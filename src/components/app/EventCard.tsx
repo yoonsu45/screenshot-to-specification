@@ -3,7 +3,7 @@ import type { ParkEvent } from "@/data/events";
 import { getFacility } from "@/data/facilities";
 import { formatRange } from "@/lib/event-service";
 
-export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; showFacility?: boolean; onClick?: () => void }) {
+export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; showFacility?: boolean; onClick?: (() => void) | undefined }) {
   const facility = getFacility(event.facilityId);
   return (
     <button onClick={onClick} className="flex w-full min-w-0 items-center gap-3 rounded-2xl bg-card p-2 text-left shadow-card transition hover:-translate-y-0.5 sm:gap-4">
