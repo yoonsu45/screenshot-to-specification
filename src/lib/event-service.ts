@@ -22,7 +22,7 @@ export function getEvent(id: string) {
   return events.find((e) => e.id === id);
 }
 
-export type CheckInput = { title: string; date: string; venue: string; image?: string };
+export type CheckInput = { title: string; date: string; venue: string; image?: string | undefined };
 
 export type FieldStatus = "same" | "different" | "missing";
 export type VerifyStatus = "match" | "partial" | "need-info" | "unverified";
