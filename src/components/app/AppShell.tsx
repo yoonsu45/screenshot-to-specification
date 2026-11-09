@@ -9,6 +9,7 @@ import { FacilityPicker } from "./FacilityPicker";
 import { navItems } from "./nav-items";
 import { useAppStore } from "@/lib/app-store";
 import { getFacility } from "@/data/facilities";
+import { LoginDialog } from "./LoginDialog";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { setCheckOpen, facilityId, setFacilityId } = useAppStore();
@@ -44,6 +45,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="relative min-w-0 flex-1 pb-28 lg:pb-12">
         <img src={headerImg} alt="" width={1536} height={512} className="pointer-events-none absolute right-0 top-0 h-40 w-full object-cover object-right opacity-90 lg:h-56" />
         <div className="relative mx-auto w-full max-w-xl px-4 pt-5 lg:max-w-5xl lg:px-10 lg:pt-10">
+          <div className="mb-3 flex justify-end lg:mb-5">
+            <LoginDialog />
+          </div>
           <Link to="/" className="mb-3 flex items-center gap-2 text-xl font-extrabold text-primary lg:hidden">
             <BrandMark /> 올팍 행사체크
           </Link>
