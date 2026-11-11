@@ -27,11 +27,11 @@ export function LoginDialog() {
     event.preventDefault();
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !trimmedEmail.includes("@")) {
-      setError("Please enter a valid email address.");
+      setError("올바른 이메일 주소를 입력해 주세요.");
       return;
     }
     if (password.length < 4) {
-      setError("Password must be at least 4 characters.");
+      setError("비밀번호는 4자 이상 입력해 주세요.");
       return;
     }
     try {
@@ -75,11 +75,11 @@ export function LoginDialog() {
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary"><UserRound className="h-5 w-5" />{LOGIN_LABEL}</DialogTitle>
-            <DialogDescription>Sign in to keep your event plans saved in this browser.</DialogDescription>
+            <DialogDescription>로그인하면 이 브라우저에 행사 계획이 저장됩니다.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2"><label htmlFor="login-email" className="text-sm font-semibold">Email</label><Input id="login-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" required /></div>
-            <div className="space-y-2"><label htmlFor="login-password" className="text-sm font-semibold">Password</label><Input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 4 characters" autoComplete="current-password" required /></div>
+            <div className="space-y-2"><label htmlFor="login-email" className="text-sm font-semibold">아이디</label><Input id="login-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="이메일 주소를 입력해 주세요" autoComplete="email" required /></div>
+            <div className="space-y-2"><label htmlFor="login-password" className="text-sm font-semibold">비밀번호</label><Input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="4자 이상 입력해 주세요" autoComplete="current-password" required /></div>
             {error && <p className="text-sm font-semibold text-destructive" role="alert">{error}</p>}
             <DialogFooter><Button type="submit" className="w-full rounded-xl font-bold sm:w-auto">{LOGIN_LABEL}</Button></DialogFooter>
           </form>
