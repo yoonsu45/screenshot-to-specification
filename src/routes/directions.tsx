@@ -25,6 +25,18 @@ export const Route = createFileRoute("/directions")({
   component: Directions,
 });
 
+const OLYMPIC_PARK_PARKING_ANCHORS = new Set([
+  "올림픽홀",
+  "올림픽공원",
+  "올림픽수영장",
+  "올림픽공원스포츠센터",
+  "올림픽테니스장",
+  "올팍축구장",
+  "지샘터도서관",
+  "소마미술관",
+  "평화의광장",
+]);
+
 function Directions() {
   const { anchor, facilityId, setAnchor, setFacilityId } = useAppStore();
   const base = resolveAnchor(anchor, facilityId);
@@ -35,6 +47,7 @@ function Directions() {
   const Icon = mode === "public" ? TrainFront : Car;
   const mapUrl = guide ? createMapUrl(guide.latitude, guide.longitude) : null;
   const naverMapUrl = `https://map.naver.com/p/search/${encodeURIComponent(base)}`;
+  const showOlympicParkParking = Boolean(guide && OLYMPIC_PARK_PARKING_ANCHORS.has(guide.anchor));
 
   return (
     <div className="max-w-3xl">
@@ -113,7 +126,7 @@ function Directions() {
               </li>
             ))}
           </ul>
-          {mode === "car" && facilityId === "olympic-park" && <ParkingSamples />}
+          {mode === "car" && showOlympicParkParking && <ParkingSamples />}
           <a
             href={guide.officialUrl}
             target="_blank"
