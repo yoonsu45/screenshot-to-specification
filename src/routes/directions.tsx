@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Car, ExternalLink, MapPinned, Navigation, TrainFront } from "lucide-react";
+import { Car, ChevronDown, ExternalLink, MapPinned, Navigation, TrainFront } from "lucide-react";
+import { FacilityPicker } from "@/components/app/FacilityPicker";
 import { transitGuides } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
 import { resolveAnchor } from "@/lib/anchor";
@@ -18,9 +19,10 @@ export const Route = createFileRoute("/directions")({
 });
 
 function Directions() {
-  const { anchor, facilityId } = useAppStore();
+  const { anchor, facilityId, setAnchor, setFacilityId } = useAppStore();
   const base = resolveAnchor(anchor, facilityId);
   const [mode, setMode] = useState<"public" | "car">("public");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const guide = transitGuides.find((g) => g.anchor === base || g.aliases?.includes(base));
   const items = guide ? (mode === "public" ? guide.publicTransit : guide.car) : [];
   const Icon = mode === "public" ? TrainFront : Car;
@@ -30,7 +32,10 @@ function Directions() {
   return (
     <div className="max-w-3xl">
       <p className="text-sm font-semibold text-muted-foreground">도착지</p>
-      <h1 className="mb-4 mt-1 text-2xl font-black text-primary sm:text-3xl">{base} 가는 길</h1>
+      <button type="button" onClick={() => setPickerOpen(true)} className="mb-4 mt-1 flex max-w-full items-center gap-1.5 rounded-2xl bg-lime/60 px-3 py-2 text-left text-primary" aria-label="도착지 변경">
+        <h1 className="min-w-0 truncate text-2xl font-black sm:text-3xl">{base} 가는 길</h1>
+        <ChevronDown className="h-6 w-6 shrink-0" />
+      </button>
       {guide && mapUrl && (
         <section className="mb-5 overflow-hidden rounded-2xl border border-border bg-card shadow-card" aria-label={`${base} 지도`}>
           <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -83,6 +88,20 @@ function Directions() {
           </a>
         </>
       )}
+      <FacilityPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        selectedId={facilityId}
+        includeAll={false}
+        title="도착지 선택"
+        description="지도와 교통 안내를 확인할 시설을 고르세요"
+        onSelect={(id) => {
+          setFacilityId(id);
+          setAnchor(null);
+          setMode("public");
+          setPickerOpen(false);
+        }}
+      />
     </div>
   );
 }

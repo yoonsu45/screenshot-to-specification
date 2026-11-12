@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Search } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { searchFacilities } from "@/data/facilities";
+import { ALL_FACILITIES_ID, searchFacilities } from "@/data/facilities";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type Props = {
@@ -10,11 +10,14 @@ type Props = {
   onOpenChange: (o: boolean) => void;
   selectedId: string;
   onSelect: (id: string) => void;
+  includeAll?: boolean;
+  title?: string;
+  description?: string;
 };
 
-function PickerBody({ selectedId, onSelect }: Pick<Props, "selectedId" | "onSelect">) {
+function PickerBody({ selectedId, onSelect, includeAll = true }: Pick<Props, "selectedId" | "onSelect" | "includeAll">) {
   const [q, setQ] = useState("");
-  const list = searchFacilities(q);
+  const list = searchFacilities(q).filter((facility) => includeAll || facility.id !== ALL_FACILITIES_ID);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <label className="relative mb-3 block">
@@ -42,7 +45,7 @@ function PickerBody({ selectedId, onSelect }: Pick<Props, "selectedId" | "onSele
             </li>
           );
         })}
-        {list.length === 1 && q && <li className="px-4 py-6 text-center text-muted-foreground">검색 결과가 없어요</li>}
+        {list.length === 0 && q && <li className="px-4 py-6 text-center text-muted-foreground">검색 결과가 없어요</li>}
       </ul>
     </div>
   );
@@ -50,13 +53,15 @@ function PickerBody({ selectedId, onSelect }: Pick<Props, "selectedId" | "onSele
 
 export function FacilityPicker(props: Props) {
   const isMobile = useIsMobile();
+  const title = props.title ?? "장소 선택";
+  const description = props.description ?? "행사를 볼 시설을 고르세요";
   if (isMobile) {
     return (
       <Sheet open={props.open} onOpenChange={props.onOpenChange}>
         <SheetContent side="bottom" className="flex h-[78dvh] flex-col rounded-t-3xl px-5 pt-3">
           <div className="mx-auto mb-2 h-1.5 w-12 rounded-full bg-border" />
-          <SheetTitle className="text-2xl font-extrabold text-primary">장소 선택</SheetTitle>
-          <SheetDescription className="sr-only">행사를 볼 시설을 고르세요</SheetDescription>
+          <SheetTitle className="text-2xl font-extrabold text-primary">{title}</SheetTitle>
+          <SheetDescription className="sr-only">{description}</SheetDescription>
           <PickerBody {...props} />
         </SheetContent>
       </Sheet>
@@ -65,8 +70,8 @@ export function FacilityPicker(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="flex h-[70vh] max-w-md flex-col rounded-3xl">
-        <DialogTitle className="text-2xl font-extrabold text-primary">장소 선택</DialogTitle>
-        <DialogDescription className="sr-only">행사를 볼 시설을 고르세요</DialogDescription>
+        <DialogTitle className="text-2xl font-extrabold text-primary">{title}</DialogTitle>
+        <DialogDescription className="sr-only">{description}</DialogDescription>
         <PickerBody {...props} />
       </DialogContent>
     </Dialog>
