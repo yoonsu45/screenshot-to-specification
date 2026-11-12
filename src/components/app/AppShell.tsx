@@ -39,7 +39,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        <p className="mt-auto text-xs text-muted-foreground">시연용 데이터로 동작하는 프로토타입이에요.</p>
       </aside>
 
       <div className="relative min-w-0 flex-1 pb-28 lg:pb-12">

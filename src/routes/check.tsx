@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import { useAppStore } from "@/lib/app-store";
-import { DEMO_CASE } from "@/lib/event-service";
+import { EXAMPLE_CASE } from "@/lib/event-service";
 
 export const Route = createFileRoute("/check")({
   head: () => ({
@@ -57,7 +57,7 @@ function CheckPage() {
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <button onClick={submit} className="h-13 flex-1 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab">공식 일정과 대조하기</button>
-        <button onClick={() => { setForm({ ...DEMO_CASE, image: form.image }); setError(false); }} className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-3.5 font-bold text-primary">
+        <button onClick={() => { setForm({ ...EXAMPLE_CASE, image: form.image }); setError(false); }} className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-3.5 font-bold text-primary">
           <Sparkles className="h-4 w-4" /> 예시로 체험하기
         </button>
       </div>

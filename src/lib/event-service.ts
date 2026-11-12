@@ -89,4 +89,4 @@ export function verifyEvent(input: CheckInput): VerifyResult {
   return { status, event, fields };
 }
 
-export const DEMO_CASE: CheckInput = { title: "CRAVITY CONCERT", date: "2026-11-14", venue: "KSPO DOME" };
+export const EXAMPLE_CASE: CheckInput = { title: "CRAVITY CONCERT", date: "2026-11-14", venue: "KSPO DOME" };

@@ -22,7 +22,7 @@ const statusMeta: Record<VerifyStatus, { label: string; desc: string; icon: type
   match: { label: "공식 일정과 일치", desc: "입력한 정보가 공식 기록과 같아요.", icon: CheckCircle2, cls: "bg-lime text-lime-foreground" },
   partial: { label: "게시물과 일부 다름", desc: "공식 기록과 다른 항목이 있어요. 아래에서 확인하세요.", icon: AlertTriangle, cls: "bg-warn text-warn-foreground" },
   "need-info": { label: "정보 더 필요", desc: "행사는 찾았지만 날짜나 장소를 더 입력하면 정확히 대조할 수 있어요.", icon: HelpCircle, cls: "bg-secondary text-secondary-foreground" },
-  unverified: { label: "시연 데이터에서 미확인", desc: "현재 연결된 시연 데이터 범위 안에서는 이 행사를 찾지 못했어요. 공식 채널에서 한 번 더 확인해 주세요.", icon: Info, cls: "bg-muted text-muted-foreground" },
+  unverified: { label: "공식 일정에서 미확인", desc: "현재 연결된 공식 일정에서는 이 행사를 찾지 못했어요. 공식 채널에서 한 번 더 확인해 주세요.", icon: Info, cls: "bg-muted text-muted-foreground" },
 };
 
 function ResultPage() {
@@ -70,7 +70,6 @@ function ResultPage() {
         {ev && (
           <p className="text-sm">
             공식 기록: <b>{ev.title}</b> · {formatRange(ev)} · <span className="rounded-md bg-lime px-1.5 font-bold text-lime-foreground">{ev.venue}</span>
-            <span className="ml-2 rounded-full bg-lime/60 px-2 py-0.5 text-[11px] font-semibold text-lime-foreground">시연용 데이터</span>
           </p>
         )}
 

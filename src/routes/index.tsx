@@ -39,7 +39,6 @@ function Home() {
           <h1 className="title-highlight truncate text-2xl font-black text-primary sm:text-3xl lg:text-4xl">{title}</h1>
           <ChevronDown className="h-6 w-6 shrink-0 text-primary" />
         </button>
-        <span className="shrink-0 rounded-full bg-lime px-2.5 py-1 text-xs font-bold text-lime-foreground">시연용</span>
       </div>
 
       <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">

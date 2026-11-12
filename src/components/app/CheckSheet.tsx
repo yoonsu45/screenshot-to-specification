@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight, ImageIcon, Pencil, Sparkles } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useAppStore } from "@/lib/app-store";
-import { DEMO_CASE } from "@/lib/event-service";
+import { EXAMPLE_CASE } from "@/lib/event-service";
 
 export function CheckSheet() {
   const { checkOpen, setCheckOpen, setDraft } = useAppStore();
@@ -55,7 +55,7 @@ export function CheckSheet() {
         </div>
         <button
           onClick={() => {
-            setDraft(DEMO_CASE);
+            setDraft(EXAMPLE_CASE);
             setCheckOpen(false);
             navigate({ to: "/check" });
           }}

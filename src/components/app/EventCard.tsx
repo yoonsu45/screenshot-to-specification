@@ -42,7 +42,6 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
         <div className="min-w-0 flex-1 py-1">
           <div className="mb-1 flex items-center gap-1.5">
             <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">{event.category}</span>
-            {event.demo && <span className="rounded-full bg-lime px-2 py-0.5 text-[11px] font-semibold text-lime-foreground">Demo</span>}
           </div>
           <h3 className="truncate text-base font-extrabold sm:text-lg">{event.title}</h3>
           <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4 shrink-0 text-primary" /><span className="truncate">{formatRange(event)}</span></p>
