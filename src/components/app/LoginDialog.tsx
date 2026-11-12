@@ -1,7 +1,13 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { LoaderCircle, LogOut, UserRound, UserRoundPlus } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/app-store";
@@ -57,9 +63,7 @@ export function LoginDialog() {
     }
 
     setPending(true);
-    const result = mode === "signup"
-      ? await signup(email, password)
-      : await login(email, password);
+    const result = mode === "signup" ? await signup(email, password) : await login(email, password);
     setPending(false);
 
     if (!result.ok) {
@@ -73,8 +77,8 @@ export function LoginDialog() {
     toast.success(mode === "signup" ? "회원가입이 완료됐어요." : "로그인했어요.");
   }
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     toast.success("로그아웃했어요.");
   }
 
@@ -141,7 +145,12 @@ export function LoginDialog() {
                 >
                   예
                 </Button>
-                <Button type="button" variant="outline" onClick={closeAuthFlow} className="rounded-xl font-extrabold">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeAuthFlow}
+                  className="rounded-xl font-extrabold"
+                >
                   아니요
                 </Button>
               </div>
@@ -150,7 +159,11 @@ export function LoginDialog() {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-xl font-black text-primary">
-                  {isSignup ? <UserRoundPlus className="h-6 w-6" /> : <UserRound className="h-6 w-6" />}
+                  {isSignup ? (
+                    <UserRoundPlus className="h-6 w-6" />
+                  ) : (
+                    <UserRound className="h-6 w-6" />
+                  )}
                   {isSignup ? "회원가입" : "로그인"}
                 </DialogTitle>
                 <DialogDescription>
@@ -168,7 +181,9 @@ export function LoginDialog() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="auth-email" className="text-sm font-extrabold text-primary">아이디</label>
+                  <label htmlFor="auth-email" className="text-sm font-extrabold text-primary">
+                    아이디
+                  </label>
                   <Input
                     id="auth-email"
                     type="email"
@@ -182,15 +197,17 @@ export function LoginDialog() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="auth-password" className="text-sm font-extrabold text-primary">비밀번호</label>
+                  <label htmlFor="auth-password" className="text-sm font-extrabold text-primary">
+                    비밀번호
+                  </label>
                   <Input
                     id="auth-password"
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    placeholder="4자 이상 입력해 주세요"
+                    placeholder="6자 이상 입력해 주세요"
                     autoComplete={isSignup ? "new-password" : "current-password"}
-                    minLength={4}
+                    minLength={6}
                     disabled={pending}
                     required
                   />
@@ -198,7 +215,12 @@ export function LoginDialog() {
 
                 {isSignup && (
                   <div className="space-y-2">
-                    <label htmlFor="auth-password-confirm" className="text-sm font-extrabold text-primary">비밀번호 확인</label>
+                    <label
+                      htmlFor="auth-password-confirm"
+                      className="text-sm font-extrabold text-primary"
+                    >
+                      비밀번호 확인
+                    </label>
                     <Input
                       id="auth-password-confirm"
                       type="password"
@@ -206,7 +228,7 @@ export function LoginDialog() {
                       onChange={(event) => setPasswordConfirm(event.target.value)}
                       placeholder="비밀번호를 한 번 더 입력해 주세요"
                       autoComplete="new-password"
-                      minLength={4}
+                      minLength={6}
                       disabled={pending}
                       required
                     />
@@ -214,12 +236,19 @@ export function LoginDialog() {
                 )}
 
                 {error && (
-                  <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive" role="alert">
+                  <p
+                    className="rounded-xl bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive"
+                    role="alert"
+                  >
                     {error}
                   </p>
                 )}
 
-                <Button type="submit" disabled={pending} className="w-full rounded-xl font-extrabold">
+                <Button
+                  type="submit"
+                  disabled={pending}
+                  className="w-full rounded-xl font-extrabold"
+                >
                   {pending && <LoaderCircle className="animate-spin" />}
                   {isSignup ? "계정 만들기" : "로그인"}
                 </Button>

@@ -1,7 +1,22 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginDialog } from "@/components/app/LoginDialog";
 import { AppStoreProvider, useAppStore } from "@/lib/app-store";
+
+vi.mock("@/lib/auth", () => ({
+  authenticateAccount: vi.fn(),
+  createAccount: vi.fn(),
+  getCurrentAccount: vi.fn().mockResolvedValue(null),
+  observeAuthAccount: vi.fn(() => () => undefined),
+  signOutAccount: vi.fn(),
+}));
+
+vi.mock("@/lib/event-saves", () => ({
+  deleteEventForUser: vi.fn(),
+  getEventSaveCounts: vi.fn().mockResolvedValue({}),
+  listMyEventSaves: vi.fn().mockResolvedValue([]),
+  saveEventForUser: vi.fn(),
+}));
 
 const memory = new Map<string, string>();
 const memoryStorage: Storage = {
@@ -43,11 +58,15 @@ describe("login-required confirmation", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "담기" }));
-    expect(screen.getByText("로그인이 필요한 서비스입니다. 로그인하시겠습니까?")).toBeInTheDocument();
+    expect(
+      screen.getByText("로그인이 필요한 서비스입니다. 로그인하시겠습니까?"),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "아니요" }));
     await waitFor(() => {
-      expect(screen.queryByText("로그인이 필요한 서비스입니다. 로그인하시겠습니까?")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("로그인이 필요한 서비스입니다. 로그인하시겠습니까?"),
+      ).not.toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("button", { name: "담기" }));

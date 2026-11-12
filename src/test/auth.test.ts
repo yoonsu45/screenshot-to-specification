@@ -1,53 +1,53 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { AUTH_SESSION_KEY, authenticateAccount, createAccount } from "@/lib/auth";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const memory = new Map<string, string>();
-const memoryStorage: Storage = {
-  get length() {
-    return memory.size;
-  },
-  clear: () => memory.clear(),
-  getItem: (key) => memory.get(key) ?? null,
-  key: (index) => Array.from(memory.keys())[index] ?? null,
-  removeItem: (key) => {
-    memory.delete(key);
-  },
-  setItem: (key, value) => {
-    memory.set(key, String(value));
-  },
-};
+const authMocks = vi.hoisted(() => ({
+  signUp: vi.fn(),
+  signInWithPassword: vi.fn(),
+  getSession: vi.fn(),
+  onAuthStateChange: vi.fn(),
+  signOut: vi.fn(),
+}));
 
-Object.defineProperty(globalThis, "localStorage", {
-  configurable: true,
-  value: memoryStorage,
-});
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { auth: authMocks },
+}));
 
-describe("browser account authentication", () => {
+import { authenticateAccount, createAccount } from "@/lib/auth";
+
+describe("Supabase account authentication", () => {
   beforeEach(() => {
-    localStorage.clear();
+    vi.clearAllMocks();
   });
 
-  it("creates an account, rejects invalid credentials, and logs in with the correct password", async () => {
-    const created = await createAccount("visitor@example.com", "pass1234");
-    expect(created).toEqual({ ok: true, email: "visitor@example.com" });
-    expect(localStorage.getItem(AUTH_SESSION_KEY)).toBe("visitor@example.com");
+  it("creates a real Supabase account", async () => {
+    authMocks.signUp.mockResolvedValue({
+      data: {
+        user: { id: "user-1", email: "visitor@example.com" },
+        session: { access_token: "token" },
+      },
+      error: null,
+    });
 
-    const storedAccounts = localStorage.getItem("thecheck-accounts-v1");
-    expect(storedAccounts).not.toContain("pass1234");
-
-    localStorage.removeItem(AUTH_SESSION_KEY);
-    const wrongPassword = await authenticateAccount("visitor@example.com", "wrong-password");
-    expect(wrongPassword).toEqual({ ok: false, error: "비밀번호가 일치하지 않아요." });
-    expect(localStorage.getItem(AUTH_SESSION_KEY)).toBeNull();
-
-    const loggedIn = await authenticateAccount("visitor@example.com", "pass1234");
-    expect(loggedIn).toEqual({ ok: true, email: "visitor@example.com" });
-    expect(localStorage.getItem(AUTH_SESSION_KEY)).toBe("visitor@example.com");
+    await expect(createAccount("VISITOR@example.com", "pass1234")).resolves.toEqual({
+      ok: true,
+      email: "visitor@example.com",
+      userId: "user-1",
+    });
+    expect(authMocks.signUp).toHaveBeenCalledWith({
+      email: "visitor@example.com",
+      password: "pass1234",
+    });
   });
 
-  it("does not allow duplicate accounts", async () => {
-    await createAccount("same@example.com", "pass1234");
-    const duplicate = await createAccount("SAME@example.com", "pass5678");
-    expect(duplicate).toEqual({ ok: false, error: "이미 가입된 이메일이에요. 로그인해 주세요." });
+  it("shows a Korean message for invalid credentials", async () => {
+    authMocks.signInWithPassword.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: "Invalid login credentials" },
+    });
+
+    await expect(authenticateAccount("visitor@example.com", "wrong-password")).resolves.toEqual({
+      ok: false,
+      error: "아이디 또는 비밀번호가 맞지 않아요.",
+    });
   });
 });

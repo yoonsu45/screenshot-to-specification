@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, CalendarDays, ExternalLink, MapPin, Plus } from "lucide-react";
+import { Bookmark, CalendarDays, ExternalLink, MapPin, Plus, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import type { ParkEvent } from "@/data/events";
 import { getFacility } from "@/data/facilities";
@@ -7,20 +7,35 @@ import { formatDate, formatRange } from "@/lib/event-service";
 import { useAppStore } from "@/lib/app-store";
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const ADD_LABEL = "\uB2F4\uAE30";
 
-export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; showFacility?: boolean | undefined; onClick?: (() => void) | undefined }) {
+export function EventCard({
+  event,
+  showFacility,
+  onClick,
+}: {
+  event: ParkEvent;
+  showFacility?: boolean | undefined;
+  onClick?: (() => void) | undefined;
+}) {
   const facility = getFacility(event.facilityId);
-  const { addPlan, removePlan, plan, requireAuth, userEmail } = useAppStore();
+  const { addPlan, removePlan, plan, requireAuth, userEmail, eventSaveCounts } = useAppStore();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [visitDateOpen, setVisitDateOpen] = useState(false);
   const plannedItem = plan.find((item) => item.id === `event:${event.id}`);
   const isAdded = Boolean(plannedItem);
 
-  function addEvent(visitDate: string) {
-    const added = addPlan({
+  async function addEvent(visitDate: string) {
+    const added = await addPlan({
       id: `event:${event.id}`,
       kind: "event",
       title: event.title,
@@ -29,17 +44,21 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
       endDate: visitDate,
       venue: event.venue,
     });
-    if (!added) return;
+    if (!added) {
+      toast.error("일정을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
     setVisitDateOpen(false);
     setDetailsOpen(false);
     toast.success(isAdded ? "방문 예정일을 변경했어요." : "선택한 날짜로 방문 계획에 담았어요.");
   }
 
-  function toggleBookmark() {
+  async function toggleBookmark() {
     if (!requireAuth()) return;
     if (isAdded) {
-      removePlan(`event:${event.id}`);
-      toast.success("방문 계획에서 뺐어요.");
+      const removed = await removePlan(`event:${event.id}`);
+      if (removed) toast.success("방문 계획에서 뺐어요.");
+      else toast.error("일정을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
       return;
     }
     setVisitDateOpen(true);
@@ -67,15 +86,46 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
   return (
     <>
       <article className="flex w-full min-w-0 items-center gap-2 rounded-[1.75rem] bg-card p-3 text-left shadow-card transition hover:-translate-y-0.5 sm:p-4">
-        <button type="button" onClick={() => setDetailsOpen(true)} className="flex min-w-0 flex-1 items-center gap-4 text-left">
-          <img src={event.image} alt="" loading="lazy" width={944} height={704} className="h-28 w-32 shrink-0 rounded-[1.35rem] object-cover sm:h-32 sm:w-40" />
+        <button
+          type="button"
+          onClick={() => setDetailsOpen(true)}
+          className="flex min-w-0 flex-1 items-center gap-4 text-left"
+        >
+          <img
+            src={event.image}
+            alt=""
+            loading="lazy"
+            width={944}
+            height={704}
+            className="h-28 w-32 shrink-0 rounded-[1.35rem] object-cover sm:h-32 sm:w-40"
+          />
           <div className="min-w-0 flex-1 py-1">
-            <h3 className="mb-3 line-clamp-2 text-xl font-black leading-tight text-primary sm:text-2xl">{event.title}</h3>
-            <p className="flex items-center gap-2 text-sm font-medium text-foreground sm:text-base"><CalendarDays className="h-5 w-5 shrink-0 text-primary" /><span className="truncate">{formatCompactRange(event)}</span></p>
-            <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground sm:text-base"><MapPin className="h-5 w-5 shrink-0 text-primary" /><span className="truncate">{showFacility ? `${facility?.name} · ` : ""}{event.venue}</span></p>
+            <h3 className="mb-3 line-clamp-2 text-xl font-black leading-tight text-primary sm:text-2xl">
+              {event.title}
+            </h3>
+            <p className="flex items-center gap-2 text-sm font-medium text-foreground sm:text-base">
+              <CalendarDays className="h-5 w-5 shrink-0 text-primary" />
+              <span className="truncate">{formatCompactRange(event)}</span>
+            </p>
+            <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground sm:text-base">
+              <MapPin className="h-5 w-5 shrink-0 text-primary" />
+              <span className="truncate">
+                {showFacility ? `${facility?.name} · ` : ""}
+                {event.venue}
+              </span>
+            </p>
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-brand-orange sm:text-sm">
+              <UsersRound className="h-4 w-4 shrink-0" />
+              {(eventSaveCounts[event.id] ?? 0).toLocaleString("ko-KR")}명이 일정에 담았어요
+            </p>
           </div>
         </button>
-        <button type="button" aria-label={isAdded ? "방문 계획에서 빼기" : "방문 계획에 담기"} onClick={toggleBookmark} className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-primary transition hover:bg-secondary">
+        <button
+          type="button"
+          aria-label={isAdded ? "방문 계획에서 빼기" : "방문 계획에 담기"}
+          onClick={toggleBookmark}
+          className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-primary transition hover:bg-secondary"
+        >
           <Bookmark className={`h-7 w-7 ${isAdded ? "fill-brand-orange text-brand-orange" : ""}`} />
         </button>
       </article>
@@ -84,16 +134,35 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-primary">{event.title}</DialogTitle>
-            <DialogDescription>{event.category} · {event.venue}</DialogDescription>
+            <DialogDescription>
+              {event.category} · {event.venue}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 rounded-xl bg-muted/50 p-4 text-sm">
-            <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" />{formatRange(event)}</p>
-            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" />{facility?.name ?? event.facilityId} · {event.venue}</p>
+            <p className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              {formatRange(event)}
+            </p>
+            <p className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              {facility?.name ?? event.facilityId} · {event.venue}
+            </p>
             <p className="text-muted-foreground">행사 정보를 확인하고 방문 계획에 담아보세요.</p>
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button type="button" onClick={openVisitDateDialog} className="rounded-xl font-bold"><Plus />{isAdded ? "방문일 변경" : ADD_LABEL}</Button>
-            <Button type="button" variant="outline" onClick={openOfficialSite} className="rounded-xl font-bold"><ExternalLink />공식 사이트</Button>
+            <Button type="button" onClick={openVisitDateDialog} className="rounded-xl font-bold">
+              <Plus />
+              {isAdded ? "방문일 변경" : ADD_LABEL}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openOfficialSite}
+              className="rounded-xl font-bold"
+            >
+              <ExternalLink />
+              공식 사이트
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

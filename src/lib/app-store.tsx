@@ -1,7 +1,30 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { CheckInput } from "@/lib/event-service";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { ALL_FACILITIES_ID } from "@/data/facilities";
-import { AUTH_SESSION_KEY, authenticateAccount, createAccount, type AuthResult } from "@/lib/auth";
+import { events } from "@/data/events";
+import {
+  authenticateAccount,
+  createAccount,
+  getCurrentAccount,
+  observeAuthAccount,
+  signOutAccount,
+  type AuthAccount,
+  type AuthResult,
+} from "@/lib/auth";
+import {
+  deleteEventForUser,
+  getEventSaveCounts,
+  listMyEventSaves,
+  saveEventForUser,
+} from "@/lib/event-saves";
+import type { CheckInput } from "@/lib/event-service";
 
 export type PlanItem = {
   id: string;
@@ -16,16 +39,17 @@ export type PlanItem = {
 type Store = {
   facilityId: string;
   setFacilityId: (id: string) => void;
-  /** 주변·가는 길의 기준 장소. 대조로 확인한 공연장이 있으면 그것을 사용 */
   anchor: string | null;
-  setAnchor: (a: string | null) => void;
+  setAnchor: (anchor: string | null) => void;
   draft: CheckInput;
-  setDraft: (d: CheckInput) => void;
+  setDraft: (draft: CheckInput) => void;
   checkOpen: boolean;
-  setCheckOpen: (o: boolean) => void;
+  setCheckOpen: (open: boolean) => void;
   plan: PlanItem[];
-  addPlan: (item: PlanItem) => boolean;
-  removePlan: (id: string) => boolean;
+  addPlan: (item: PlanItem) => Promise<boolean>;
+  removePlan: (id: string) => Promise<boolean>;
+  eventSaveCounts: Record<string, number>;
+  refreshEventSaveCounts: () => Promise<void>;
   userEmail: string | null;
   authLoaded: boolean;
   authOpen: boolean;
@@ -35,99 +59,194 @@ type Store = {
   requireAuth: () => boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
   signup: (email: string, password: string) => Promise<AuthResult>;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const Ctx = createContext<Store | null>(null);
-const empty: CheckInput = { title: "", date: "", venue: "" };
+const emptyDraft: CheckInput = { title: "", date: "", venue: "" };
 
-function getPlanKey(email: string) {
-  return `thecheck-plan-v2:${encodeURIComponent(email)}`;
+function placePlanKey(email: string) {
+  return `thecheck-place-plan-v1:${encodeURIComponent(email)}`;
+}
+
+function eventPlanItem(eventId: string, visitDate: string): PlanItem | null {
+  const event = events.find((item) => item.id === eventId);
+  if (!event) return null;
+  return {
+    id: `event:${event.id}`,
+    kind: "event",
+    title: event.title,
+    subtitle: `${visitDate} · ${event.venue}`,
+    startDate: visitDate,
+    endDate: visitDate,
+    venue: event.venue,
+  };
 }
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [facilityId, setFacilityId] = useState(ALL_FACILITIES_ID);
   const [anchor, setAnchor] = useState<string | null>(null);
-  const [draft, setDraft] = useState<CheckInput>(empty);
+  const [draft, setDraft] = useState<CheckInput>(emptyDraft);
   const [checkOpen, setCheckOpen] = useState(false);
   const [plan, setPlan] = useState<PlanItem[]>([]);
-  const [loadedPlanKey, setLoadedPlanKey] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [account, setAccount] = useState<AuthAccount | null>(null);
+  const [loadedPlacePlanKey, setLoadedPlacePlanKey] = useState<string | null>(null);
+  const [eventSaveCounts, setEventSaveCounts] = useState<Record<string, number>>({});
   const [authLoaded, setAuthLoaded] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
-  useEffect(() => {
+  const refreshEventSaveCounts = useCallback(async () => {
     try {
-      setUserEmail(localStorage.getItem(AUTH_SESSION_KEY));
+      setEventSaveCounts(await getEventSaveCounts(events.map((event) => event.id)));
     } catch {
-      setUserEmail(null);
+      // Counts are supplemental; the rest of the service remains available if they fail.
     }
-    setAuthLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (!authLoaded) return;
+    let active = true;
+    void getCurrentAccount()
+      .then((currentAccount) => {
+        if (active) setAccount(currentAccount);
+      })
+      .finally(() => {
+        if (active) setAuthLoaded(true);
+      });
 
-    setPlan([]);
-    setLoadedPlanKey(null);
-    if (!userEmail) return;
+    const unsubscribe = observeAuthAccount((currentAccount) => {
+      if (!active) return;
+      setAccount(currentAccount);
+      setAuthLoaded(true);
+    });
+    void refreshEventSaveCounts();
 
-    const planKey = getPlanKey(userEmail);
-    try {
-      const raw = localStorage.getItem(planKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setPlan(parsed);
-      }
-    } catch {
-      // Keep an empty in-memory plan when browser storage is unavailable.
-    }
-    setLoadedPlanKey(planKey);
-  }, [authLoaded, userEmail]);
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [refreshEventSaveCounts]);
 
   useEffect(() => {
-    if (!userEmail) return;
-    const planKey = getPlanKey(userEmail);
-    if (loadedPlanKey !== planKey) return;
+    if (!authLoaded) return;
+    let active = true;
+    setPlan([]);
+    setLoadedPlacePlanKey(null);
+    if (!account) return;
 
+    const storageKey = placePlanKey(account.email);
+    let places: PlanItem[] = [];
     try {
-      localStorage.setItem(planKey, JSON.stringify(plan));
+      const stored = localStorage.getItem(storageKey);
+      const parsed = stored ? JSON.parse(stored) : [];
+      if (Array.isArray(parsed)) places = parsed.filter((item) => item?.kind === "place");
     } catch {
-      // The current session can still use its in-memory plan.
+      // Keep an empty place plan when browser storage is unavailable.
     }
-  }, [loadedPlanKey, plan, userEmail]);
+
+    setPlan(places);
+    setLoadedPlacePlanKey(storageKey);
+    void listMyEventSaves()
+      .then((rows) => {
+        if (!active) return;
+        const eventItems = rows
+          .map((row) => eventPlanItem(row.eventId, row.visitDate))
+          .filter((item): item is PlanItem => item !== null);
+        setPlan([...places, ...eventItems]);
+      })
+      .catch(() => {
+        // The user can retry by signing in again if the cloud plan cannot be loaded.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [account, authLoaded]);
+
+  useEffect(() => {
+    if (!account || loadedPlacePlanKey !== placePlanKey(account.email)) return;
+    try {
+      localStorage.setItem(
+        loadedPlacePlanKey,
+        JSON.stringify(plan.filter((item) => item.kind === "place")),
+      );
+    } catch {
+      // Places remain usable in memory when browser storage is unavailable.
+    }
+  }, [account, loadedPlacePlanKey, plan]);
 
   const requireAuth = useCallback(() => {
-    if (userEmail) return true;
+    if (account) return true;
     setAuthPromptOpen(true);
     return false;
-  }, [userEmail]);
+  }, [account]);
 
-  const addPlan = useCallback((item: PlanItem) => {
-    if (!userEmail) {
-      setAuthPromptOpen(true);
-      return false;
-    }
-    setPlan((current) => current.some((entry) => entry.id === item.id)
-      ? current.map((entry) => (entry.id === item.id ? item : entry))
-      : [...current, item]);
-    return true;
-  }, [userEmail]);
+  const addPlan = useCallback(
+    async (item: PlanItem) => {
+      if (!account) {
+        setAuthPromptOpen(true);
+        return false;
+      }
 
-  const removePlan = useCallback((id: string) => {
-    if (!userEmail) {
-      setAuthPromptOpen(true);
-      return false;
-    }
-    setPlan((current) => current.filter((item) => item.id !== id));
-    return true;
-  }, [userEmail]);
+      const existing = plan.some((entry) => entry.id === item.id);
+      if (item.kind === "event") {
+        const eventId = item.id.replace(/^event:/, "");
+        if (!item.startDate) return false;
+        try {
+          await saveEventForUser(account.userId, eventId, item.startDate);
+        } catch {
+          return false;
+        }
+        if (!existing) {
+          setEventSaveCounts((counts) => ({
+            ...counts,
+            [eventId]: (counts[eventId] ?? 0) + 1,
+          }));
+        }
+      }
+
+      setPlan((current) =>
+        current.some((entry) => entry.id === item.id)
+          ? current.map((entry) => (entry.id === item.id ? item : entry))
+          : [...current, item],
+      );
+      return true;
+    },
+    [account, plan],
+  );
+
+  const removePlan = useCallback(
+    async (id: string) => {
+      if (!account) {
+        setAuthPromptOpen(true);
+        return false;
+      }
+
+      const existing = plan.find((item) => item.id === id);
+      if (!existing) return true;
+      if (existing.kind === "event") {
+        const eventId = id.replace(/^event:/, "");
+        try {
+          await deleteEventForUser(account.userId, eventId);
+        } catch {
+          return false;
+        }
+        setEventSaveCounts((counts) => ({
+          ...counts,
+          [eventId]: Math.max(0, (counts[eventId] ?? 0) - 1),
+        }));
+      }
+
+      setPlan((current) => current.filter((item) => item.id !== id));
+      return true;
+    },
+    [account, plan],
+  );
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await authenticateAccount(email, password);
     if (result.ok) {
-      setUserEmail(result.email);
+      setAccount({ email: result.email, userId: result.userId });
       setAuthOpen(false);
     }
     return result;
@@ -136,23 +255,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const signup = useCallback(async (email: string, password: string) => {
     const result = await createAccount(email, password);
     if (result.ok) {
-      setUserEmail(result.email);
+      setAccount({ email: result.email, userId: result.userId });
       setAuthOpen(false);
     }
     return result;
   }, []);
 
-  const logout = useCallback(() => {
-    try {
-      localStorage.removeItem(AUTH_SESSION_KEY);
-    } catch {
-      // Clear the in-memory session even if storage is unavailable.
-    }
-    setUserEmail(null);
+  const logout = useCallback(async () => {
+    await signOutAccount();
+    setAccount(null);
     setPlan([]);
   }, []);
 
-  const value = useMemo(
+  const value = useMemo<Store>(
     () => ({
       facilityId,
       setFacilityId,
@@ -165,7 +280,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       plan,
       addPlan,
       removePlan,
-      userEmail,
+      eventSaveCounts,
+      refreshEventSaveCounts,
+      userEmail: account?.email ?? null,
       authLoaded,
       authOpen,
       setAuthOpen,
@@ -176,7 +293,25 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       signup,
       logout,
     }),
-    [facilityId, anchor, draft, checkOpen, plan, addPlan, removePlan, userEmail, authLoaded, authOpen, authPromptOpen, requireAuth, login, signup, logout],
+    [
+      facilityId,
+      anchor,
+      draft,
+      checkOpen,
+      plan,
+      addPlan,
+      removePlan,
+      eventSaveCounts,
+      refreshEventSaveCounts,
+      account,
+      authLoaded,
+      authOpen,
+      authPromptOpen,
+      requireAuth,
+      login,
+      signup,
+      logout,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
