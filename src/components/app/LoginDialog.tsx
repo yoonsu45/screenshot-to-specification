@@ -118,14 +118,6 @@ export function LoginDialog() {
           <div className="grid grid-cols-2 gap-3 pt-2">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => setAuthPromptOpen(false)}
-              className="rounded-xl font-extrabold"
-            >
-              아니요
-            </Button>
-            <Button
-              type="button"
               onClick={() => {
                 setAuthPromptOpen(false);
                 setAuthOpen(true);
@@ -133,6 +125,14 @@ export function LoginDialog() {
               className="rounded-xl font-extrabold"
             >
               예
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAuthPromptOpen(false)}
+              className="rounded-xl font-extrabold"
+            >
+              아니요
             </Button>
           </div>
         </DialogContent>
@@ -148,7 +148,11 @@ export function LoginDialog() {
             <DialogDescription>
               {isSignup
                 ? "계정을 만들면 나만의 방문 일정을 저장할 수 있어요."
-                : "일정을 담으려면 로그인해 주세요. 다른 기능은 비회원도 이용할 수 있어요."}
+                : <>
+                    일정을 담으려면 로그인해 주세요.
+                    <br />
+                    다른 기능은 비회원도 이용할 수 있어요.
+                  </>}
             </DialogDescription>
           </DialogHeader>
 
@@ -208,7 +212,7 @@ export function LoginDialog() {
 
             <div className="border-t border-border pt-4 text-center">
               <p className="mb-3 text-sm text-muted-foreground">
-                {isSignup ? "이미 계정이 있나요?" : "아직 계정이 없나요?"}
+                {isSignup ? "이미 계정이 있나요?" : "아직 계정이 없으신가요?"}
               </p>
               <Button
                 type="button"
