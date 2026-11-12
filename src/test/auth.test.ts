@@ -50,4 +50,16 @@ describe("Supabase account authentication", () => {
       error: "아이디 또는 비밀번호가 맞지 않아요.",
     });
   });
+
+  it("explains when email sign-up is disabled", async () => {
+    authMocks.signUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: "Email provider is disabled", code: "email_provider_disabled" },
+    });
+
+    await expect(createAccount("visitor@example.com", "pass1234")).resolves.toEqual({
+      ok: false,
+      error: "이메일 회원가입이 아직 활성화되지 않았어요. 관리자 설정이 필요해요.",
+    });
+  });
 });
