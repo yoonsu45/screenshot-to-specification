@@ -53,7 +53,10 @@ function Nearby() {
               </div>
               <button
                 aria-label={`${p.name} 계획에 담기`}
-                onClick={() => { addPlan({ id: `place:${p.id}`, kind: "place", title: p.name, subtitle: `${base} 주변 · ${p.category}` }); toast.success("방문 계획에 담았어요"); }}
+                onClick={() => {
+                  const added = addPlan({ id: `place:${p.id}`, kind: "place", title: p.name, subtitle: `${base} 주변 · ${p.category}` });
+                  if (added) toast.success("방문 계획에 담았어요");
+                }}
                 className="mr-1 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground"
               >
                 <Plus className="h-5 w-5" />

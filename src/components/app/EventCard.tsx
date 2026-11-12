@@ -13,14 +13,14 @@ const ADD_LABEL = "\uB2F4\uAE30";
 
 export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; showFacility?: boolean; onClick?: (() => void) | undefined }) {
   const facility = getFacility(event.facilityId);
-  const { addPlan, removePlan, plan } = useAppStore();
+  const { addPlan, removePlan, plan, requireAuth } = useAppStore();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [visitDateOpen, setVisitDateOpen] = useState(false);
   const plannedItem = plan.find((item) => item.id === `event:${event.id}`);
   const isAdded = Boolean(plannedItem);
 
   function addEvent(visitDate: string) {
-    addPlan({
+    const added = addPlan({
       id: `event:${event.id}`,
       kind: "event",
       title: event.title,
@@ -29,12 +29,14 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
       endDate: visitDate,
       venue: event.venue,
     });
+    if (!added) return;
     setVisitDateOpen(false);
     setDetailsOpen(false);
     toast.success(isAdded ? "방문 예정일을 변경했어요." : "선택한 날짜로 방문 계획에 담았어요.");
   }
 
   function toggleBookmark() {
+    if (!requireAuth()) return;
     if (isAdded) {
       removePlan(`event:${event.id}`);
       toast.success("방문 계획에서 뺐어요.");
@@ -44,6 +46,10 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
   }
 
   function openVisitDateDialog() {
+    if (!requireAuth()) {
+      setDetailsOpen(false);
+      return;
+    }
     setDetailsOpen(false);
     setVisitDateOpen(true);
   }

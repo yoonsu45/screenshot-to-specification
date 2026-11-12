@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CalendarCheck2, ChevronLeft, ChevronRight, MapPin, Trash2 } from "lucide-react";
+import { CalendarCheck2, ChevronLeft, ChevronRight, LockKeyhole, MapPin, Trash2 } from "lucide-react";
 import { useAppStore, type PlanItem } from "@/lib/app-store";
 import { getEvent } from "@/lib/event-service";
 
@@ -24,7 +24,7 @@ type PlannedEvent = {
 };
 
 function Plan() {
-  const { plan, removePlan } = useAppStore();
+  const { plan, removePlan, userEmail, authLoaded, setAuthOpen } = useAppStore();
   const today = useMemo(() => new Date(), []);
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(() => toDateKey(today));
@@ -62,6 +62,31 @@ function Plan() {
     const now = new Date();
     setMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     setSelectedDate(toDateKey(now));
+  }
+
+  if (!authLoaded) {
+    return <div className="mx-auto h-72 max-w-4xl animate-pulse rounded-[1.75rem] bg-card" />;
+  }
+
+  if (!userEmail) {
+    return (
+      <div className="mx-auto max-w-xl rounded-[1.75rem] bg-card px-6 py-12 text-center shadow-card sm:px-10">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary text-primary">
+          <LockKeyhole className="h-7 w-7" />
+        </span>
+        <h1 className="mt-5 text-2xl font-black text-primary sm:text-3xl">내 방문 계획은 로그인 후 이용할 수 있어요</h1>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+          행사와 주변 정보는 로그인 없이 둘러볼 수 있고, 방문 일정을 담을 때만 로그인이 필요해요.
+        </p>
+        <button
+          type="button"
+          onClick={() => setAuthOpen(true)}
+          className="mt-6 rounded-full bg-primary px-6 py-3 font-extrabold text-primary-foreground shadow-fab"
+        >
+          로그인 또는 회원가입
+        </button>
+      </div>
+    );
   }
 
   return (

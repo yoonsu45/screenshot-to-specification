@@ -27,7 +27,7 @@ const statusMeta: Record<VerifyStatus, { label: string; desc: string; icon: type
 };
 
 function ResultPage() {
-  const { draft, setAnchor, addPlan, plan } = useAppStore();
+  const { draft, setAnchor, addPlan, plan, requireAuth } = useAppStore();
   const navigate = useNavigate();
   const [visitDateOpen, setVisitDateOpen] = useState(false);
   const result = useMemo(() => verifyEvent(draft), [draft]);
@@ -89,7 +89,9 @@ function ResultPage() {
                 <ExternalLink className="h-4 w-4" /> 공식 상세 보기
               </a>
               <button
-                onClick={() => setVisitDateOpen(true)}
+                onClick={() => {
+                  if (requireAuth()) setVisitDateOpen(true);
+                }}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab"
               >
                 <Plus className="h-4 w-4" /> {plan.some((item) => item.id === `event:${ev.id}`) ? "방문일 변경" : "방문 계획에 담기"}
@@ -109,7 +111,7 @@ function ResultPage() {
           onOpenChange={setVisitDateOpen}
           initialDate={plan.find((item) => item.id === `event:${ev.id}`)?.startDate}
           onConfirm={(visitDate) => {
-            addPlan({
+            const added = addPlan({
               id: `event:${ev.id}`,
               kind: "event",
               title: ev.title,
@@ -118,6 +120,7 @@ function ResultPage() {
               endDate: visitDate,
               venue: ev.venue,
             });
+            if (!added) return;
             setVisitDateOpen(false);
             toast.success("선택한 날짜로 방문 계획에 담았어요");
           }}
