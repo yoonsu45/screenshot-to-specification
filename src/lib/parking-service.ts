@@ -2,6 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 
 const PARKING_API_URL = "https://api.kcisa.kr/openapi/API_CPM_008/request";
 const SAMPLE_SIZE = 5;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+let cachedResult: ParkingSampleResult | null = null;
+let cachedAt = 0;
+let activeRequest: Promise<ParkingSampleResult> | null = null;
 
 export type ParkingSample = {
   entryAt: string;
@@ -19,40 +24,67 @@ export type ParkingSampleResult = {
 
 export const getParkingSamples = createServerFn({ method: "GET" }).handler(
   async (): Promise<ParkingSampleResult> => {
-    const serviceKey = process.env["PARKING_SERVICE_KEY"]?.trim();
-    if (!serviceKey) {
-      throw new Error("주차 API 서비스 키가 서버에 설정되지 않았어요.");
-    }
+    if (cachedResult && Date.now() - cachedAt < CACHE_TTL_MS) return cachedResult;
+    if (activeRequest) return activeRequest;
 
-    const url = new URL(PARKING_API_URL);
-    url.searchParams.set("serviceKey", serviceKey);
-    url.searchParams.set("numOfRows", String(SAMPLE_SIZE));
-    url.searchParams.set("pageNo", "1");
-
-    let response: Response;
+    activeRequest = fetchParkingSamples();
     try {
-      response = await fetch(url, {
-        headers: { Accept: "application/json, application/xml;q=0.9" },
-        signal: AbortSignal.timeout(12_000),
-      });
-    } catch {
-      throw new Error("주차 정보 제공기관에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      const result = await activeRequest;
+      cachedResult = result;
+      cachedAt = Date.now();
+      return result;
+    } catch (error) {
+      if (cachedResult) return cachedResult;
+      throw error;
+    } finally {
+      activeRequest = null;
     }
-
-    if (!response.ok) {
-      throw new Error(`주차 데이터를 불러오지 못했어요. (HTTP ${response.status})`);
-    }
-
-    const body = await response.text();
-    const contentType = response.headers.get("content-type") ?? "";
-    const payload =
-      contentType.includes("json") || body.trimStart().startsWith("{")
-        ? safelyParseJson(body)
-        : parseXmlPayload(body);
-
-    return parseParkingPayload(payload);
   },
 );
+
+async function fetchParkingSamples(): Promise<ParkingSampleResult> {
+  const serviceKey = process.env["PARKING_SERVICE_KEY"]?.trim();
+  if (!serviceKey) {
+    throw new Error("주차 API 서비스 키가 서버에 설정되지 않았어요.");
+  }
+
+  const url = new URL(PARKING_API_URL);
+  url.searchParams.set("serviceKey", serviceKey);
+  url.searchParams.set("numOfRows", String(SAMPLE_SIZE));
+  url.searchParams.set("pageNo", "1");
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: { Accept: "application/json, application/xml;q=0.9" },
+      signal: AbortSignal.timeout(12_000),
+    });
+  } catch {
+    throw new Error("주차 정보 제공기관에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.");
+  }
+
+  if (response.status === 429) {
+    const retryAfter = response.headers.get("retry-after");
+    const retryGuide =
+      retryAfter && /^\d+$/.test(retryAfter)
+        ? ` 약 ${Math.max(1, Math.ceil(Number(retryAfter) / 60))}분 뒤 다시 확인해 주세요.`
+        : " 잠시 뒤 다시 확인해 주세요.";
+    throw new Error(`주차 정보 제공기관의 요청 한도가 초과됐어요.${retryGuide}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`주차 데이터를 불러오지 못했어요. (HTTP ${response.status})`);
+  }
+
+  const body = await response.text();
+  const contentType = response.headers.get("content-type") ?? "";
+  const payload =
+    contentType.includes("json") || body.trimStart().startsWith("{")
+      ? safelyParseJson(body)
+      : parseXmlPayload(body);
+
+  return parseParkingPayload(payload);
+}
 
 export function parseParkingPayload(payload: unknown): ParkingSampleResult {
   const records = collectRecords(payload);

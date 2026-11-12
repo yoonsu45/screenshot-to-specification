@@ -7,13 +7,31 @@ type LoadState =
   | { status: "success"; data: ParkingSampleResult }
   | { status: "error"; message: string };
 
+let cachedParkingData: ParkingSampleResult | null = null;
+let parkingRequest: Promise<ParkingSampleResult> | null = null;
+
+function requestParkingData(force = false) {
+  if (!force && cachedParkingData) return Promise.resolve(cachedParkingData);
+  if (parkingRequest) return parkingRequest;
+
+  parkingRequest = getParkingSamples()
+    .then((data) => {
+      cachedParkingData = data;
+      return data;
+    })
+    .finally(() => {
+      parkingRequest = null;
+    });
+  return parkingRequest;
+}
+
 export function ParkingSamples() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     setState({ status: "loading" });
     try {
-      const data = await getParkingSamples();
+      const data = await requestParkingData(force);
       setState({ status: "success", data });
     } catch (error) {
       setState({
@@ -48,7 +66,7 @@ export function ParkingSamples() {
         </div>
         <button
           type="button"
-          onClick={load}
+          onClick={() => void load(true)}
           disabled={state.status === "loading"}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border text-primary transition hover:bg-secondary disabled:cursor-wait disabled:opacity-50"
           aria-label="주차 데이터 새로고침"
