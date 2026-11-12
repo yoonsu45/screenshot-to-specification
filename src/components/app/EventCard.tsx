@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 const ADD_LABEL = "\uB2F4\uAE30";
 
-export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; showFacility?: boolean; onClick?: (() => void) | undefined }) {
+export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; showFacility?: boolean | undefined; onClick?: (() => void) | undefined }) {
   const facility = getFacility(event.facilityId);
   const { addPlan, removePlan, plan, requireAuth, userEmail } = useAppStore();
   const [detailsOpen, setDetailsOpen] = useState(false);
