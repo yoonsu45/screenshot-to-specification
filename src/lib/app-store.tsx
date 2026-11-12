@@ -51,7 +51,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, [plan, loaded]);
 
   const addPlan = useCallback((item: PlanItem) => {
-    setPlan((p) => (p.some((x) => x.id === item.id) ? p : [...p, item]));
+    setPlan((p) => (p.some((x) => x.id === item.id) ? p.map((x) => (x.id === item.id ? item : x)) : [...p, item]));
   }, []);
   const removePlan = useCallback((id: string) => setPlan((p) => p.filter((x) => x.id !== id)), []);
 

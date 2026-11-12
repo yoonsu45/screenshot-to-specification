@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, ExternalLink, HelpCircle, Info, MapPin, Plus, Route as RouteIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/lib/app-store";
-import { verifyEvent, formatRange, type VerifyStatus } from "@/lib/event-service";
+import { verifyEvent, formatDate, formatRange, type VerifyStatus } from "@/lib/event-service";
 import { ComparisonCard, ComparisonTable } from "@/components/app/ComparisonCard";
+import { VisitDateDialog } from "@/components/app/VisitDateDialog";
 
 export const Route = createFileRoute("/result")({
   head: () => ({
@@ -26,8 +27,9 @@ const statusMeta: Record<VerifyStatus, { label: string; desc: string; icon: type
 };
 
 function ResultPage() {
-  const { draft, setAnchor, addPlan } = useAppStore();
+  const { draft, setAnchor, addPlan, plan } = useAppStore();
   const navigate = useNavigate();
+  const [visitDateOpen, setVisitDateOpen] = useState(false);
   const result = useMemo(() => verifyEvent(draft), [draft]);
   const venueDiff = result.fields.find((f) => f.label === "장소")?.status === "different";
 
@@ -87,21 +89,10 @@ function ResultPage() {
                 <ExternalLink className="h-4 w-4" /> 공식 상세 보기
               </a>
               <button
-                onClick={() => {
-                  addPlan({
-                    id: `event:${ev.id}`,
-                    kind: "event",
-                    title: ev.title,
-                    subtitle: `${formatRange(ev)} · ${ev.venue}`,
-                    startDate: ev.startDate,
-                    endDate: ev.endDate,
-                    venue: ev.venue,
-                  });
-                  toast.success("방문 계획에 담았어요");
-                }}
+                onClick={() => setVisitDateOpen(true)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab"
               >
-                <Plus className="h-4 w-4" /> 방문 계획에 담기
+                <Plus className="h-4 w-4" /> {plan.some((item) => item.id === `event:${ev.id}`) ? "방문일 변경" : "방문 계획에 담기"}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -111,6 +102,27 @@ function ResultPage() {
           </>
         )}
       </section>
+      {ev && (
+        <VisitDateDialog
+          event={ev}
+          open={visitDateOpen}
+          onOpenChange={setVisitDateOpen}
+          initialDate={plan.find((item) => item.id === `event:${ev.id}`)?.startDate}
+          onConfirm={(visitDate) => {
+            addPlan({
+              id: `event:${ev.id}`,
+              kind: "event",
+              title: ev.title,
+              subtitle: `${formatDate(visitDate)} · ${ev.venue}`,
+              startDate: visitDate,
+              endDate: visitDate,
+              venue: ev.venue,
+            });
+            setVisitDateOpen(false);
+            toast.success("선택한 날짜로 방문 계획에 담았어요");
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -3,8 +3,9 @@ import { Bookmark, CalendarDays, ExternalLink, MapPin, Plus } from "lucide-react
 import { toast } from "sonner";
 import type { ParkEvent } from "@/data/events";
 import { getFacility } from "@/data/facilities";
-import { formatRange } from "@/lib/event-service";
+import { formatDate, formatRange } from "@/lib/event-service";
 import { useAppStore } from "@/lib/app-store";
+import { VisitDateDialog } from "@/components/app/VisitDateDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -14,19 +15,23 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
   const facility = getFacility(event.facilityId);
   const { addPlan, removePlan, plan } = useAppStore();
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const isAdded = plan.some((item) => item.id === `event:${event.id}`);
+  const [visitDateOpen, setVisitDateOpen] = useState(false);
+  const plannedItem = plan.find((item) => item.id === `event:${event.id}`);
+  const isAdded = Boolean(plannedItem);
 
-  function addEvent() {
+  function addEvent(visitDate: string) {
     addPlan({
       id: `event:${event.id}`,
       kind: "event",
       title: event.title,
-      subtitle: `${formatRange(event)} · ${event.venue}`,
-      startDate: event.startDate,
-      endDate: event.endDate,
+      subtitle: `${formatDate(visitDate)} · ${event.venue}`,
+      startDate: visitDate,
+      endDate: visitDate,
       venue: event.venue,
     });
-    toast.success(isAdded ? "이미 담긴 행사예요." : "행사를 방문 계획에 담았어요.");
+    setVisitDateOpen(false);
+    setDetailsOpen(false);
+    toast.success(isAdded ? "방문 예정일을 변경했어요." : "선택한 날짜로 방문 계획에 담았어요.");
   }
 
   function toggleBookmark() {
@@ -35,7 +40,12 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
       toast.success("방문 계획에서 뺐어요.");
       return;
     }
-    addEvent();
+    setVisitDateOpen(true);
+  }
+
+  function openVisitDateDialog() {
+    setDetailsOpen(false);
+    setVisitDateOpen(true);
   }
 
   function openOfficialSite() {
@@ -74,11 +84,18 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
             <p className="text-muted-foreground">행사 정보를 확인하고 방문 계획에 담아보세요.</p>
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button type="button" onClick={addEvent} className="rounded-xl font-bold"><Plus />{isAdded ? "담김" : ADD_LABEL}</Button>
+            <Button type="button" onClick={openVisitDateDialog} className="rounded-xl font-bold"><Plus />{isAdded ? "방문일 변경" : ADD_LABEL}</Button>
             <Button type="button" variant="outline" onClick={openOfficialSite} className="rounded-xl font-bold"><ExternalLink />공식 사이트</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <VisitDateDialog
+        event={event}
+        open={visitDateOpen}
+        onOpenChange={setVisitDateOpen}
+        initialDate={plannedItem?.startDate}
+        onConfirm={addEvent}
+      />
     </>
   );
 }
