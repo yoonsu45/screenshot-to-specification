@@ -33,7 +33,19 @@ export function CheckSheet() {
     }
   }
 
-  const Option = ({ icon: Icon, title, desc, onClick, disabled = false }: { icon: typeof Pencil; title: string; desc: string; onClick: () => void; disabled?: boolean }) => (
+  const Option = ({
+    icon: Icon,
+    title,
+    desc,
+    onClick,
+    disabled = false,
+  }: {
+    icon: typeof Pencil;
+    title: string;
+    desc: string;
+    onClick: () => void;
+    disabled?: boolean;
+  }) => (
     <button
       type="button"
       onClick={onClick}
@@ -41,7 +53,11 @@ export function CheckSheet() {
       className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left shadow-card transition hover:bg-muted disabled:cursor-wait disabled:opacity-60"
     >
       <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
-        {disabled ? <LoaderCircle className="h-7 w-7 animate-spin" /> : <Icon className="h-7 w-7" />}
+        {disabled ? (
+          <LoaderCircle className="h-7 w-7 animate-spin" />
+        ) : (
+          <Icon className="h-7 w-7" />
+        )}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-lg font-extrabold">{title}</span>
@@ -56,12 +72,12 @@ export function CheckSheet() {
       <SheetContent side="bottom" className="mx-auto max-w-xl rounded-t-3xl px-5 pb-8 pt-3">
         <div className="mx-auto mb-2 h-1.5 w-12 rounded-full bg-border" />
         <SheetTitle className="text-2xl font-extrabold text-primary">행사 확인하기</SheetTitle>
-        <SheetDescription>캡처 AI 분석 또는 직접 검색으로 확인해요</SheetDescription>
+        <SheetDescription>브라우저에서 캡처 글자를 읽거나 직접 검색해요</SheetDescription>
         <div className="mt-4 space-y-3">
           <Option
             icon={ImageIcon}
-            title={preparing ? "이미지 준비 중" : "캡처 이미지 AI 분석"}
-            desc="이미지에서 행사명 · 날짜 · 장소를 자동 추출"
+            title={preparing ? "이미지 준비 중" : "캡처 이미지 글자 읽기"}
+            desc="기기에서 한글 · 영문을 읽고 행사 정보를 찾아요"
             disabled={preparing}
             onClick={() => fileRef.current?.click()}
           />
@@ -87,7 +103,13 @@ export function CheckSheet() {
         >
           <Sparkles className="h-4 w-4" /> 예시로 체험하기
         </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(event) => onFile(event.target.files?.[0])} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(event) => onFile(event.target.files?.[0])}
+        />
       </SheetContent>
     </Sheet>
   );
