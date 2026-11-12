@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CheckInput } from "@/lib/event-service";
+import { ALL_FACILITIES_ID } from "@/data/facilities";
 
 export type PlanItem = { id: string; kind: "event" | "place"; title: string; subtitle: string };
 
@@ -23,7 +24,7 @@ const PLAN_KEY = "olpark-plan-v1";
 const empty: CheckInput = { title: "", date: "", venue: "" };
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const [facilityId, setFacilityId] = useState("olympic-park");
+  const [facilityId, setFacilityId] = useState(ALL_FACILITIES_ID);
   const [anchor, setAnchor] = useState<string | null>(null);
   const [draft, setDraft] = useState<CheckInput>(empty);
   const [checkOpen, setCheckOpen] = useState(false);

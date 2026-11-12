@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, PlugZap, SearchX } from "lucide-react";
+import { ArrowRight, Camera, PlugZap, ScanLine, SearchX } from "lucide-react";
 import { categories, type CategoryFilter } from "@/data/events";
-import { ALL_FACILITIES_ID, getFacility } from "@/data/facilities";
+import { ALL_FACILITIES_ID } from "@/data/facilities";
 import { listEvents } from "@/lib/event-service";
 import { useAppStore } from "@/lib/app-store";
 import { EventCard } from "@/components/app/EventCard";
-import { FacilityPicker } from "@/components/app/FacilityPicker";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,32 +20,40 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { facilityId, setFacilityId } = useAppStore();
+  const { facilityId, setCheckOpen } = useAppStore();
   const [category, setCategory] = useState<CategoryFilter>("전체");
-  const [open, setOpen] = useState(false);
   useEffect(() => setCategory("전체"), [facilityId]);
 
-  const facility = getFacility(facilityId);
   const isAll = facilityId === ALL_FACILITIES_ID;
-  const title = isAll ? "전체 시설 행사" : `${facility?.name} 행사`;
   const result = listEvents(facilityId, category);
 
   return (
     <>
-      <p className="text-sm font-semibold text-muted-foreground">장소 선택</p>
-      <div className="mb-4 mt-1 flex min-w-0 items-center gap-2">
-        <button onClick={() => setOpen(true)} className="flex min-w-0 items-center gap-1 rounded-2xl bg-lime/60 px-3 py-1.5 text-left" aria-label="장소 선택 열기">
-          <h1 className="title-highlight truncate text-2xl font-black text-primary sm:text-3xl lg:text-4xl">{title}</h1>
-          <ChevronDown className="h-6 w-6 shrink-0 text-primary" />
-        </button>
+      <button type="button" onClick={() => setCheckOpen(true)} className="group mb-9 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[2rem] bg-[linear-gradient(115deg,#edf4ff_0%,#e7effc_100%)] px-6 py-7 text-left transition hover:-translate-y-0.5 hover:shadow-card sm:px-8 sm:py-8">
+        <span className="min-w-0">
+          <span className="block text-2xl font-black text-primary sm:text-3xl">캡처로 행사 확인</span>
+          <span className="mt-2 block text-sm font-medium text-primary/90 sm:text-lg">SNS에서 본 행사, 공식 일정과 비교해요</span>
+        </span>
+        <span className="flex shrink-0 items-center gap-3 text-primary">
+          <span className="relative grid h-16 w-16 place-items-center sm:h-20 sm:w-20">
+            <ScanLine className="absolute h-full w-full stroke-[1.5]" />
+            <Camera className="h-8 w-8 sm:h-10 sm:w-10" />
+          </span>
+          <ArrowRight className="h-8 w-8 text-brand-orange transition group-hover:translate-x-1" />
+        </span>
+      </button>
+
+      <div className="mb-5">
+        <h1 className="text-3xl font-black tracking-tight text-primary sm:text-4xl">다가오는 행사</h1>
+        <span className="mt-3 block h-1.5 w-10 rounded-full bg-brand-orange" />
       </div>
 
-      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
+      <div className="-mx-5 mb-7 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0">
         {categories.map((c) => (
           <button
             key={c}
             onClick={() => setCategory(c)}
-            className={`shrink-0 rounded-full border px-4 py-2 text-sm font-bold ${category === c ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
+            className={`shrink-0 rounded-full border px-6 py-3 text-base font-extrabold transition ${category === c ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-foreground hover:border-primary/30"}`}
           >
             {c}
           </button>
@@ -60,7 +67,7 @@ function Home() {
         <Empty icon={<SearchX className="h-8 w-8" />} title="이 조건에 맞는 행사가 없어요" desc="다른 분류나 시설을 선택해 보세요." />
       )}
       {result.kind === "ok" && (
-        <ul className="grid gap-3 lg:grid-cols-2">
+        <ul className="grid gap-4 lg:grid-cols-2">
           {result.events.map((e) => (
             <li key={e.id} className="min-w-0">
               <EventCard event={e} showFacility={isAll} onClick={e.officialUrl ? () => window.open(e.officialUrl, "_blank", "noopener") : undefined} />
@@ -69,15 +76,6 @@ function Home() {
         </ul>
       )}
 
-      <FacilityPicker
-        open={open}
-        onOpenChange={setOpen}
-        selectedId={facilityId}
-        onSelect={(id) => {
-          setFacilityId(id);
-          setOpen(false);
-        }}
-      />
     </>
   );
 }

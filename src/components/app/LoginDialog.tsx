@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { LogIn, LogOut, UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ export function LoginDialog() {
     return (
       <div className="relative z-10 flex items-center gap-2 self-end">
         <span className="hidden max-w-36 truncate rounded-full bg-background/90 px-3 py-2 text-xs font-semibold text-primary shadow-sm sm:inline-block">{userEmail}</span>
-        <Button type="button" variant="outline" size="sm" onClick={handleLogout} className="rounded-full border-primary/20 bg-background/90 font-bold text-primary backdrop-blur-sm hover:bg-background">
+        <Button type="button" variant="outline" onClick={handleLogout} className="h-12 rounded-full border-2 border-primary bg-background px-6 text-base font-extrabold text-primary hover:bg-secondary">
           <LogOut /> {LOGOUT_LABEL}
         </Button>
       </div>
@@ -68,8 +68,8 @@ export function LoginDialog() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)} className="relative z-10 self-end rounded-full bg-primary px-4 font-bold text-primary-foreground shadow-fab hover:bg-primary/90">
-        <LogIn /> {LOGIN_LABEL}
+      <Button type="button" variant="outline" onClick={() => setOpen(true)} className="relative z-10 h-12 self-end rounded-full border-2 border-primary bg-background px-7 text-lg font-extrabold text-primary hover:bg-secondary">
+        {LOGIN_LABEL}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md rounded-2xl">

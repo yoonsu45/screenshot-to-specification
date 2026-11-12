@@ -1,31 +1,31 @@
 import { useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Camera, ChevronDown } from "lucide-react";
-import headerImg from "@/assets/header-park.jpg";
+import { Camera, ChevronDown, MapPin } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 import { BottomTabBar } from "./BottomTabBar";
 import { CheckSheet } from "./CheckSheet";
 import { FacilityPicker } from "./FacilityPicker";
 import { navItems } from "./nav-items";
 import { useAppStore } from "@/lib/app-store";
-import { getFacility } from "@/data/facilities";
+import { ALL_FACILITIES_ID, getFacility } from "@/data/facilities";
 import { LoginDialog } from "./LoginDialog";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { setCheckOpen, facilityId, setFacilityId } = useAppStore();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [pickerOpen, setPickerOpen] = useState(false);
+  const facilityLabel = facilityId === ALL_FACILITIES_ID ? "전체 장소" : (getFacility(facilityId)?.name ?? "장소 선택");
 
   return (
-    <div className="min-h-dvh lg:flex">
-      <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col gap-6 border-r border-sidebar-border bg-sidebar p-6 lg:flex">
-        <Link to="/" className="flex items-center gap-2 text-xl font-extrabold text-primary">
-          <BrandMark /> 올팍 행사체크
+    <div className="min-h-dvh bg-background lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col gap-7 border-r border-sidebar-border bg-sidebar p-7 lg:flex">
+        <Link to="/" aria-label="홈으로 이동">
+          <BrandMark className="text-3xl" />
         </Link>
         <div>
-          <p className="mb-1.5 text-xs font-semibold text-muted-foreground">장소 선택</p>
-          <button onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-between rounded-xl bg-lime px-4 py-3 text-left font-bold text-lime-foreground">
-            <span className="truncate">{getFacility(facilityId)?.name}</span>
+          <p className="mb-2 text-xs font-bold text-muted-foreground">장소 선택</p>
+          <button onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-between rounded-full bg-secondary px-4 py-3 text-left font-bold text-primary">
+            <span className="flex min-w-0 items-center gap-2"><MapPin className="h-5 w-5 shrink-0" /><span className="truncate">{facilityLabel}</span></span>
             <ChevronDown className="h-5 w-5 shrink-0" />
           </button>
         </div>
@@ -41,15 +41,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </aside>
 
-      <div className="relative min-w-0 flex-1 pb-28 lg:pb-12">
-        <img src={headerImg} alt="" width={1536} height={512} className="pointer-events-none absolute right-0 top-0 h-40 w-full object-cover object-right opacity-90 lg:h-56" />
-        <div className="relative mx-auto w-full max-w-xl px-4 pt-5 lg:max-w-5xl lg:px-10 lg:pt-10">
-          <div className="mb-3 flex justify-end lg:mb-5">
-            <LoginDialog />
-          </div>
-          <Link to="/" className="mb-3 flex items-center gap-2 text-xl font-extrabold text-primary lg:hidden">
-            <BrandMark /> 올팍 행사체크
-          </Link>
+      <div className="min-w-0 flex-1 pb-32 lg:pb-14">
+        <div className="mx-auto w-full max-w-5xl px-5 pt-6 sm:px-7 lg:px-10 lg:pt-9">
+          <header className="mb-8">
+            <div className="flex items-center justify-between gap-4">
+              <Link to="/" className="lg:hidden" aria-label="홈으로 이동">
+                <BrandMark className="text-[2.15rem] sm:text-4xl" />
+              </Link>
+              <div className="ml-auto"><LoginDialog /></div>
+            </div>
+            <button onClick={() => setPickerOpen(true)} className="mt-7 inline-flex max-w-full items-center gap-2 rounded-full bg-secondary px-5 py-3 text-left text-lg font-extrabold text-primary transition hover:bg-accent" aria-label="장소 선택 열기">
+              <MapPin className="h-6 w-6 shrink-0" />
+              <span className="truncate">{facilityLabel}</span>
+              <ChevronDown className="h-5 w-5 shrink-0" />
+            </button>
+          </header>
           {children}
         </div>
       </div>

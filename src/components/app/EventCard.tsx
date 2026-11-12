@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, ChevronRight, ExternalLink, MapPin, Plus } from "lucide-react";
+import { Bookmark, CalendarDays, ExternalLink, MapPin, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { ParkEvent } from "@/data/events";
 import { getFacility } from "@/data/facilities";
@@ -8,12 +8,11 @@ import { useAppStore } from "@/lib/app-store";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const DETAIL_LABEL = "\uC790\uC138\uD788 \uBCF4\uAE30";
 const ADD_LABEL = "\uB2F4\uAE30";
 
 export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; showFacility?: boolean; onClick?: (() => void) | undefined }) {
   const facility = getFacility(event.facilityId);
-  const { addPlan, plan } = useAppStore();
+  const { addPlan, removePlan, plan } = useAppStore();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isAdded = plan.some((item) => item.id === `event:${event.id}`);
 
@@ -27,6 +26,15 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
     toast.success(isAdded ? "이미 담긴 행사예요." : "행사를 방문 계획에 담았어요.");
   }
 
+  function toggleBookmark() {
+    if (isAdded) {
+      removePlan(`event:${event.id}`);
+      toast.success("방문 계획에서 뺐어요.");
+      return;
+    }
+    addEvent();
+  }
+
   function openOfficialSite() {
     if (onClick) {
       onClick();
@@ -37,22 +45,17 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
 
   return (
     <>
-      <article className="flex w-full min-w-0 gap-3 rounded-2xl bg-card p-2 text-left shadow-card transition hover:-translate-y-0.5 sm:gap-4">
-        <img src={event.image} alt="" loading="lazy" width={944} height={704} className="h-20 w-24 shrink-0 rounded-xl object-cover sm:h-24 sm:w-32" />
-        <div className="min-w-0 flex-1 py-1">
-          <div className="mb-1 flex items-center gap-1.5">
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">{event.category}</span>
+      <article className="flex w-full min-w-0 items-center gap-2 rounded-[1.75rem] bg-card p-3 text-left shadow-card transition hover:-translate-y-0.5 sm:p-4">
+        <button type="button" onClick={() => setDetailsOpen(true)} className="flex min-w-0 flex-1 items-center gap-4 text-left">
+          <img src={event.image} alt="" loading="lazy" width={944} height={704} className="h-28 w-32 shrink-0 rounded-[1.35rem] object-cover sm:h-32 sm:w-40" />
+          <div className="min-w-0 flex-1 py-1">
+            <h3 className="mb-3 line-clamp-2 text-xl font-black leading-tight text-primary sm:text-2xl">{event.title}</h3>
+            <p className="flex items-center gap-2 text-sm font-medium text-foreground sm:text-base"><CalendarDays className="h-5 w-5 shrink-0 text-primary" /><span className="truncate">{formatCompactRange(event)}</span></p>
+            <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground sm:text-base"><MapPin className="h-5 w-5 shrink-0 text-primary" /><span className="truncate">{showFacility ? `${facility?.name} · ` : ""}{event.venue}</span></p>
           </div>
-          <h3 className="truncate text-base font-extrabold sm:text-lg">{event.title}</h3>
-          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4 shrink-0 text-primary" /><span className="truncate">{formatRange(event)}</span></p>
-          <p className="flex items-center gap-1.5 text-sm text-muted-foreground"><MapPin className="h-4 w-4 shrink-0 text-primary" /><span className="truncate">{showFacility ? `${facility?.name} · ` : ""}{event.venue}</span></p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => setDetailsOpen(true)} className="h-8 rounded-full px-3 text-xs font-bold">{DETAIL_LABEL}</Button>
-            <Button type="button" size="sm" onClick={addEvent} className="h-8 rounded-full px-3 text-xs font-bold"><Plus />{isAdded ? "담김" : ADD_LABEL}</Button>
-          </div>
-        </div>
-        <button type="button" aria-label="공식 사이트 열기" onClick={openOfficialSite} className="grid h-10 w-10 shrink-0 place-items-center self-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-primary">
-          <ChevronRight className="h-5 w-5" />
+        </button>
+        <button type="button" aria-label={isAdded ? "방문 계획에서 빼기" : "방문 계획에 담기"} onClick={toggleBookmark} className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-primary transition hover:bg-secondary">
+          <Bookmark className={`h-7 w-7 ${isAdded ? "fill-brand-orange text-brand-orange" : ""}`} />
         </button>
       </article>
 
@@ -75,4 +78,11 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
       </Dialog>
     </>
   );
+}
+
+function formatCompactRange(event: ParkEvent) {
+  return formatRange(event)
+    .replace(/^\d{4}\./, "")
+    .replace(/\s~\s/g, " – ")
+    .replace(/(\d{2}\.\d{2})\((.)\)/g, "$1 ($2)");
 }
