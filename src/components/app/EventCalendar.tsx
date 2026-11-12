@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { events as allParkEvents, type ParkEvent } from "@/data/events";
+import type { EventCategory, ParkEvent } from "@/data/events";
 import { EventCard } from "@/components/app/EventCard";
 
 type Props = {
@@ -12,7 +12,7 @@ export function EventCalendar({ events, showFacility }: Props) {
   const firstEventDate = events[0]?.startDate ?? toDateKey(new Date());
   const [month, setMonth] = useState(() => monthFromDateKey(firstEventDate));
   const [selectedDate, setSelectedDate] = useState(firstEventDate);
-  const eventKey = events.map((event) => `${event.id}:${event.startDate}:${event.endDate ?? ""}`).join("|");
+  const eventKey = events.map((event) => `${event.id}:${event.category}:${event.startDate}:${event.endDate ?? ""}`).join("|");
 
   useEffect(() => {
     const nextDate = events[0]?.startDate;
@@ -22,6 +22,7 @@ export function EventCalendar({ events, showFacility }: Props) {
   }, [eventKey]);
 
   const calendarDays = useMemo(() => buildCalendarDays(month), [month]);
+  const visibleCategories = useMemo(() => Array.from(new Set(events.map((event) => event.category))), [eventKey]);
   const selectedEvents = events.filter((event) => isEventOnDate(event, selectedDate));
 
   function moveMonth(offset: number) {
@@ -56,15 +57,15 @@ export function EventCalendar({ events, showFacility }: Props) {
           </button>
         </div>
 
-        <div className="border-t border-border px-4 py-3 sm:px-6" aria-label="행사별 색상">
-          <p className="mb-2 text-xs font-extrabold text-muted-foreground">행사별 색상</p>
+        <div className="border-t border-border px-4 py-3 sm:px-6" aria-label="카테고리별 색상">
+          <p className="mb-2 text-xs font-extrabold text-muted-foreground">카테고리별 색상</p>
           <div className="flex flex-wrap gap-2">
-            {events.map((event) => {
-              const color = getEventColor(event.id);
+            {visibleCategories.map((category) => {
+              const color = getCategoryColor(category);
               return (
-                <span key={event.id} className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-extrabold ${color.background} ${color.text}`}>
+                <span key={category} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-extrabold ${color.background} ${color.text}`}>
                   <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${color.dot}`} />
-                  <span className="truncate">{event.title}</span>
+                  {category}
                 </span>
               );
             })}
@@ -140,21 +141,15 @@ export function EventCalendar({ events, showFacility }: Props) {
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
-const EVENT_COLORS = [
-  { background: "bg-blue-100", text: "text-blue-800", border: "border-blue-500", dot: "bg-blue-500" },
-  { background: "bg-orange-100", text: "text-orange-800", border: "border-orange-500", dot: "bg-orange-500" },
-  { background: "bg-emerald-100", text: "text-emerald-800", border: "border-emerald-500", dot: "bg-emerald-500" },
-  { background: "bg-violet-100", text: "text-violet-800", border: "border-violet-500", dot: "bg-violet-500" },
-  { background: "bg-rose-100", text: "text-rose-800", border: "border-rose-500", dot: "bg-rose-500" },
-  { background: "bg-cyan-100", text: "text-cyan-800", border: "border-cyan-500", dot: "bg-cyan-500" },
-  { background: "bg-amber-100", text: "text-amber-800", border: "border-amber-500", dot: "bg-amber-500" },
-  { background: "bg-fuchsia-100", text: "text-fuchsia-800", border: "border-fuchsia-500", dot: "bg-fuchsia-500" },
-  { background: "bg-lime-100", text: "text-lime-800", border: "border-lime-500", dot: "bg-lime-500" },
-  { background: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-500", dot: "bg-indigo-500" },
-] as const;
+const CATEGORY_COLORS: Record<EventCategory, { background: string; text: string; border: string; dot: string }> = {
+  공연: { background: "bg-blue-100", text: "text-blue-800", border: "border-blue-500", dot: "bg-blue-500" },
+  체험: { background: "bg-orange-100", text: "text-orange-800", border: "border-orange-500", dot: "bg-orange-500" },
+  전시: { background: "bg-violet-100", text: "text-violet-800", border: "border-violet-500", dot: "bg-violet-500" },
+  프로그램: { background: "bg-emerald-100", text: "text-emerald-800", border: "border-emerald-500", dot: "bg-emerald-500" },
+};
 
 function EventLabel({ event }: { event: ParkEvent }) {
-  const color = getEventColor(event.id);
+  const color = getCategoryColor(event.category);
   return (
     <span className={`block truncate rounded border-l-2 px-1 py-0.5 text-[9px] font-bold leading-tight sm:text-[11px] ${color.background} ${color.text} ${color.border}`}>
       {event.title}
@@ -162,14 +157,8 @@ function EventLabel({ event }: { event: ParkEvent }) {
   );
 }
 
-function getEventColor(eventId: string) {
-  const knownIndex = allParkEvents.findIndex((event) => event.id === eventId);
-  const index = knownIndex >= 0 ? knownIndex : stableHash(eventId);
-  return EVENT_COLORS[index % EVENT_COLORS.length];
-}
-
-function stableHash(value: string) {
-  return Array.from(value).reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 0);
+function getCategoryColor(category: EventCategory) {
+  return CATEGORY_COLORS[category];
 }
 
 function monthFromDateKey(dateKey: string) {
