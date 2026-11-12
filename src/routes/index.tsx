@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Camera, PlugZap, ScanLine, SearchX } from "lucide-react";
+import { ArrowRight, CalendarDays, Camera, List, PlugZap, ScanLine, SearchX } from "lucide-react";
 import { categories, type CategoryFilter } from "@/data/events";
 import { ALL_FACILITIES_ID } from "@/data/facilities";
 import { listEvents } from "@/lib/event-service";
 import { useAppStore } from "@/lib/app-store";
 import { EventCard } from "@/components/app/EventCard";
+import { EventCalendar } from "@/components/app/EventCalendar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   const { facilityId, setCheckOpen } = useAppStore();
   const [category, setCategory] = useState<CategoryFilter>("전체");
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   useEffect(() => setCategory("전체"), [facilityId]);
 
   const isAll = facilityId === ALL_FACILITIES_ID;
@@ -43,9 +45,29 @@ function Home() {
         </span>
       </button>
 
-      <div className="mb-5">
-        <h1 className="text-3xl font-black tracking-tight text-primary sm:text-4xl">다가오는 행사</h1>
-        <span className="mt-3 block h-1.5 w-10 rounded-full bg-brand-orange" />
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-primary sm:text-4xl">다가오는 행사</h1>
+          <span className="mt-3 block h-1.5 w-10 rounded-full bg-brand-orange" />
+        </div>
+        <div className="flex rounded-full border border-border bg-card p-1 shadow-sm" role="group" aria-label="행사 보기 방식">
+          <button
+            type="button"
+            onClick={() => setViewMode("calendar")}
+            aria-pressed={viewMode === "calendar"}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-extrabold transition sm:px-4 ${viewMode === "calendar" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-primary"}`}
+          >
+            <CalendarDays className="h-4 w-4" /> 달력 보기
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            aria-pressed={viewMode === "list"}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-extrabold transition sm:px-4 ${viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-primary"}`}
+          >
+            <List className="h-4 w-4" /> 목록 보기
+          </button>
+        </div>
       </div>
 
       <div className="-mx-5 mb-7 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0">
@@ -67,13 +89,17 @@ function Home() {
         <Empty icon={<SearchX className="h-8 w-8" />} title="이 조건에 맞는 행사가 없어요" desc="다른 분류나 시설을 선택해 보세요." />
       )}
       {result.kind === "ok" && (
-        <ul className="grid gap-4 lg:grid-cols-2">
-          {result.events.map((e) => (
-            <li key={e.id} className="min-w-0">
-              <EventCard event={e} showFacility={isAll} onClick={e.officialUrl ? () => window.open(e.officialUrl, "_blank", "noopener") : undefined} />
-            </li>
-          ))}
-        </ul>
+        viewMode === "calendar" ? (
+          <EventCalendar events={result.events} showFacility={isAll} />
+        ) : (
+          <ul className="grid gap-4 lg:grid-cols-2">
+            {result.events.map((e) => (
+              <li key={e.id} className="min-w-0">
+                <EventCard event={e} showFacility={isAll} onClick={e.officialUrl ? () => window.open(e.officialUrl, "_blank", "noopener") : undefined} />
+              </li>
+            ))}
+          </ul>
+        )
       )}
 
     </>
