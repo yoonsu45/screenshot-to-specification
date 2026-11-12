@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import type { ParkEvent } from "@/data/events";
+import { events as allParkEvents, type ParkEvent } from "@/data/events";
 import { EventCard } from "@/components/app/EventCard";
 
 type Props = {
@@ -56,6 +56,21 @@ export function EventCalendar({ events, showFacility }: Props) {
           </button>
         </div>
 
+        <div className="border-t border-border px-4 py-3 sm:px-6" aria-label="행사별 색상">
+          <p className="mb-2 text-xs font-extrabold text-muted-foreground">행사별 색상</p>
+          <div className="flex flex-wrap gap-2">
+            {events.map((event) => {
+              const color = getEventColor(event.id);
+              return (
+                <span key={event.id} className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-extrabold ${color.background} ${color.text}`}>
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${color.dot}`} />
+                  <span className="truncate">{event.title}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="grid grid-cols-7 border-y border-border bg-secondary/70 text-center text-xs font-extrabold text-muted-foreground sm:text-sm">
           {WEEKDAYS.map((day, index) => (
             <div key={day} className={`py-2.5 ${index === 0 ? "text-brand-orange" : index === 6 ? "text-primary" : ""}`}>
@@ -84,12 +99,7 @@ export function EventCalendar({ events, showFacility }: Props) {
                 </span>
                 <span className="mt-1 block space-y-1">
                   {dayEvents.slice(0, 2).map((event) => (
-                    <span
-                      key={event.id}
-                      className="block truncate rounded bg-brand-orange/10 px-1 py-0.5 text-[9px] font-bold leading-tight text-brand-orange sm:text-[11px]"
-                    >
-                      {event.title}
-                    </span>
+                    <EventLabel key={event.id} event={event} />
                   ))}
                   {dayEvents.length > 2 && (
                     <span className="block px-1 text-[9px] font-bold text-muted-foreground">+{dayEvents.length - 2}</span>
@@ -129,6 +139,38 @@ export function EventCalendar({ events, showFacility }: Props) {
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+const EVENT_COLORS = [
+  { background: "bg-blue-100", text: "text-blue-800", border: "border-blue-500", dot: "bg-blue-500" },
+  { background: "bg-orange-100", text: "text-orange-800", border: "border-orange-500", dot: "bg-orange-500" },
+  { background: "bg-emerald-100", text: "text-emerald-800", border: "border-emerald-500", dot: "bg-emerald-500" },
+  { background: "bg-violet-100", text: "text-violet-800", border: "border-violet-500", dot: "bg-violet-500" },
+  { background: "bg-rose-100", text: "text-rose-800", border: "border-rose-500", dot: "bg-rose-500" },
+  { background: "bg-cyan-100", text: "text-cyan-800", border: "border-cyan-500", dot: "bg-cyan-500" },
+  { background: "bg-amber-100", text: "text-amber-800", border: "border-amber-500", dot: "bg-amber-500" },
+  { background: "bg-fuchsia-100", text: "text-fuchsia-800", border: "border-fuchsia-500", dot: "bg-fuchsia-500" },
+  { background: "bg-lime-100", text: "text-lime-800", border: "border-lime-500", dot: "bg-lime-500" },
+  { background: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-500", dot: "bg-indigo-500" },
+] as const;
+
+function EventLabel({ event }: { event: ParkEvent }) {
+  const color = getEventColor(event.id);
+  return (
+    <span className={`block truncate rounded border-l-2 px-1 py-0.5 text-[9px] font-bold leading-tight sm:text-[11px] ${color.background} ${color.text} ${color.border}`}>
+      {event.title}
+    </span>
+  );
+}
+
+function getEventColor(eventId: string) {
+  const knownIndex = allParkEvents.findIndex((event) => event.id === eventId);
+  const index = knownIndex >= 0 ? knownIndex : stableHash(eventId);
+  return EVENT_COLORS[index % EVENT_COLORS.length];
+}
+
+function stableHash(value: string) {
+  return Array.from(value).reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 0);
+}
 
 function monthFromDateKey(dateKey: string) {
   const [year, month] = dateKey.split("-").map(Number);
