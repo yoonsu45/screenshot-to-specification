@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { CalendarDays, ChevronDown, MapPin } from "lucide-react";
 import type { ParkEvent } from "@/data/events";
 import { formatDate, formatRange } from "@/lib/event-service";
@@ -22,7 +22,6 @@ type Props = {
 
 export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialDate }: Props) {
   const [visitDate, setVisitDate] = useState("");
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const lastDate = event.endDate ?? event.startDate;
 
   useEffect(() => {
@@ -34,18 +33,6 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
         : "";
     setVisitDate(savedDate);
   }, [event.startDate, initialDate, lastDate, open]);
-
-  function openDatePicker() {
-    const input = dateInputRef.current;
-    if (!input) return;
-
-    if (typeof input.showPicker === "function") {
-      input.showPicker();
-      return;
-    }
-
-    input.click();
-  }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -80,27 +67,24 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
           <div>
             <span className="mb-2 block text-sm font-extrabold text-primary">방문 예정일</span>
             <div className="relative">
-              <button
-                type="button"
-                onClick={openDatePicker}
-                className="flex h-13 w-full items-center justify-between rounded-xl border border-input bg-card px-4 text-left text-base font-bold text-foreground outline-none transition-colors hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring"
+              <div
+                aria-hidden="true"
+                className="flex h-13 w-full items-center justify-between rounded-xl border border-input bg-card px-4 text-left text-base font-bold text-foreground transition-colors"
               >
                 <span className="flex items-center gap-2">
                   <CalendarDays className="h-5 w-5 text-primary" />
                   {visitDate ? formatDate(visitDate) : "날짜 선택하기"}
                 </span>
                 <ChevronDown className="h-5 w-5 text-muted-foreground" />
-              </button>
+              </div>
               <input
-                ref={dateInputRef}
                 type="date"
                 value={visitDate}
                 min={event.startDate}
                 max={lastDate}
                 onChange={(e) => setVisitDate(e.target.value)}
-                tabIndex={-1}
-                aria-hidden="true"
-                className="pointer-events-none absolute bottom-0 left-1/2 h-px w-px opacity-0"
+                aria-label="방문 예정일 선택"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-[0.01] outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
             <span className="mt-2 block text-xs text-muted-foreground">
