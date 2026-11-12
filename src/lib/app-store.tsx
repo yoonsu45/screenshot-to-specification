@@ -30,6 +30,8 @@ type Store = {
   authLoaded: boolean;
   authOpen: boolean;
   setAuthOpen: (open: boolean) => void;
+  authPromptOpen: boolean;
+  setAuthPromptOpen: (open: boolean) => void;
   requireAuth: () => boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
   signup: (email: string, password: string) => Promise<AuthResult>;
@@ -53,6 +55,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -97,13 +100,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const requireAuth = useCallback(() => {
     if (userEmail) return true;
-    setAuthOpen(true);
+    setAuthPromptOpen(true);
     return false;
   }, [userEmail]);
 
   const addPlan = useCallback((item: PlanItem) => {
     if (!userEmail) {
-      setAuthOpen(true);
+      setAuthPromptOpen(true);
       return false;
     }
     setPlan((current) => current.some((entry) => entry.id === item.id)
@@ -114,7 +117,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const removePlan = useCallback((id: string) => {
     if (!userEmail) {
-      setAuthOpen(true);
+      setAuthPromptOpen(true);
       return false;
     }
     setPlan((current) => current.filter((item) => item.id !== id));
@@ -166,12 +169,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       authLoaded,
       authOpen,
       setAuthOpen,
+      authPromptOpen,
+      setAuthPromptOpen,
       requireAuth,
       login,
       signup,
       logout,
     }),
-    [facilityId, anchor, draft, checkOpen, plan, addPlan, removePlan, userEmail, authLoaded, authOpen, requireAuth, login, signup, logout],
+    [facilityId, anchor, draft, checkOpen, plan, addPlan, removePlan, userEmail, authLoaded, authOpen, authPromptOpen, requireAuth, login, signup, logout],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

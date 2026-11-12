@@ -9,7 +9,16 @@ import { useAppStore } from "@/lib/app-store";
 type Mode = "login" | "signup";
 
 export function LoginDialog() {
-  const { userEmail, authOpen, setAuthOpen, login, signup, logout } = useAppStore();
+  const {
+    userEmail,
+    authOpen,
+    setAuthOpen,
+    authPromptOpen,
+    setAuthPromptOpen,
+    login,
+    signup,
+    logout,
+  } = useAppStore();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +32,7 @@ export function LoginDialog() {
     setPasswordConfirm("");
     setError("");
     setPending(false);
+    setMode("login");
   }, [authOpen]);
 
   function changeMode(nextMode: Mode) {
@@ -95,6 +105,39 @@ export function LoginDialog() {
         로그인
       </Button>
 
+      <Dialog open={authPromptOpen} onOpenChange={setAuthPromptOpen}>
+        <DialogContent className="max-w-sm rounded-[1.75rem]" onOpenAutoFocus={(event) => event.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black text-primary">
+              <UserRound className="h-6 w-6" /> 로그인 필요
+            </DialogTitle>
+            <DialogDescription className="pt-1 text-base leading-6 text-foreground">
+              로그인이 필요한 서비스입니다. 로그인하시겠습니까?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAuthPromptOpen(false)}
+              className="rounded-xl font-extrabold"
+            >
+              아니요
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setAuthPromptOpen(false);
+                setAuthOpen(true);
+              }}
+              className="rounded-xl font-extrabold"
+            >
+              예
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={authOpen} onOpenChange={setAuthOpen}>
         <DialogContent className="max-w-md rounded-[1.75rem]" onOpenAutoFocus={(event) => event.preventDefault()}>
           <DialogHeader>
@@ -163,16 +206,19 @@ export function LoginDialog() {
               {isSignup ? "계정 만들기" : "로그인"}
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground">
-              {isSignup ? "이미 계정이 있나요?" : "아직 계정이 없나요?"}{" "}
-              <button
+            <div className="border-t border-border pt-4 text-center">
+              <p className="mb-3 text-sm text-muted-foreground">
+                {isSignup ? "이미 계정이 있나요?" : "아직 계정이 없나요?"}
+              </p>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => changeMode(isSignup ? "login" : "signup")}
-                className="font-extrabold text-primary underline underline-offset-4"
+                className="w-full rounded-xl border-primary font-extrabold text-primary"
               >
-                {isSignup ? "로그인" : "회원가입"}
-              </button>
-            </p>
+                {isSignup ? "로그인으로 돌아가기" : "회원가입"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
