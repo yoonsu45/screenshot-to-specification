@@ -13,7 +13,7 @@ const ADD_LABEL = "\uB2F4\uAE30";
 
 export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; showFacility?: boolean; onClick?: (() => void) | undefined }) {
   const facility = getFacility(event.facilityId);
-  const { addPlan, removePlan, plan, requireAuth } = useAppStore();
+  const { addPlan, removePlan, plan, requireAuth, userEmail } = useAppStore();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [visitDateOpen, setVisitDateOpen] = useState(false);
   const plannedItem = plan.find((item) => item.id === `event:${event.id}`);
@@ -46,12 +46,14 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
   }
 
   function openVisitDateDialog() {
-    if (!requireAuth()) {
-      setDetailsOpen(false);
-      return;
-    }
     setDetailsOpen(false);
-    setVisitDateOpen(true);
+    window.setTimeout(() => {
+      if (!userEmail) {
+        requireAuth();
+        return;
+      }
+      setVisitDateOpen(true);
+    }, 220);
   }
 
   function openOfficialSite() {
