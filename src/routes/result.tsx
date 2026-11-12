@@ -88,7 +88,15 @@ function ResultPage() {
               </a>
               <button
                 onClick={() => {
-                  addPlan({ id: `event:${ev.id}`, kind: "event", title: ev.title, subtitle: `${formatRange(ev)} · ${ev.venue}` });
+                  addPlan({
+                    id: `event:${ev.id}`,
+                    kind: "event",
+                    title: ev.title,
+                    subtitle: `${formatRange(ev)} · ${ev.venue}`,
+                    startDate: ev.startDate,
+                    endDate: ev.endDate,
+                    venue: ev.venue,
+                  });
                   toast.success("방문 계획에 담았어요");
                 }}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab"

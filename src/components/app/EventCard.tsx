@@ -22,6 +22,9 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
       kind: "event",
       title: event.title,
       subtitle: `${formatRange(event)} · ${event.venue}`,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      venue: event.venue,
     });
     toast.success(isAdded ? "이미 담긴 행사예요." : "행사를 방문 계획에 담았어요.");
   }

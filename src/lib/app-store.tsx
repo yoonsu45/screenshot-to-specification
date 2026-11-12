@@ -2,7 +2,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { CheckInput } from "@/lib/event-service";
 import { ALL_FACILITIES_ID } from "@/data/facilities";
 
-export type PlanItem = { id: string; kind: "event" | "place"; title: string; subtitle: string };
+export type PlanItem = {
+  id: string;
+  kind: "event" | "place";
+  title: string;
+  subtitle: string;
+  startDate?: string;
+  endDate?: string;
+  venue?: string;
+};
 
 type Store = {
   facilityId: string;
