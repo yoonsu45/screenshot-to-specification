@@ -14,13 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      event_saves: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          user_id: string
+          visit_date: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          user_id?: string
+          visit_date: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+          visit_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_event_save_counts: {
+        Args: { p_event_ids?: string[] }
+        Returns: {
+          event_id: string
+          save_count: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
