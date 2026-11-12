@@ -163,7 +163,7 @@ function getCategoryColor(category: EventCategory) {
 
 function monthFromDateKey(dateKey: string) {
   const [year, month] = dateKey.split("-").map(Number);
-  return new Date(year, month - 1, 1);
+  return new Date(year ?? 1970, (month ?? 1) - 1, 1);
 }
 
 function buildCalendarDays(month: Date) {

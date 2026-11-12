@@ -17,7 +17,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (visitDate: string) => void;
-  initialDate?: string;
+  initialDate?: string | undefined;
 };
 
 export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialDate }: Props) {

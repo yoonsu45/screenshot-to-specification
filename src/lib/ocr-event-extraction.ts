@@ -75,7 +75,7 @@ export function parseOcrText(
   const isClearTitle = Boolean(
     first && first.score >= 0.56 && (!second || first.score - second.score >= 0.08),
   );
-  const title = isClearTitle ? first.title : "";
+  const title = isClearTitle && first ? first.title : "";
   const date = detectedDates[0] ?? "";
   const foundFieldCount = [title, date, venue].filter(Boolean).length;
   const confidence: OcrConfidence =
