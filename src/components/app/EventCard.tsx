@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, CalendarDays, ExternalLink, MapPin, Plus } from "lucide-react";
+import { Bookmark, CalendarDays, MapPin, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { ParkEvent } from "@/data/events";
 import { getFacility } from "@/data/facilities";
@@ -35,14 +35,6 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
     addEvent();
   }
 
-  function openOfficialSite() {
-    if (onClick) {
-      onClick();
-      return;
-    }
-    toast.info("아직 연결된 공식 사이트가 없는 행사예요.");
-  }
-
   return (
     <>
       <article className="flex w-full min-w-0 items-center gap-2 rounded-[1.75rem] bg-card p-3 text-left shadow-card transition hover:-translate-y-0.5 sm:p-4">
@@ -63,7 +55,7 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-primary">{event.title}</DialogTitle>
-            <DialogDescription>{event.category} · {event.venue}</DialogDescription>
+            <DialogDescription>시연용 예시 데이터 · 실제 행사 아님 · {event.category} · {event.venue}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 rounded-xl bg-muted/50 p-4 text-sm">
             <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" />{formatRange(event)}</p>
@@ -72,7 +64,6 @@ export function EventCard({ event, showFacility, onClick }: { event: ParkEvent; 
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
             <Button type="button" onClick={addEvent} className="rounded-xl font-bold"><Plus />{isAdded ? "담김" : ADD_LABEL}</Button>
-            <Button type="button" variant="outline" onClick={openOfficialSite} className="rounded-xl font-bold"><ExternalLink />공식 사이트</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

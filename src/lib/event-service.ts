@@ -2,6 +2,7 @@
 // 실제 API를 붙일 때는 이 파일의 함수 내부만 바꾸면 화면은 그대로 동작합니다.
 import { events, type CategoryFilter, type ParkEvent } from "@/data/events";
 import { ALL_FACILITIES_ID, getFacility } from "@/data/facilities";
+import officialSnapshot from "@/data/official-events.json";
 
 export type ListResult =
   | { kind: "not-connected" }
@@ -28,6 +29,9 @@ export type FieldStatus = "same" | "different" | "missing";
 export type VerifyStatus = "match" | "partial" | "need-info" | "unverified";
 
 export type VerifyResult = {
+  sourceType?: "demo" | "official_public_data";
+  sourceRows?: number[];
+  ambiguous?: boolean;
   status: VerifyStatus;
   event?: ParkEvent;
   fields: { label: "행사명" | "날짜" | "장소"; input: string; official: string; status: FieldStatus }[];
@@ -51,7 +55,26 @@ export function formatRange(e: ParkEvent) {
 /** 홈 시설 필터와 무관하게 전체 샘플 데이터에서 대조합니다. */
 export function verifyEvent(input: CheckInput): VerifyResult {
   const t = norm(input.title);
-  const event = t ? events.find((e) => norm(e.title).includes(t) || t.includes(norm(e.title))) : undefined;
+  // Do not select an arbitrary performance when several official records share a title.
+  const official = t ? officialSnapshot.events.filter((e) => norm(e.title) === t) : [];
+  if (official.length) {
+    const record = official.length === 1 ? official[0] : undefined;
+    const venue = record?.venue ?? "";
+    const date = record?.startDate ?? "";
+    const fields: VerifyResult["fields"] = [
+      { label: "행사명", input: input.title, official: record?.title ?? input.title, status: "same" },
+      { label: "날짜", input: input.date, official: date, status: !date || !input.date ? "missing" : date === input.date ? "same" : "different" },
+      { label: "장소", input: input.venue, official: venue, status: !venue || !input.venue.trim() ? "missing" : norm(venue) === norm(input.venue) ? "same" : "different" },
+    ];
+    return {
+      sourceType: "official_public_data",
+      sourceRows: record?.sourceRows ?? [],
+      ambiguous: official.length > 1,
+      fields,
+      status: fields.some((f) => f.status === "different") ? "partial" : fields.some((f) => f.status === "missing") ? "need-info" : "match",
+    };
+  }
+  const event = t ? events.find((e) => norm(e.title) === t) : undefined;
 
   if (!event) {
     return {
@@ -86,7 +109,7 @@ export function verifyEvent(input: CheckInput): VerifyResult {
     : fields.some((f) => f.status === "missing")
       ? "need-info"
       : "match";
-  return { status, event, fields };
+  return { status, event, fields, sourceType: "demo" };
 }
 
-export const EXAMPLE_CASE: CheckInput = { title: "CRAVITY CONCERT", date: "2026-11-14", venue: "KSPO DOME" };
+export const EXAMPLE_CASE: CheckInput = { title: "[시연용] 가상 별빛 콘서트", date: "2026-11-14", venue: "올림픽홀" };

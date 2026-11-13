@@ -27,7 +27,7 @@ export function ComparisonCard({ field }: { field: Field }) {
           <dd className="break-words font-semibold">{field.input || "—"}</dd>
         </div>
         <div className="min-w-0">
-          <dt className="text-xs text-muted-foreground">공식 기록</dt>
+          <dt className="text-xs text-muted-foreground">비교 자료</dt>
           <dd className="break-words"><span className={officialCls(field)}>{field.official || "—"}</span></dd>
         </div>
       </dl>
@@ -43,7 +43,7 @@ export function ComparisonTable({ fields }: { fields: Field[] }) {
         <tr>
           <th className="w-24 px-4 py-3">항목</th>
           <th className="px-4 py-3">입력 정보</th>
-          <th className="px-4 py-3">공식 기록</th>
+          <th className="px-4 py-3">비교 자료</th>
           <th className="w-28 px-4 py-3">결과</th>
         </tr>
       </thead>

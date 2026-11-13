@@ -19,10 +19,12 @@ export type ParkEvent = {
   endDate?: string;
   image: string;
   officialUrl?: string;
+  sourceType: "demo";
 };
 
-export const events: ParkEvent[] = [
-  { id: "cravity-2026", title: "CRAVITY CONCERT", facilityId: "olympic-park", venue: "올림픽홀", category: "공연", startDate: "2026-11-14", endDate: "2026-11-15", image: concert, officialUrl: "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?evtSeq=5167&mid=a20301010200" },
+// All schedules here are fictional examples, separate from the official API snapshot.
+const demoEvents = [
+  { id: "demo-concert-2026", title: "가상 별빛 콘서트", facilityId: "olympic-park", venue: "올림픽홀", category: "공연", startDate: "2026-11-14", endDate: "2026-11-15", image: concert },
   { id: "autumn-concert", title: "가을 음악회", facilityId: "olympic-park", venue: "88잔디마당", category: "공연", startDate: "2026-11-12", image: concert },
   { id: "park-walk", title: "공원 산책 프로그램", facilityId: "olympic-park", venue: "올림픽공원 산책로", category: "프로그램", startDate: "2026-11-13", endDate: "2026-11-27", image: walk },
   { id: "weekend-exhibit", title: "주말 전시", facilityId: "olympic-park", venue: "소마미술관", category: "전시", startDate: "2026-11-21", endDate: "2026-11-22", image: exhibit },
@@ -33,3 +35,10 @@ export const events: ParkEvent[] = [
   { id: "bundang-photo", title: "생활체육 사진전", facilityId: "bundang", venue: "분당 로비 갤러리", category: "전시", startDate: "2026-11-18", endDate: "2026-11-30", image: exhibit },
   { id: "bundang-run", title: "가족 달리기 교실", facilityId: "bundang", venue: "분당 운동장", category: "체험", startDate: "2026-11-29", image: family },
 ];
+
+export const events: ParkEvent[] = demoEvents.map((event) => ({
+  ...event,
+  category: event.category as EventCategory,
+  title: `[시연용] ${event.title}`,
+  sourceType: "demo",
+}));

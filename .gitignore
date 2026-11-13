@@ -31,5 +31,15 @@ dist-ssr
 *.sln
 *.sw?
 
+
+
 # API 인증키 보호
 .env
+.env.*
+
+# 수집한 데이터 파일 제외
+data/*.csv
+
+# Local derived datasets (regenerate with scripts/clean_kspo_performances.py)
+data/processed/
+__pycache__/

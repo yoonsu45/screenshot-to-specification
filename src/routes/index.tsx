@@ -44,7 +44,8 @@ function Home() {
       </button>
 
       <div className="mb-5">
-        <h1 className="text-3xl font-black tracking-tight text-primary sm:text-4xl">다가오는 행사</h1>
+        <h1 className="text-3xl font-black tracking-tight text-primary sm:text-4xl">시연용 행사 일정</h1>
+        <p className="mt-2 text-sm text-muted-foreground">시연용 예시 데이터입니다. 아래 일정은 실제 행사가 아닙니다. 공식 API 자료는 행사 확인 화면에서 정확한 행사명으로 비교할 수 있습니다.</p>
         <span className="mt-3 block h-1.5 w-10 rounded-full bg-brand-orange" />
       </div>
 

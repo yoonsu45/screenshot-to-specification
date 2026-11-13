@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, ExternalLink, HelpCircle, Info, MapPin, Plus, Route as RouteIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle2, HelpCircle, Info, MapPin, Plus, Route as RouteIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/lib/app-store";
 import { verifyEvent, formatRange, type VerifyStatus } from "@/lib/event-service";
@@ -19,10 +19,10 @@ export const Route = createFileRoute("/result")({
 });
 
 const statusMeta: Record<VerifyStatus, { label: string; desc: string; icon: typeof Info; cls: string }> = {
-  match: { label: "공식 일정과 일치", desc: "입력한 정보가 공식 기록과 같아요.", icon: CheckCircle2, cls: "bg-lime text-lime-foreground" },
-  partial: { label: "게시물과 일부 다름", desc: "공식 기록과 다른 항목이 있어요. 아래에서 확인하세요.", icon: AlertTriangle, cls: "bg-warn text-warn-foreground" },
-  "need-info": { label: "정보 더 필요", desc: "행사는 찾았지만 날짜나 장소를 더 입력하면 정확히 대조할 수 있어요.", icon: HelpCircle, cls: "bg-secondary text-secondary-foreground" },
-  unverified: { label: "공식 일정에서 미확인", desc: "현재 연결된 공식 일정에서는 이 행사를 찾지 못했어요. 공식 채널에서 한 번 더 확인해 주세요.", icon: Info, cls: "bg-muted text-muted-foreground" },
+  match: { label: "비교 자료와 일치", desc: "입력한 정보가 비교 자료와 같아요. 아래 출처를 확인해 주세요.", icon: CheckCircle2, cls: "bg-lime text-lime-foreground" },
+  partial: { label: "게시물과 일부 다름", desc: "비교 자료와 다른 항목이 있어요. 아래에서 확인하세요.", icon: AlertTriangle, cls: "bg-warn text-warn-foreground" },
+  "need-info": { label: "일부 항목 확인 불가", desc: "입력 또는 원본 자료가 부족해 확인할 수 없는 항목이 있어요.", icon: HelpCircle, cls: "bg-secondary text-secondary-foreground" },
+  unverified: { label: "행사 확인 불가", desc: "보유 자료에서 정확히 일치하는 행사명을 찾지 못했어요. 허위라는 뜻은 아니에요.", icon: Info, cls: "bg-muted text-muted-foreground" },
 };
 
 function ResultPage() {
@@ -44,6 +44,8 @@ function ResultPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <section className="min-w-0 space-y-4">
+        {result.sourceType === "demo" && <p role="note" className="rounded-xl bg-warn p-4 font-bold">시연용 예시 데이터와 비교한 결과입니다. 실제 행사나 공식 검증 결과가 아닙니다.</p>}
+        {result.sourceType === "official_public_data" && <div className="rounded-xl bg-secondary p-4 text-sm"><p className="font-bold">출처: 한국체육산업개발 공연정보 Open API</p><p>수집한 공식 자료 기준이며 최신 일정 전체를 보장하지 않습니다. 개최일이 없으면 날짜는 확인 불가로 표시합니다.</p>{result.ambiguous ? <p>같은 이름의 자료가 여러 건 있어 회차를 확정할 수 없습니다.</p> : <p>원본 CSV 행: {result.sourceRows?.join(", ")}</p>}</div>}
         <h1 className="text-2xl font-black text-primary sm:text-3xl">대조 결과</h1>
         {draft.image && <img src={draft.image} alt="입력한 캡처" className="max-h-64 w-full rounded-2xl border border-border bg-card object-contain" />}
         <div className="rounded-2xl bg-card p-4 text-sm shadow-card">
@@ -69,7 +71,7 @@ function ResultPage() {
         <p className="text-sm text-muted-foreground">{meta.desc}</p>
         {ev && (
           <p className="text-sm">
-            공식 기록: <b>{ev.title}</b> · {formatRange(ev)} · <span className="rounded-md bg-lime px-1.5 font-bold text-lime-foreground">{ev.venue}</span>
+            시연용 예시: <b>{ev.title}</b> · {formatRange(ev)} · <span className="rounded-md bg-lime px-1.5 font-bold text-lime-foreground">{ev.venue}</span>
           </p>
         )}
 
@@ -83,9 +85,6 @@ function ResultPage() {
         {ev && (
           <>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <a href={ev.officialUrl ?? "https://www.ksponco.or.kr/olympicpark/"} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-primary bg-card py-3.5 font-bold text-primary">
-                <ExternalLink className="h-4 w-4" /> 공식 상세 보기
-              </a>
               <button
                 onClick={() => {
                   addPlan({ id: `event:${ev.id}`, kind: "event", title: ev.title, subtitle: `${formatRange(ev)} · ${ev.venue}` });
