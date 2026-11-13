@@ -43,7 +43,7 @@ export const transitGuides: TransitGuide[] = [
     latitude: 37.5207,
     longitude: 127.1215,
     publicTransit: PARK_PUBLIC_TRANSIT,
-    car: [{ title: "주차장 P1", detail: "평화의문과 가까운 주차장" }, PARK_CAR[1]],
+    car: [{ title: "주차장 P1", detail: "평화의문과 가까운 주차장" }, PARK_CAR[1]!],
     officialUrl: PARK_GUIDE_URL,
   },
   {
@@ -145,7 +145,7 @@ export const transitGuides: TransitGuide[] = [
     latitude: 37.5168386,
     longitude: 127.118065,
     publicTransit: PARK_PUBLIC_TRANSIT,
-    car: [{ title: "주차장 P1", detail: "미술관과 가까운 주차장" }, PARK_CAR[1]],
+    car: [{ title: "주차장 P1", detail: "미술관과 가까운 주차장" }, PARK_CAR[1]!],
     officialUrl: PARK_GUIDE_URL,
   },
   {
@@ -154,7 +154,7 @@ export const transitGuides: TransitGuide[] = [
     latitude: 37.5175329,
     longitude: 127.11267,
     publicTransit: [{ title: "몽촌토성역 1번 출구", detail: "8호선 · 평화의문 바로 앞" }],
-    car: [{ title: "주차장 P1", detail: "평화의광장과 가까운 주차장" }, PARK_CAR[1]],
+    car: [{ title: "주차장 P1", detail: "평화의광장과 가까운 주차장" }, PARK_CAR[1]!],
     officialUrl: PARK_GUIDE_URL,
   },
 ];

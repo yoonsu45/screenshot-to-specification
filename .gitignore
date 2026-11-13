@@ -43,3 +43,4 @@ data/*.csv
 # Local derived datasets (regenerate with scripts/clean_kspo_performances.py)
 data/processed/
 __pycache__/
+.tools/

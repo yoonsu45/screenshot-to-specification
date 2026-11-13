@@ -1,0 +1,26 @@
+{
+  "name": "The:Check",
+  "short_name": "The:Check",
+  "description": "행사 일정 확인부터 방문 계획까지 한곳에서 관리하세요.",
+  "lang": "ko-KR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fffdf9",
+  "theme_color": "#092f6e",
+  "icons": [
+    {
+      "src": "/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

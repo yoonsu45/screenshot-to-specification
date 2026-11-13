@@ -5,14 +5,13 @@ import { ALL_FACILITIES_ID, getFacility } from "@/data/facilities";
 import officialSnapshot from "@/data/official-events.json";
 
 export type ListResult =
-  | { kind: "not-connected" }
-  | { kind: "empty" }
-  | { kind: "ok"; events: ParkEvent[] };
+  { kind: "not-connected" } | { kind: "empty" } | { kind: "ok"; events: ParkEvent[] };
 
 export function listEvents(facilityId: string, category: CategoryFilter): ListResult {
   const facility = getFacility(facilityId);
   if (!facility || !facility.connected) return { kind: "not-connected" };
-  const scoped = facilityId === ALL_FACILITIES_ID ? events : events.filter((e) => e.facilityId === facilityId);
+  const scoped =
+    facilityId === ALL_FACILITIES_ID ? events : events.filter((e) => e.facilityId === facilityId);
   const filtered = (category === "전체" ? scoped : scoped.filter((e) => e.category === category))
     .slice()
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
@@ -34,7 +33,12 @@ export type VerifyResult = {
   ambiguous?: boolean;
   status: VerifyStatus;
   event?: ParkEvent;
-  fields: { label: "행사명" | "날짜" | "장소"; input: string; official: string; status: FieldStatus }[];
+  fields: {
+    label: "행사명" | "날짜" | "장소";
+    input: string;
+    official: string;
+    status: FieldStatus;
+  }[];
 };
 
 const norm = (s: string) => s.toLowerCase().replace(/[\s·.\-_]/g, "");
@@ -62,16 +66,40 @@ export function verifyEvent(input: CheckInput): VerifyResult {
     const venue = record?.venue ?? "";
     const date = record?.startDate ?? "";
     const fields: VerifyResult["fields"] = [
-      { label: "행사명", input: input.title, official: record?.title ?? input.title, status: "same" },
-      { label: "날짜", input: input.date, official: date, status: !date || !input.date ? "missing" : date === input.date ? "same" : "different" },
-      { label: "장소", input: input.venue, official: venue, status: !venue || !input.venue.trim() ? "missing" : norm(venue) === norm(input.venue) ? "same" : "different" },
+      {
+        label: "행사명",
+        input: input.title,
+        official: record?.title ?? input.title,
+        status: "same",
+      },
+      {
+        label: "날짜",
+        input: input.date,
+        official: date,
+        status: !date || !input.date ? "missing" : date === input.date ? "same" : "different",
+      },
+      {
+        label: "장소",
+        input: input.venue,
+        official: venue,
+        status:
+          !venue || !input.venue.trim()
+            ? "missing"
+            : norm(venue) === norm(input.venue)
+              ? "same"
+              : "different",
+      },
     ];
     return {
       sourceType: "official_public_data",
       sourceRows: record?.sourceRows ?? [],
       ambiguous: official.length > 1,
       fields,
-      status: fields.some((f) => f.status === "different") ? "partial" : fields.some((f) => f.status === "missing") ? "need-info" : "match",
+      status: fields.some((f) => f.status === "different")
+        ? "partial"
+        : fields.some((f) => f.status === "missing")
+          ? "need-info"
+          : "match",
     };
   }
   const event = t ? events.find((e) => norm(e.title) === t) : undefined;
@@ -81,7 +109,12 @@ export function verifyEvent(input: CheckInput): VerifyResult {
       status: "unverified",
       fields: [
         { label: "행사명", input: input.title, official: "", status: "missing" },
-        { label: "날짜", input: input.date ? formatDate(input.date) : "", official: "", status: "missing" },
+        {
+          label: "날짜",
+          input: input.date ? formatDate(input.date) : "",
+          official: "",
+          status: "missing",
+        },
         { label: "장소", input: input.venue, official: "", status: "missing" },
       ],
     };
@@ -100,7 +133,12 @@ export function verifyEvent(input: CheckInput): VerifyResult {
 
   const fields: VerifyResult["fields"] = [
     { label: "행사명", input: input.title, official: event.title, status: "same" },
-    { label: "날짜", input: input.date ? formatDate(input.date) : "", official: formatRange(event), status: dateStatus },
+    {
+      label: "날짜",
+      input: input.date ? formatDate(input.date) : "",
+      official: formatRange(event),
+      status: dateStatus,
+    },
     { label: "장소", input: input.venue, official: event.venue, status: venueStatus },
   ];
 
@@ -112,4 +150,8 @@ export function verifyEvent(input: CheckInput): VerifyResult {
   return { status, event, fields, sourceType: "demo" };
 }
 
-export const EXAMPLE_CASE: CheckInput = { title: "[시연용] 가상 별빛 콘서트", date: "2026-11-14", venue: "올림픽홀" };
+export const EXAMPLE_CASE: CheckInput = {
+  title: "[시연용] 가상 별빛 콘서트",
+  date: "2026-11-14",
+  venue: "올림픽홀",
+};

@@ -4,14 +4,23 @@ type Field = VerifyResult["fields"][number];
 
 const badge = (s: Field["status"]) =>
   s === "same" ? (
-    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-success">같음</span>
+    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-success">
+      같음
+    </span>
   ) : s === "different" ? (
-    <span className="rounded-full bg-warn px-2.5 py-0.5 text-xs font-bold text-warn-foreground">다름</span>
+    <span className="rounded-full bg-warn px-2.5 py-0.5 text-xs font-bold text-warn-foreground">
+      다름
+    </span>
   ) : (
-    <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-bold text-muted-foreground">확인 필요</span>
+    <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-bold text-muted-foreground">
+      확인 필요
+    </span>
   );
 
-const officialCls = (f: Field) => (f.status === "different" ? "rounded-md bg-lime px-1.5 font-extrabold text-lime-foreground" : "font-semibold");
+const officialCls = (f: Field) =>
+  f.status === "different"
+    ? "rounded-md bg-lime px-1.5 font-extrabold text-lime-foreground"
+    : "font-semibold";
 
 /** 모바일: 항목별 카드 */
 export function ComparisonCard({ field }: { field: Field }) {
@@ -28,7 +37,9 @@ export function ComparisonCard({ field }: { field: Field }) {
         </div>
         <div className="min-w-0">
           <dt className="text-xs text-muted-foreground">비교 자료</dt>
-          <dd className="break-words"><span className={officialCls(field)}>{field.official || "—"}</span></dd>
+          <dd className="break-words">
+            <span className={officialCls(field)}>{field.official || "—"}</span>
+          </dd>
         </div>
       </dl>
     </div>
@@ -52,7 +63,9 @@ export function ComparisonTable({ fields }: { fields: Field[] }) {
           <tr key={f.label} className="border-t border-border">
             <td className="px-4 py-4 text-sm font-bold text-muted-foreground">{f.label}</td>
             <td className="break-words px-4 py-4 font-semibold">{f.input || "—"}</td>
-            <td className="break-words px-4 py-4"><span className={officialCls(f)}>{f.official || "—"}</span></td>
+            <td className="break-words px-4 py-4">
+              <span className={officialCls(f)}>{f.official || "—"}</span>
+            </td>
             <td className="px-4 py-4">{badge(f.status)}</td>
           </tr>
         ))}
