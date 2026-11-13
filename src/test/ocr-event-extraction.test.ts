@@ -56,4 +56,11 @@ describe("parseOcrText", () => {
     expect(result.candidates[0]?.eventId).toBe("kspo-winter");
     expect(result.candidates[0]?.score).toBeGreaterThan(0.8);
   });
+
+  it("한 글자를 잘못 읽은 공연장도 유사도로 찾는다", () => {
+    const result = parseOcrText("가상 별빛 콘서트\n2026.11.14\n올림픽흘", 2026);
+
+    expect(result.venue).toBe("올림픽홀");
+    expect(result.candidates[0]?.eventId).toBe("demo-concert-2026");
+  });
 });

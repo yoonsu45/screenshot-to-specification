@@ -34,23 +34,116 @@ export async function extractEventFromImage(
   imageDataUrl: string,
   onProgress?: (progress: OcrProgress) => void,
 ): Promise<BrowserOcrResult> {
-  const { createWorker } = await import("tesseract.js");
+  const { createWorker, PSM } = await import("tesseract.js");
+  let recognitionPass = 0;
+  let lastProgress = 0;
   const worker = await createWorker(["kor", "eng"], undefined, {
     logger(message) {
       if (typeof message.progress !== "number") return;
+      const weightedProgress =
+        message.status === "recognizing text"
+          ? 15 + recognitionPass * 42.5 + message.progress * 42.5
+          : message.progress * 15;
+      lastProgress = Math.max(lastProgress, Math.min(99, Math.round(weightedProgress)));
       onProgress?.({
-        progress: Math.round(message.progress * 100),
+        progress: lastProgress,
         label: translateStatus(message.status),
       });
     },
   });
 
   try {
-    const result = await worker.recognize(imageDataUrl, { rotateAuto: true });
-    return parseOcrText(result.data.text);
+    await worker.setParameters({
+      // Posters contain isolated text blocks rather than one uniform paragraph.
+      tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+      preserve_interword_spaces: "1",
+      user_defined_dpi: "300",
+    });
+
+    const variants: Array<string | HTMLCanvasElement> = [imageDataUrl];
+    try {
+      variants.push(await createHighContrastVariant(imageDataUrl));
+    } catch {
+      // The original image is still usable if a browser cannot create the enhanced canvas.
+    }
+
+    const recognizedTexts: string[] = [];
+    for (let index = 0; index < variants.length; index += 1) {
+      recognitionPass = index;
+      const result = await worker.recognize(variants[index]!, { rotateAuto: true });
+      recognizedTexts.push(result.data.text);
+    }
+    onProgress?.({ progress: 100, label: "인식 결과 정리 중" });
+    return parseOcrText(mergeOcrTexts(recognizedTexts));
   } finally {
     await worker.terminate();
   }
+}
+
+async function createHighContrastVariant(source: string) {
+  const image = await loadOcrImage(source);
+  const border = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth + border * 2;
+  canvas.height = image.naturalHeight + border * 2;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("canvas unavailable");
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, border, border);
+
+  const pixels = context.getImageData(border, border, image.naturalWidth, image.naturalHeight);
+  let luminanceTotal = 0;
+  for (let index = 0; index < pixels.data.length; index += 4) {
+    luminanceTotal +=
+      pixels.data[index]! * 0.299 +
+      pixels.data[index + 1]! * 0.587 +
+      pixels.data[index + 2]! * 0.114;
+  }
+  const averageLuminance = luminanceTotal / (pixels.data.length / 4);
+  const invert = averageLuminance < 105;
+
+  for (let index = 0; index < pixels.data.length; index += 4) {
+    const luminance =
+      pixels.data[index]! * 0.299 +
+      pixels.data[index + 1]! * 0.587 +
+      pixels.data[index + 2]! * 0.114;
+    const contrasted = Math.max(0, Math.min(255, 128 + (luminance - 128) * 1.55));
+    const value = invert ? 255 - contrasted : contrasted;
+    pixels.data[index] = value;
+    pixels.data[index + 1] = value;
+    pixels.data[index + 2] = value;
+    pixels.data[index + 3] = 255;
+  }
+  context.putImageData(pixels, border, border);
+  return canvas;
+}
+
+function loadOcrImage(source: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = source;
+  });
+}
+
+function mergeOcrTexts(texts: string[]) {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+
+  texts.forEach((text) => {
+    text.split(/\r?\n/).forEach((line) => {
+      const cleaned = line.replace(/\s+/g, " ").trim();
+      const key = normalize(cleaned);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      lines.push(cleaned);
+    });
+  });
+
+  return lines.join("\n");
 }
 
 export function parseOcrText(
@@ -148,15 +241,41 @@ function findVenue(rawText: string) {
     .filter((facility) => facility.id !== ALL_FACILITIES_ID)
     .forEach((facility) => {
       aliases.push({ alias: facility.name, venue: facility.name });
-      facility.keywords?.forEach((keyword) => aliases.push({ alias: keyword, venue: keyword }));
+      facility.keywords?.forEach((keyword) =>
+        aliases.push({ alias: keyword, venue: facility.name }),
+      );
     });
 
-  return (
-    aliases
-      .filter(({ alias }) => normalize(alias).length >= 2)
-      .sort((left, right) => normalize(right.alias).length - normalize(left.alias).length)
-      .find(({ alias }) => normalizedText.includes(normalize(alias)))?.venue ?? ""
-  );
+  const usableAliases = aliases
+    .filter(({ alias }) => normalize(alias).length >= 2)
+    .sort((left, right) => normalize(right.alias).length - normalize(left.alias).length);
+  const exact = usableAliases.find(({ alias }) => normalizedText.includes(normalize(alias)));
+  if (exact) return exact.venue;
+
+  const lines = rawText.split(/\r?\n/).map(normalize).filter(Boolean);
+  const fuzzy = usableAliases
+    .map((entry) => ({
+      ...entry,
+      score: Math.max(0, ...lines.map((line) => partialSimilarity(normalize(entry.alias), line))),
+    }))
+    .sort((left, right) => right.score - left.score)[0];
+
+  return fuzzy && fuzzy.score >= 0.62 ? fuzzy.venue : "";
+}
+
+function partialSimilarity(needle: string, text: string) {
+  if (!needle || !text) return 0;
+  if (text.includes(needle) || needle.includes(text)) return 1;
+  const minLength = Math.max(2, needle.length - 1);
+  const maxLength = Math.min(text.length, needle.length + 1);
+  let best = similarity(needle, text);
+
+  for (let length = minLength; length <= maxLength; length += 1) {
+    for (let start = 0; start + length <= text.length; start += 1) {
+      best = Math.max(best, similarity(needle, text.slice(start, start + length)));
+    }
+  }
+  return best;
 }
 
 function rankEventCandidates(
