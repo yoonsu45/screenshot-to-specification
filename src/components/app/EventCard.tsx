@@ -100,6 +100,11 @@ export function EventCard({
             className="h-28 w-32 shrink-0 rounded-[1.35rem] object-cover sm:h-32 sm:w-40"
           />
           <div className="min-w-0 flex-1 py-1">
+            {event.sourceType === "demo" && (
+              <span className="mb-2 inline-flex rounded-full bg-brand-orange/10 px-2.5 py-1 text-[11px] font-extrabold text-brand-orange">
+                시연용
+              </span>
+            )}
             <h3 className="mb-3 line-clamp-2 text-xl font-black leading-tight text-primary sm:text-2xl">
               {event.title}
             </h3>

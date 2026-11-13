@@ -24,12 +24,20 @@ describe("VisitDateDialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "방문 예정일 선택" }));
 
+    expect(screen.getByRole("button", { name: "방문 예정일 선택" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(container.ownerDocument.querySelector("#visit-date-calendar")).not.toBeNull();
+
     const date = new Date(2026, 10, 14);
     const dayButton = container.ownerDocument.querySelector<HTMLButtonElement>(
       `[data-day="${date.toLocaleDateString()}"]`,
     );
     expect(dayButton).not.toBeNull();
     fireEvent.click(dayButton!);
+
+    expect(container.ownerDocument.querySelector("#visit-date-calendar")).toBeNull();
 
     expect(screen.getByRole("button", { name: "방문 예정일 선택" })).toHaveTextContent(
       "2026.11.14",

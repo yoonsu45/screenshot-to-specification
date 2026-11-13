@@ -5,7 +5,6 @@ import type { ParkEvent } from "@/data/events";
 import { formatDate, formatRange } from "@/lib/event-service";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +45,7 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-md rounded-[1.75rem]"
+        className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-md overflow-y-auto rounded-[1.75rem]"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogHeader>
@@ -69,26 +68,27 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <span className="mb-2 block text-sm font-extrabold text-primary">방문 예정일</span>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  aria-label="방문 예정일 선택"
-                  aria-expanded={calendarOpen}
-                  className="h-13 w-full justify-between rounded-xl bg-card px-4 text-left text-base font-bold text-foreground"
-                >
-                  <span className="flex items-center gap-2">
-                    <CalendarDays className="h-5 w-5 text-primary" />
-                    {visitDate ? formatDate(visitDate) : "날짜 선택하기"}
-                  </span>
-                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="start"
-                sideOffset={8}
-                className="w-auto max-w-[calc(100vw-2rem)] overflow-auto rounded-2xl p-0"
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="방문 예정일 선택"
+              aria-expanded={calendarOpen}
+              aria-controls="visit-date-calendar"
+              onClick={() => setCalendarOpen((current) => !current)}
+              className="h-13 w-full touch-manipulation justify-between rounded-xl bg-card px-4 text-left text-base font-bold text-foreground"
+            >
+              <span className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5 text-primary" />
+                {visitDate ? formatDate(visitDate) : "날짜 선택하기"}
+              </span>
+              <ChevronDown
+                className={`h-5 w-5 text-muted-foreground transition-transform ${calendarOpen ? "rotate-180" : ""}`}
+              />
+            </Button>
+            {calendarOpen && (
+              <div
+                id="visit-date-calendar"
+                className="mt-2 overflow-x-auto rounded-2xl border border-border bg-card p-1"
               >
                 <Calendar
                   mode="single"
@@ -106,10 +106,10 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
                     setVisitDate(toDateKey(date));
                     setCalendarOpen(false);
                   }}
-                  autoFocus
+                  className="mx-auto w-fit [--cell-size:2.25rem]"
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            )}
             <span className="mt-2 block text-xs text-muted-foreground">
               행사 기간 안의 날짜만 선택할 수 있어요.
             </span>
