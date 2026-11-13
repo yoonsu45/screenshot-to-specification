@@ -104,6 +104,7 @@ function CheckPage() {
   function selectEvent(event: ParkEvent) {
     setForm((current) => ({
       ...current,
+      officialRecordId: undefined,
       title: event.title,
       date: event.startDate,
       venue: event.venue,
@@ -135,6 +136,12 @@ function CheckPage() {
           ? "기기에서 읽은 행사 정보를 확인하고, 잘못된 부분만 직접 수정해 주세요."
           : "공연명을 검색해 등록된 행사를 선택하거나 정보를 직접 입력해 주세요."}
       </p>
+      {form.officialRecordId && (
+        <p className="mb-5 rounded-xl bg-secondary p-4 text-sm">
+          목록에서 선택한 공식 자료와 비교합니다. 날짜·장소는 포스터에 적힌 내용을 직접 입력해
+          주세요. 원본 자료에 없는 항목은 확인 불가로 처리합니다.
+        </p>
+      )}
 
       {form.image && (
         <img
@@ -200,7 +207,7 @@ function CheckPage() {
                     type="button"
                     className="text-left text-sm font-semibold underline"
                     onClick={() => {
-                      setForm((current) => ({ ...current, title }));
+                      setForm((current) => ({ ...current, title, officialRecordId: undefined }));
                       setError(false);
                     }}
                   >
@@ -232,7 +239,7 @@ function CheckPage() {
               onFocus={() => !isCaptureMode && setSearchOpen(true)}
               onBlur={() => !isCaptureMode && window.setTimeout(() => setSearchOpen(false), 100)}
               onChange={(event) => {
-                setForm({ ...form, title: event.target.value });
+                setForm({ ...form, title: event.target.value, officialRecordId: undefined });
                 setError(false);
                 setSearchOpen(true);
               }}

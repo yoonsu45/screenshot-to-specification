@@ -22,7 +22,21 @@ export function getEvent(id: string) {
   return events.find((e) => e.id === id);
 }
 
-export type CheckInput = { title: string; date: string; venue: string; image?: string | undefined };
+export type CheckInput = {
+  title: string;
+  date: string;
+  venue: string;
+  image?: string | undefined;
+  officialRecordId?: string | undefined;
+};
+
+export function searchOfficialEvents(query: string) {
+  const value = norm(query.trim());
+  return officialSnapshot.events.filter(
+    (event) =>
+      !value || norm(event.title).includes(value) || norm(event.venue ?? "").includes(value),
+  );
+}
 
 export type FieldStatus = "same" | "different" | "missing";
 export type VerifyStatus = "match" | "partial" | "need-info" | "unverified";
@@ -60,7 +74,11 @@ export function formatRange(e: ParkEvent) {
 export function verifyEvent(input: CheckInput): VerifyResult {
   const t = norm(input.title);
   // Do not select an arbitrary performance when several official records share a title.
-  const official = t ? officialSnapshot.events.filter((e) => norm(e.title) === t) : [];
+  const byTitle = t ? officialSnapshot.events.filter((e) => norm(e.title) === t) : [];
+  const selected = input.officialRecordId
+    ? byTitle.find((event) => event.id === input.officialRecordId)
+    : undefined;
+  const official = selected ? [selected] : byTitle;
   if (official.length) {
     const record = official.length === 1 ? official[0] : undefined;
     const venue = record?.venue ?? "";

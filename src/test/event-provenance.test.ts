@@ -1,9 +1,30 @@
 import { describe, expect, it } from "vitest";
 import snapshot from "@/data/official-events.json";
 import { events } from "@/data/events";
-import { EXAMPLE_CASE, verifyEvent } from "@/lib/event-service";
+import { EXAMPLE_CASE, verifyEvent, searchOfficialEvents } from "@/lib/event-service";
 
 describe("event data provenance", () => {
+  it("searches official titles and venues without including demo data", () => {
+    expect(searchOfficialEvents("")).toHaveLength(snapshot.events.length);
+    expect(searchOfficialEvents("올림픽홀").length).toBeGreaterThan(0);
+    expect(searchOfficialEvents("존재하지 않는 검색 xyz")).toEqual([]);
+  });
+
+  it("compares the selected official record even when another record shares its title", () => {
+    const event = snapshot.events.find(
+      (candidate) => snapshot.events.filter((other) => other.title === candidate.title).length > 1,
+    )!;
+    const result = verifyEvent({
+      title: event.title,
+      date: "2026-11-14",
+      venue: "",
+      officialRecordId: event.id,
+    });
+    expect(result.ambiguous).toBe(false);
+    expect(result.sourceRows).toEqual(event.sourceRows);
+    expect(result.fields.find((field) => field.label === "날짜")?.status).toBe("missing");
+    expect(verifyEvent({ ...EXAMPLE_CASE, officialRecordId: event.id }).sourceType).toBe("demo");
+  });
   it("labels fictional examples and keeps official links out of them", () => {
     expect(
       events.every(
