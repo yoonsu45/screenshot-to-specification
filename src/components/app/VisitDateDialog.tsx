@@ -20,28 +20,38 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onConfirm: (visitDate: string) => void;
   initialDate?: string | undefined;
+  availableDates?: string[] | undefined;
 };
 
-export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialDate }: Props) {
+export function VisitDateDialog({
+  event,
+  open,
+  onOpenChange,
+  onConfirm,
+  initialDate,
+  availableDates,
+}: Props) {
   const [visitDate, setVisitDate] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const lastDate = event.endDate ?? event.startDate;
+  const allowedDateKey = availableDates?.join(",");
 
   useEffect(() => {
     if (!open) return;
 
     const savedDate =
       initialDate &&
+      (allowedDateKey === undefined || allowedDateKey.split(",").includes(initialDate)) &&
       (!event.startDate || !lastDate || (initialDate >= event.startDate && initialDate <= lastDate))
         ? initialDate
         : "";
     setVisitDate(savedDate);
     setCalendarOpen(false);
-  }, [event.startDate, initialDate, lastDate, open]);
+  }, [event.startDate, initialDate, lastDate, open, allowedDateKey]);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!visitDate) return;
+    if (!visitDate || (availableDates && !availableDates.includes(visitDate))) return;
     onConfirm(visitDate);
   }
 
@@ -54,9 +64,11 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
         <DialogHeader>
           <DialogTitle className="text-xl font-black text-primary">방문 예정일 선택</DialogTitle>
           <DialogDescription>
-            {event.startDate
-              ? "실제로 방문할 날짜 하루를 선택해 주세요."
-              : "공식 개최일이 없어 개인 방문예정일로 저장합니다. 행사 개최일을 확인한 결과가 아닙니다."}
+            {availableDates?.length
+              ? `공연일 ${availableDates.map(formatDate).join(", ")}`
+              : event.startDate
+                ? "실제로 방문할 날짜 하루를 선택해 주세요."
+                : "공식 개최일이 없어 개인 방문예정일로 저장합니다. 행사 개최일을 확인한 결과가 아닙니다."}
           </DialogDescription>
         </DialogHeader>
 
@@ -112,10 +124,12 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
                     ? {
                         startMonth: parseDateKey(event.startDate),
                         endMonth: parseDateKey(lastDate),
-                        disabled: {
-                          before: parseDateKey(event.startDate),
-                          after: parseDateKey(lastDate),
-                        },
+                        disabled: availableDates
+                          ? (date: Date) => !availableDates.includes(toDateKey(date))
+                          : {
+                              before: parseDateKey(event.startDate),
+                              after: parseDateKey(lastDate),
+                            },
                       }
                     : {})}
                   onSelect={(date) => {
@@ -128,9 +142,11 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
               </div>
             )}
             <span className="mt-2 block text-xs text-muted-foreground">
-              {event.startDate
-                ? "행사 기간 안의 날짜만 선택할 수 있어요."
-                : "선택한 날짜는 나의 계획이며 공식 행사 일정으로 사용되지 않습니다."}
+              {availableDates?.length
+                ? "표시된 공연일 중 하루만 선택할 수 있어요."
+                : event.startDate
+                  ? "행사 기간 안의 날짜만 선택할 수 있어요."
+                  : "선택한 날짜는 나의 계획이며 공식 행사 일정으로 사용되지 않습니다."}
             </span>
           </div>
           <DialogFooter>

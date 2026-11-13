@@ -10,6 +10,7 @@ import {
 import { ALL_FACILITIES_ID } from "@/data/facilities";
 import { events } from "@/data/events";
 import officialSnapshot from "@/data/official-events.json";
+import { getOfficialSchedule } from "@/lib/official-posters";
 import {
   authenticateAccount,
   createAccount,
@@ -73,17 +74,21 @@ function placePlanKey(email: string) {
 
 function eventPlanItem(eventId: string, visitDate: string): PlanItem | null {
   const official = officialSnapshot.events.find((item) => item.id === eventId);
-  if (official)
+  if (official) {
+    const confirmed = getOfficialSchedule(official.id).dates.includes(visitDate);
     return {
       id: `event:${official.id}`,
-      dateKind: "personal",
+      dateKind: confirmed ? "event" : "personal",
       kind: "event",
       title: official.title,
-      subtitle: `개인 방문예정일 ${visitDate} · ${official.venue || "장소 확인 불가"} · 공식 개최일 아님`,
+      subtitle: confirmed
+        ? `공식 포스터 개최일 ${visitDate} · ${official.venue || "장소 확인 불가"}`
+        : `개인 방문예정일 ${visitDate} · ${official.venue || "장소 확인 불가"} · 공식 개최일 아님`,
       startDate: visitDate,
       endDate: visitDate,
       venue: official.venue || "장소 확인 불가",
     };
+  }
   const event = events.find((item) => item.id === eventId);
   if (!event) return null;
   return {

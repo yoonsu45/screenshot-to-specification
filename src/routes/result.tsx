@@ -118,6 +118,8 @@ function ResultPage() {
         {result.sourceType === "official_public_data" && (
           <div className="rounded-xl bg-secondary p-4 text-sm">
             <p className="font-bold">출처: 한국체육산업개발 공연정보 Open API</p>
+            {result.dateSource === "official_poster" && <p>개최일 출처: 공식 공연 포스터 정보</p>}
+            {result.scheduleIssue && <p className="font-bold">{result.scheduleIssue}</p>}
             <p>
               수집한 공식 자료 기준이며 최신 일정 전체를 보장하지 않습니다. 개최일이 없으면 날짜는
               확인 불가로 표시합니다.

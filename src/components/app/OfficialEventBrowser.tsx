@@ -3,7 +3,7 @@ import { Bookmark, CalendarDays, MapPin, Plus, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
-import { getOfficialPoster } from "@/lib/official-posters";
+import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 import {
   Dialog,
   DialogContent,
@@ -127,7 +127,9 @@ export function OfficialEventBrowser() {
                   </span>
                   <span className="flex items-center gap-2 text-sm">
                     <CalendarDays className="h-5 w-5 shrink-0 text-primary" />
-                    {event.startDate || "날짜 확인 불가"}
+                    {getOfficialSchedule(event.id).raw
+                      ? `${getOfficialSchedule(event.id).raw}${getOfficialSchedule(event.id).issue ? " · 확인 필요" : ""}`
+                      : event.startDate || "날짜 확인 불가"}
                   </span>
                   <span className="mt-1 flex items-center gap-2 text-sm">
                     <MapPin className="h-5 w-5 shrink-0 text-primary" />
@@ -203,7 +205,16 @@ export function OfficialEventBrowser() {
                 className="max-h-64 min-h-32 w-full rounded-xl"
               />
               <div className="space-y-3 rounded-xl bg-muted/50 p-4 text-sm">
-                <p>개최일: {selected.startDate || "확인 불가"}</p>
+                <p>
+                  개최일:{" "}
+                  {getOfficialSchedule(selected.id).raw || selected.startDate || "확인 불가"}
+                </p>
+                {getOfficialSchedule(selected.id).raw && <p>개최일 출처: 공식 공연 포스터 정보</p>}
+                {getOfficialSchedule(selected.id).issue && (
+                  <p className="font-bold text-brand-orange">
+                    {getOfficialSchedule(selected.id).issue}
+                  </p>
+                )}
                 <p>장소: {selected.venue || "확인 불가"}</p>
                 <p>출처: 한국체육산업개발 공연정보 Open API</p>
                 {getOfficialPoster(selected.id) && (
@@ -224,8 +235,9 @@ export function OfficialEventBrowser() {
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">
-                과거 자료입니다. 담을 때 선택한 날짜는 개인 방문예정일이며 공식 개최일로 사용되지
-                않습니다.
+                {getOfficialSchedule(selected.id).dates.length
+                  ? "과거 공식 공연 기록입니다. 확인된 개최일 중 방문일을 선택할 수 있습니다."
+                  : "개최일이 미확인되거나 자료가 충돌하는 경우 선택한 날짜는 개인 방문예정일로 저장됩니다."}
               </p>
               <button
                 type="button"
@@ -265,9 +277,15 @@ export function OfficialEventBrowser() {
           event={{
             title: savingEvent.title,
             venue: savingEvent.venue || "장소 확인 불가",
-            startDate: savingEvent.startDate,
+            startDate: getOfficialSchedule(savingEvent.id).dates[0] ?? savingEvent.startDate,
+            endDate: getOfficialSchedule(savingEvent.id).dates.at(-1) ?? null,
           }}
           open
+          availableDates={
+            getOfficialSchedule(savingEvent.id).dates.length
+              ? getOfficialSchedule(savingEvent.id).dates
+              : undefined
+          }
           onOpenChange={(open) => {
             if (!open) setSavingEvent(null);
           }}
@@ -277,18 +295,22 @@ export function OfficialEventBrowser() {
             setPending(true);
             try {
               const ok = await addPlan({
-                dateKind: "personal",
+                dateKind: getOfficialSchedule(savingEvent.id).dates.includes(visitDate)
+                  ? "event"
+                  : "personal",
                 id: `event:${savingEvent.id}`,
                 kind: "event",
                 title: savingEvent.title,
-                subtitle: `개인 방문예정일 ${visitDate} · ${savingEvent.venue || "장소 확인 불가"} · 공식 개최일 아님`,
+                subtitle: getOfficialSchedule(savingEvent.id).dates.includes(visitDate)
+                  ? `공식 포스터 개최일 ${visitDate} · ${savingEvent.venue || "장소 확인 불가"}`
+                  : `개인 방문예정일 ${visitDate} · ${savingEvent.venue || "장소 확인 불가"} · 공식 개최일 아님`,
                 startDate: visitDate,
                 endDate: visitDate,
                 venue: savingEvent.venue || "장소 확인 불가",
               });
               if (ok) {
                 setSavingEvent(null);
-                toast.success("개인 방문예정일로 담았어요.");
+                toast.success("선택한 방문일로 담았어요.");
               } else toast.error("저장하지 못했습니다. 다시 시도해 주세요.");
             } finally {
               setPending(false);
