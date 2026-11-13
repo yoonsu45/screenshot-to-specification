@@ -3,6 +3,7 @@ import {
   classifyParkingHttpFailure,
   classifyParkingProviderFailure,
   parseParkingHistoryPayload,
+  shouldRetryParkingHttpStatus,
 } from "@/lib/parking-service";
 
 describe("parseParkingHistoryPayload", () => {
@@ -94,6 +95,11 @@ describe("주차 API 오류 분류", () => {
       code: "PROVIDER_HTTP_ERROR",
       httpStatus: 503,
     });
+  });
+
+  it("일시적인 게이트웨이 오류만 한 번 더 시도한다", () => {
+    expect([502, 503, 504].every(shouldRetryParkingHttpStatus)).toBe(true);
+    expect([400, 401, 403, 404, 429, 500].some(shouldRetryParkingHttpStatus)).toBe(false);
   });
 
   it("응답 본문이나 긴 비정상 코드는 브라우저 진단값으로 전달하지 않는다", () => {
