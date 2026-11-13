@@ -1,0 +1,26 @@
+{
+  "name": "the check - 올팍 행사체크",
+  "short_name": "the check",
+  "description": "행사 일정 확인부터 방문 계획까지 한곳에서 관리하세요.",
+  "lang": "ko-KR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fffdf9",
+  "theme_color": "#092f6e",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ]
+}
