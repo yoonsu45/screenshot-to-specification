@@ -17,7 +17,6 @@ const PARK_PUBLIC_TRANSIT = [
 ];
 const PARK_CAR = [
   { title: "올림픽공원 주차장", detail: "도착 시설과 가까운 주차장 이용" },
-  { title: "행사일 혼잡 안내", detail: "대중교통 이용을 권장해요" },
 ];
 
 export const transitGuides: TransitGuide[] = [
