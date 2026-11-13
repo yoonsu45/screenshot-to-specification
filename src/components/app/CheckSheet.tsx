@@ -118,8 +118,10 @@ export function CheckSheet() {
 async function optimizeImage(file: File) {
   const source = await readFileAsDataUrl(file);
   const image = await loadImage(source);
-  const maxSide = 1600;
-  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+  // Poster dates and venue names are often rendered in small type. Keep substantially
+  // more source detail than the preview used to, and gently upscale small screenshots.
+  const maxSide = 2400;
+  const scale = Math.min(1.5, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
   const height = Math.max(1, Math.round(image.naturalHeight * scale));
   const canvas = document.createElement("canvas");
@@ -127,10 +129,13 @@ async function optimizeImage(file: File) {
   canvas.height = height;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("canvas unavailable");
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, width, height);
   context.drawImage(image, 0, 0, width, height);
-  return canvas.toDataURL("image/jpeg", 0.86);
+  // PNG avoids JPEG ringing around thin Korean glyphs.
+  return canvas.toDataURL("image/png");
 }
 
 function readFileAsDataUrl(file: File) {
