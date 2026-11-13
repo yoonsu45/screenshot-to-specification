@@ -2,8 +2,8 @@ import { useState } from "react";
 import { AlertCircle, Car, Database, LoaderCircle, RefreshCw } from "lucide-react";
 import {
   getParkingHistorySamples,
-  type ParkingHistoryErrorCode,
   type ParkingHistoryResult,
+  type ParkingHistoryResponse,
 } from "@/lib/parking-service";
 
 type LoadState =
@@ -22,12 +22,12 @@ export function ParkingHistoryCard() {
       if (response.ok) {
         setState({ status: "success", data: response.data });
       } else {
-        setState({ status: "error", message: getParkingErrorMessage(response.code) });
+        setState({ status: "error", message: getParkingErrorMessage(response) });
       }
-    } catch (error) {
+    } catch {
       setState({
         status: "error",
-        message: error instanceof Error ? error.message : "주차 데이터를 불러오지 못했어요.",
+        message: "주차 데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
       });
     }
   }
@@ -132,18 +132,41 @@ export function ParkingHistoryCard() {
   );
 }
 
-function getParkingErrorMessage(code: ParkingHistoryErrorCode) {
+type ParkingFailure = Exclude<ParkingHistoryResponse, { ok: true }>;
+
+function getParkingErrorMessage(failure: ParkingFailure) {
+  const { code } = failure;
+  const diagnostic = [
+    failure.providerCode,
+    failure.httpStatus ? `HTTP ${failure.httpStatus}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const suffix = diagnostic ? ` (${diagnostic})` : "";
+
   switch (code) {
     case "KEY_MISSING":
       return "서버에 PARKING_SERVICE_KEY가 적용되지 않았어요. (KEY_MISSING)";
     case "AUTH_FAILED":
-      return "서비스 키 인증에 실패했어요. API_CPM_009 활용 신청과 키를 확인해 주세요. (AUTH_FAILED)";
+      return `서비스 키 인증에 실패했어요. API_CPM_009 활용 신청과 키를 확인해 주세요.${suffix}`;
+    case "KEY_EXPIRED":
+      return `서비스 키의 활용기간이 만료됐어요. 새 키를 발급받아 주세요.${suffix}`;
+    case "IP_RESTRICTED":
+      return `등록되지 않은 서버 IP에서 요청했어요. 제공기관의 IP 제한 설정을 확인해 주세요.${suffix}`;
     case "RATE_LIMITED":
-      return "제공기관의 호출 한도를 초과했어요. 잠시 후 다시 확인해 주세요. (RATE_LIMITED)";
+      return `제공기관의 호출 한도를 초과했어요. 잠시 후 다시 확인해 주세요.${suffix}`;
     case "NETWORK_ERROR":
       return "주차 정보 제공기관에 연결하지 못했어요. (NETWORK_ERROR)";
-    case "PROVIDER_UNAVAILABLE":
-      return "주차 정보 제공기관이 응답하지 않거나 점검 중이에요. (PROVIDER_UNAVAILABLE)";
+    case "BAD_REQUEST":
+      return `주차 API 요청 형식이 올바르지 않아요. 앱의 요청 설정을 확인해야 해요.${suffix}`;
+    case "SERVICE_NOT_FOUND":
+      return `주차 API 주소가 없거나 서비스가 중단됐어요.${suffix}`;
+    case "PROVIDER_CALL_FAILED":
+      return `제공기관이 원본 주차 시스템 호출에 실패했어요. 제공기관 복구가 필요해요.${suffix}`;
+    case "PROVIDER_MAINTENANCE":
+      return `주차 정보 제공기관이 점검 중이거나 내부 오류가 발생했어요.${suffix}`;
+    case "PROVIDER_HTTP_ERROR":
+      return `주차 정보 제공기관 서버에서 오류가 발생했어요.${suffix}`;
     case "RESPONSE_FORMAT":
       return "제공기관의 응답 형식을 확인할 수 없어요. (RESPONSE_FORMAT)";
     case "NO_RECORDS":

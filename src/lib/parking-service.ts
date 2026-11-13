@@ -22,19 +22,35 @@ export type ParkingHistoryResult = {
 export type ParkingHistoryErrorCode =
   | "KEY_MISSING"
   | "AUTH_FAILED"
+  | "KEY_EXPIRED"
+  | "IP_RESTRICTED"
   | "RATE_LIMITED"
   | "NETWORK_ERROR"
-  | "PROVIDER_UNAVAILABLE"
+  | "BAD_REQUEST"
+  | "SERVICE_NOT_FOUND"
+  | "PROVIDER_CALL_FAILED"
+  | "PROVIDER_MAINTENANCE"
+  | "PROVIDER_HTTP_ERROR"
   | "RESPONSE_FORMAT"
   | "NO_RECORDS"
   | "UNKNOWN";
 
 export type ParkingHistoryResponse =
   | { ok: true; data: ParkingHistoryResult }
-  | { ok: false; code: ParkingHistoryErrorCode };
+  | {
+      ok: false;
+      code: ParkingHistoryErrorCode;
+      httpStatus?: number;
+      providerCode?: string;
+    };
+
+type ParkingFailure = Exclude<ParkingHistoryResponse, { ok: true }>;
 
 class ParkingServiceError extends Error {
-  constructor(readonly code: ParkingHistoryErrorCode) {
+  constructor(
+    readonly code: ParkingHistoryErrorCode,
+    readonly details: Pick<ParkingFailure, "httpStatus" | "providerCode"> = {},
+  ) {
     super(code);
   }
 }
@@ -56,9 +72,12 @@ export const getParkingHistorySamples = createServerFn({ method: "GET" }).handle
       cachedAt = Date.now();
       return { ok: true, data: result };
     } catch (error) {
+      const failure =
+        error instanceof ParkingServiceError ? error : new ParkingServiceError("UNKNOWN");
       return {
         ok: false,
-        code: error instanceof ParkingServiceError ? error.code : "UNKNOWN",
+        code: failure.code,
+        ...failure.details,
       };
     } finally {
       activeRequest = null;
@@ -87,20 +106,13 @@ async function fetchParkingHistorySamples(): Promise<ParkingHistoryResult> {
     throw new ParkingServiceError("NETWORK_ERROR");
   }
 
-  if (response.status === 401 || response.status === 403) {
-    throw new ParkingServiceError("AUTH_FAILED");
-  }
-  if (response.status === 429) {
-    throw new ParkingServiceError("RATE_LIMITED");
-  }
-  if (!response.ok) {
-    throw new ParkingServiceError("PROVIDER_UNAVAILABLE");
-  }
+  const httpFailure = classifyParkingHttpFailure(response.status);
+  if (httpFailure) throw new ParkingServiceError(httpFailure.code, httpFailure);
 
   const body = await response.text();
   const payload = parseResponseBody(body, response.headers.get("content-type") ?? "");
-  const upstreamError = findUpstreamError(payload);
-  if (upstreamError) throw new ParkingServiceError(upstreamError);
+  const upstreamError = classifyParkingProviderFailure(payload);
+  if (upstreamError) throw new ParkingServiceError(upstreamError.code, upstreamError);
 
   const result = parseParkingHistoryPayload(payload);
   if (result.samples.length === 0) {
@@ -138,7 +150,8 @@ function parseResponseBody(body: string, contentType: string): unknown {
 function parseXmlPayload(body: string): unknown {
   const items = [...body.matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi)].map((match) => {
     const record: Record<string, string> = {};
-    for (const field of match[1]?.matchAll(/<([A-Za-z0-9_가-힣]+)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/g) ?? []) {
+    for (const field of match[1]?.matchAll(/<([A-Za-z0-9_가-힣]+)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/g) ??
+      []) {
       if (field[1]) record[field[1]] = decodeXml(field[2] ?? "");
     }
     return record;
@@ -163,7 +176,9 @@ function collectRecords(payload: unknown) {
     if (!isRecord(value)) return;
 
     const keys = Object.keys(value).map(normalizeKey);
-    if (keys.some((key) => ["description", "입차일시", "entrydatetime", "parkingzone"].includes(key))) {
+    if (
+      keys.some((key) => ["description", "입차일시", "entrydatetime", "parkingzone"].includes(key))
+    ) {
       records.push(value);
       return;
     }
@@ -177,18 +192,22 @@ function collectRecords(payload: unknown) {
 function toParkingSample(record: Record<string, unknown>): ParkingHistorySample | null {
   const fields = new Map(
     Object.entries(record)
-      .filter((entry): entry is [string, string | number] =>
-        typeof entry[1] === "string" || typeof entry[1] === "number",
+      .filter(
+        (entry): entry is [string, string | number] =>
+          typeof entry[1] === "string" || typeof entry[1] === "number",
       )
       .map(([key, value]) => [normalizeKey(key), String(value)]),
   );
   const description = [...fields.values()].join("\n").replace(/<br\s*\/?>/gi, "\n");
 
-  const entryAt = pick(fields, ["entrydatetime", "entryat", "indatetime", "indt", "입차일시"]) ||
+  const entryAt =
+    pick(fields, ["entrydatetime", "entryat", "indatetime", "indt", "입차일시"]) ||
     extractLabeledValue(description, ["입차일시", "입차시간", "입차일"]);
-  const exitAt = pick(fields, ["exitdatetime", "exitat", "outdatetime", "outdt", "출차일시"]) ||
+  const exitAt =
+    pick(fields, ["exitdatetime", "exitat", "outdatetime", "outdt", "출차일시"]) ||
     extractLabeledValue(description, ["출차일시", "출차시간", "출차일"]);
-  const zone = pick(fields, ["parkingzone", "parkingarea", "zone", "주차구역", "주차장"]) ||
+  const zone =
+    pick(fields, ["parkingzone", "parkingarea", "zone", "주차구역", "주차장"]) ||
     extractLabeledValue(description, ["주차구역", "주차장", "구역"]);
 
   if (!entryAt || !zone) return null;
@@ -203,16 +222,47 @@ function extractLabeledValue(text: string, labels: string[]) {
   const labelPattern = labels.map(escapeRegExp).join("|");
   const nextLabel = "입차일시|입차시간|입차일|출차일시|출차시간|출차일|주차구역|주차장|구역";
   const match = text.match(
-    new RegExp(`(?:${labelPattern})\\s*[:：=]?\\s*([^|;,\\n]+?)(?=\\s*(?:[|;,\\n]|(?:${nextLabel})\\s*[:：=])|$)`, "i"),
+    new RegExp(
+      `(?:${labelPattern})\\s*[:：=]?\\s*([^|;,\\n]+?)(?=\\s*(?:[|;,\\n]|(?:${nextLabel})\\s*[:：=])|$)`,
+      "i",
+    ),
   );
   return match?.[1]?.trim() ?? "";
 }
 
-function findUpstreamError(payload: unknown): ParkingHistoryErrorCode | null {
-  const code = findStringByKey(payload, "resultcode").trim();
-  if (!code || code === "0000") return null;
-  if (code === "9999" || code === "F2013") return "PROVIDER_UNAVAILABLE";
-  return "UNKNOWN";
+export function classifyParkingHttpFailure(status: number): ParkingFailure | null {
+  if (status >= 200 && status < 300) return null;
+  if (status === 400) return { ok: false, code: "BAD_REQUEST", httpStatus: status };
+  if (status === 401 || status === 403) {
+    return { ok: false, code: "AUTH_FAILED", httpStatus: status };
+  }
+  if (status === 404) return { ok: false, code: "SERVICE_NOT_FOUND", httpStatus: status };
+  if (status === 429) return { ok: false, code: "RATE_LIMITED", httpStatus: status };
+  return { ok: false, code: "PROVIDER_HTTP_ERROR", httpStatus: status };
+}
+
+export function classifyParkingProviderFailure(payload: unknown): ParkingFailure | null {
+  const rawCode = findStringByKey(payload, "resultcode").trim().toUpperCase();
+  if (!rawCode || rawCode === "00" || rawCode === "0000") return null;
+
+  // Only a short, code-shaped value is returned to the browser. The provider's
+  // message and response body remain on the server and can never expose the key.
+  const providerCode = /^[A-Z0-9_-]{1,20}$/.test(rawCode) ? rawCode : undefined;
+  const failure = (code: ParkingHistoryErrorCode): ParkingFailure => ({
+    ok: false,
+    code,
+    ...(providerCode ? { providerCode } : {}),
+  });
+
+  if (["20", "30", "97"].includes(rawCode)) return failure("AUTH_FAILED");
+  if (rawCode === "31") return failure("KEY_EXPIRED");
+  if (rawCode === "32") return failure("IP_RESTRICTED");
+  if (rawCode === "22") return failure("RATE_LIMITED");
+  if (rawCode === "12") return failure("SERVICE_NOT_FOUND");
+  if (rawCode === "F2013") return failure("PROVIDER_CALL_FAILED");
+  if (["98", "99", "9999"].includes(rawCode)) return failure("PROVIDER_MAINTENANCE");
+  if (["01", "1", "04", "4"].includes(rawCode)) return failure("PROVIDER_HTTP_ERROR");
+  return failure("UNKNOWN");
 }
 
 function findStringByKey(payload: unknown, target: string): string {
@@ -259,7 +309,9 @@ function decodeServiceKey(value: string) {
 }
 
 function cleanValue(value: string) {
-  return decodeXml(value).replace(/^[\s:'"=]+|[\s,'"]+$/g, "").trim();
+  return decodeXml(value)
+    .replace(/^[\s:'"=]+|[\s,'"]+$/g, "")
+    .trim();
 }
 
 function decodeXml(value: string) {
