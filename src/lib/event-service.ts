@@ -3,6 +3,7 @@
 import { events, type CategoryFilter, type ParkEvent } from "@/data/events";
 import { ALL_FACILITIES_ID, getFacility } from "@/data/facilities";
 import officialSnapshot from "@/data/official-events.json";
+import { getOfficialSchedule } from "@/lib/official-posters";
 
 export type ListResult =
   { kind: "not-connected" } | { kind: "empty" } | { kind: "ok"; events: ParkEvent[] };
@@ -42,6 +43,8 @@ export type FieldStatus = "same" | "different" | "missing";
 export type VerifyStatus = "match" | "partial" | "need-info" | "unverified";
 
 export type VerifyResult = {
+  dateSource?: "official_poster";
+  scheduleIssue?: string;
   sourceType?: "demo" | "official_public_data";
   sourceRows?: number[];
   ambiguous?: boolean;
@@ -83,6 +86,8 @@ export function verifyEvent(input: CheckInput): VerifyResult {
     const record = official.length === 1 ? official[0] : undefined;
     const venue = record?.venue ?? "";
     const date = record?.startDate ?? "";
+    const schedule = getOfficialSchedule(record?.id ?? "");
+    const dates = schedule.dates.length ? schedule.dates : date ? [date] : [];
     const fields: VerifyResult["fields"] = [
       {
         label: "행사명",
@@ -93,8 +98,13 @@ export function verifyEvent(input: CheckInput): VerifyResult {
       {
         label: "날짜",
         input: input.date,
-        official: date,
-        status: !date || !input.date ? "missing" : date === input.date ? "same" : "different",
+        official: schedule.raw || date,
+        status:
+          !dates.length || !input.date
+            ? "missing"
+            : dates.includes(input.date)
+              ? "same"
+              : "different",
       },
       {
         label: "장소",
@@ -109,6 +119,9 @@ export function verifyEvent(input: CheckInput): VerifyResult {
       },
     ];
     return {
+      ...(schedule.raw
+        ? { dateSource: "official_poster" as const, scheduleIssue: schedule.issue ?? "" }
+        : {}),
       sourceType: "official_public_data",
       sourceRows: record?.sourceRows ?? [],
       ambiguous: official.length > 1,

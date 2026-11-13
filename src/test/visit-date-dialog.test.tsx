@@ -16,6 +16,33 @@ const event: ParkEvent = {
 };
 
 describe("VisitDateDialog", () => {
+  it("disables gaps between separate official sessions", () => {
+    const onConfirm = vi.fn();
+    const { container } = render(
+      <VisitDateDialog
+        event={{
+          title: "공식 행사",
+          venue: "올림픽홀",
+          startDate: "2026-11-14",
+          endDate: "2026-11-16",
+        }}
+        availableDates={["2026-11-14", "2026-11-16"]}
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "방문 예정일 선택" }));
+    const day = (date: number) =>
+      container.ownerDocument.querySelector<HTMLButtonElement>(
+        `[data-day="${new Date(2026, 10, date).toLocaleDateString()}"]`,
+      )!;
+    expect(day(15)).toBeDisabled();
+    expect(day(16)).toBeEnabled();
+    fireEvent.click(day(16));
+    fireEvent.click(screen.getByRole("button", { name: "이 날짜로 담기" }));
+    expect(onConfirm).toHaveBeenCalledWith("2026-11-16");
+  });
   it("allows a personal plan date when the official event date is unknown", () => {
     const onConfirm = vi.fn();
     const { container } = render(
