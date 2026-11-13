@@ -9,7 +9,7 @@ import {
 } from "react";
 import { ALL_FACILITIES_ID } from "@/data/facilities";
 import { events } from "@/data/events";
-import officialSnapshot from "@/data/official-events.json";
+import { officialEvents } from "@/lib/official-data";
 import { getOfficialSchedule } from "@/lib/official-posters";
 import {
   authenticateAccount,
@@ -73,7 +73,7 @@ function placePlanKey(email: string) {
 }
 
 function eventPlanItem(eventId: string, visitDate: string): PlanItem | null {
-  const official = officialSnapshot.events.find((item) => item.id === eventId);
+  const official = officialEvents.find((item) => item.id === eventId);
   if (official) {
     const confirmed = getOfficialSchedule(official.id).dates.includes(visitDate);
     return {
@@ -117,10 +117,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const refreshEventSaveCounts = useCallback(async () => {
     try {
-      const ids = [
-        ...events.map((event) => event.id),
-        ...officialSnapshot.events.map((event) => event.id),
-      ];
+      const ids = [...events.map((event) => event.id), ...officialEvents.map((event) => event.id)];
       const counts = await getEventSaveCounts(ids);
       setEventSaveCounts(Object.fromEntries(ids.map((id) => [id, counts[id] ?? 0])));
     } catch {

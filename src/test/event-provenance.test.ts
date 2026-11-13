@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import snapshot from "@/data/official-events.json";
+import { officialEvents } from "@/lib/official-data";
 import { events } from "@/data/events";
 import { EXAMPLE_CASE, verifyEvent, searchOfficialEvents } from "@/lib/event-service";
 
@@ -18,7 +19,7 @@ describe("event data provenance", () => {
     expect(searchOfficialEvents("차카게 살자").length).toBeGreaterThan(0);
   });
   it("searches official titles and venues without including demo data", () => {
-    expect(searchOfficialEvents("")).toHaveLength(snapshot.events.length);
+    expect(searchOfficialEvents("")).toHaveLength(officialEvents.length);
     expect(searchOfficialEvents("올림픽홀").length).toBeGreaterThan(0);
     expect(searchOfficialEvents("존재하지 않는 검색 xyz")).toEqual([]);
   });

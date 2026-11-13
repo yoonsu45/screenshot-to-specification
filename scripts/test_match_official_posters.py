@@ -1,8 +1,24 @@
 import unittest
-from match_official_posters import match_posters
+from match_official_posters import match_posters, build_catalog, venue_key
 
 
 class PosterMatchTests(unittest.TestCase):
+    def test_aliases_and_standalone_source(self):
+        self.assertEqual(venue_key("KSPODOME(체조경기장)"), venue_key("KSPO DOME"))
+        self.assertEqual(venue_key("올림픽공원 내 올림픽홀"), venue_key("올림픽홀"))
+        self.assertEqual(venue_key("우리금융아트홀(올림픽역도경기장)"), venue_key("우리금융아트홀"))
+        matched, standalone, posters, held = build_catalog([], [self.poster()])
+        self.assertEqual(matched, [])
+        self.assertEqual(standalone[0]["id"], "official-poster-1")
+        self.assertEqual(posters[0]["matchMethod"], "standalone_official_poster_record")
+        self.assertEqual(held, [])
+
+    def test_ambiguous_existing_title_is_not_added_as_duplicate(self):
+        event = [{"id": "api-1", "title": "테스트 공연", "venue": "KSPO DOME"}]
+        _, standalone, _, held = build_catalog(event, [self.poster(), self.poster()])
+        self.assertEqual(standalone, [])
+        self.assertEqual(len(held), 2)
+
     def poster(self, **extra):
         return {"제목": "테스트 공연", "공연장소": "올림픽공원 체조경기장", "연결홈페이지주소": "https://www.ksponco.or.kr/poster.jpg", "공연포스터 일련번호": "1", "공연일": "2012-01-02", "데이터 기준일": "2025-05-08", **extra}
 

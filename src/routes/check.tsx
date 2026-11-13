@@ -17,7 +17,7 @@ import {
   type OcrConfidence,
 } from "@/lib/ocr-event-extraction";
 import { EXAMPLE_CASE, formatRange } from "@/lib/event-service";
-import officialSnapshot from "@/data/official-events.json";
+import { officialEvents } from "@/lib/official-data";
 
 export const Route = createFileRoute("/check")({
   head: () => ({
@@ -192,13 +192,13 @@ function CheckPage() {
       )}
 
       <section className="mb-5 rounded-2xl border border-border bg-card p-4">
-        <h2 className="font-bold">공식 API 자료 검색</h2>
+        <h2 className="font-bold">공식 행사 자료 검색</h2>
         <p className="text-xs text-muted-foreground">
           행사명을 입력하면 공식 자료 후보가 표시됩니다. 날짜가 없는 자료는 확인 불가로 남습니다.
         </p>
         <ul className="mt-2 space-y-2">
           {form.title.trim() &&
-            Array.from(new Set(officialSnapshot.events.map((event) => event.title)))
+            Array.from(new Set(officialEvents.map((event) => event.title)))
               .filter((title) => title.toLowerCase().includes(form.title.trim().toLowerCase()))
               .slice(0, 10)
               .map((title) => (

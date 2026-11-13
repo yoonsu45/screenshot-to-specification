@@ -117,7 +117,7 @@ function ResultPage() {
         )}
         {result.sourceType === "official_public_data" && (
           <div className="rounded-xl bg-secondary p-4 text-sm">
-            <p className="font-bold">출처: 한국체육산업개발 공연정보 Open API</p>
+            <p className="font-bold">출처: {result.sourceName}</p>
             {result.dateSource === "official_poster" && <p>개최일 출처: 공식 공연 포스터 정보</p>}
             {result.scheduleIssue && <p className="font-bold">{result.scheduleIssue}</p>}
             <p>
@@ -127,7 +127,7 @@ function ResultPage() {
             {result.ambiguous ? (
               <p>같은 이름의 자료가 여러 건 있어 회차를 확정할 수 없습니다.</p>
             ) : (
-              <p>원본 CSV 행: {result.sourceRows?.join(", ")}</p>
+              <p>출처 자료 CSV 행: {result.sourceRows?.join(", ")}</p>
             )}
           </div>
         )}

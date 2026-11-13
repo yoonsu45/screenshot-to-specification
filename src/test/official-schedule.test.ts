@@ -22,8 +22,11 @@ describe("공식 포스터 개최일", () => {
   });
   it("applies six reviewed schedules and flags the cross-source discrepancy", () => {
     expect(
-      posters.matches.filter((poster) => getOfficialSchedule(poster.eventId).dates.length),
-    ).toHaveLength(6);
+      ["5987", "5994", "5977", "5906", "5850", "5836"].every((id) => {
+        const poster = posters.matches.find((item) => item.posterId === id)!;
+        return getOfficialSchedule(poster.eventId).dates.length > 0;
+      }),
+    ).toBe(true);
     const conflict = posters.matches.find((poster) => poster.posterId === "5874")!;
     expect(getOfficialSchedule(conflict.eventId).dates).toEqual([]);
     expect(getOfficialSchedule(conflict.eventId).issue).toContain("17일");

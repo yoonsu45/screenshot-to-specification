@@ -7,7 +7,8 @@ export function getOfficialPoster(eventId: string) {
 }
 
 export function parsePosterSchedule(raw: string): { dates: string[]; issue: string | null } {
-  const pattern = /(\d{4})-(\d{2})-(\d{2})(?:\(([일월화수목금토])\))?(?:\s*\d{1,2}:\d{2})?/g;
+  const pattern =
+    /(\d{4})-\s*(\d{1,2})-\s*(\d{1,2})(?:\(([일월화수목금토])\))?(?:\s*\d{1,2}:\d{2})?/g;
   const matches = [...raw.matchAll(pattern)];
   const dates: string[] = [];
   if (!matches.length) return { dates, issue: "개최일을 확인할 수 없습니다." };
@@ -21,7 +22,7 @@ export function parsePosterSchedule(raw: string): { dates: string[]; issue: stri
       (match[4] && "일월화수목금토"[date.getUTCDay()] !== match[4])
     )
       return { dates: [], issue: "날짜 또는 요일이 일치하지 않아 확인이 필요합니다." };
-    dates.push(`${match[1]}-${match[2]}-${match[3]}`);
+    dates.push(`${match[1]}-${match[2]!.padStart(2, "0")}-${match[3]!.padStart(2, "0")}`);
   }
   const remainder = raw.replace(pattern, "").trim();
   if (dates.length === 1 && remainder === "") return { dates, issue: null };
@@ -35,11 +36,19 @@ export function parsePosterSchedule(raw: string): { dates: string[]; issue: stri
       expanded.push(new Date(time).toISOString().slice(0, 10));
     return { dates: expanded, issue: null };
   }
-  if (/^(?:\s*\/\s*)+$/.test(remainder)) return { dates: [...new Set(dates)].sort(), issue: null };
+  if (
+    /^(?:\s*[/,]\s*)+$/.test(remainder) &&
+    remainder.replace(/\s/g, "").length === dates.length - 1
+  )
+    return { dates: [...new Set(dates)].sort(), issue: null };
   return { dates: [], issue: "복잡한 일정 표기라 확인이 필요합니다." };
 }
 
-export function getOfficialSchedule(eventId: string) {
+type OfficialSchedule = { raw: string; dates: string[]; issue: string | null };
+const scheduleCache = new Map<string, OfficialSchedule>();
+export function getOfficialSchedule(eventId: string): OfficialSchedule {
+  const cached = scheduleCache.get(eventId);
+  if (cached) return cached;
   const poster = getOfficialPoster(eventId);
   const raw = poster?.scheduleRaw ?? "";
   const review = scheduleReviews.reviews.find((item) => item.posterId === poster?.posterId);
@@ -48,5 +57,7 @@ export function getOfficialSchedule(eventId: string) {
     : raw
       ? parsePosterSchedule(raw)
       : { dates: [] as string[], issue: null };
-  return { raw, ...parsed };
+  const schedule = { raw, ...parsed };
+  scheduleCache.set(eventId, schedule);
+  return schedule;
 }

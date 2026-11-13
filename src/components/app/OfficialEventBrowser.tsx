@@ -15,6 +15,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAppStore } from "@/lib/app-store";
 import { searchOfficialEvents } from "@/lib/event-service";
 import { getFacility } from "@/data/facilities";
+import { officialRecordSource } from "@/lib/official-data";
 
 const PAGE_SIZE = 20;
 
@@ -52,7 +53,7 @@ export function OfficialEventBrowser() {
       if (facilityId === "olympic-park")
         return Boolean(
           event.venue &&
-          /올림픽홀|KSPO DOME|핸드볼경기장|뮤즈라이브|우리금융아트홀|K-아트홀|88잔디마당|평화의광장|소마미술관/.test(
+          /올림픽홀|KSPO\s?DOME|체조경기장|핸드볼경기장|뮤즈라이브|우리금융아트홀|K-아트홀|88잔디마당|평화의광장|소마미술관/.test(
             event.venue,
           ),
         );
@@ -74,8 +75,8 @@ export function OfficialEventBrowser() {
         </h1>
         <span className="mt-3 block h-1.5 w-10 rounded-full bg-brand-orange" />
         <p className="mt-2 text-sm text-muted-foreground">
-          한국체육산업개발 공연정보 Open API에서 수집한 자료입니다. 과거 기록을 포함하며, 실시간으로
-          갱신되는 최신 일정은 아닙니다.
+          공식 공연정보 API와 공연 포스터 파일데이터를 함께 제공합니다. 과거 기록을 포함하며,
+          실시간으로 갱신되는 최신 일정은 아닙니다.
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
           선택한 시설의 행사 정보를 확인하세요. 개최일이 없는 자료는 날짜 확인 불가로 표시합니다.
@@ -120,7 +121,7 @@ export function OfficialEventBrowser() {
                 />
                 <span className="min-w-0 flex-1 py-1">
                   <span className="mb-1 block text-xs font-semibold text-muted-foreground">
-                    공식 API 자료
+                    {officialRecordSource(event.id)}
                   </span>
                   <span className="mb-3 line-clamp-2 text-xl font-black leading-tight text-primary sm:text-2xl">
                     {event.title}
@@ -194,7 +195,9 @@ export function OfficialEventBrowser() {
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-primary">{selected?.title}</DialogTitle>
-            <DialogDescription>공식 API에서 수집한 행사 정보</DialogDescription>
+            <DialogDescription>
+              {selected ? officialRecordSource(selected.id) : "공식 행사 정보"}
+            </DialogDescription>
           </DialogHeader>
           {selected && (
             <>
@@ -216,7 +219,7 @@ export function OfficialEventBrowser() {
                   </p>
                 )}
                 <p>장소: {selected.venue || "확인 불가"}</p>
-                <p>출처: 한국체육산업개발 공연정보 Open API</p>
+                <p>출처: {officialRecordSource(selected.id)}</p>
                 {getOfficialPoster(selected.id) && (
                   <>
                     <p>포스터 출처: 한국체육산업개발 공연 포스터 정보</p>
@@ -225,13 +228,15 @@ export function OfficialEventBrowser() {
                       {getOfficialPoster(selected.id)?.scheduleRaw || "확인 불가"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      행사명·장소가 일치하는 유일 후보로 매칭했습니다. 회차는 원문을 함께 확인해
-                      주세요.
+                      {getOfficialPoster(selected.id)?.matchMethod ===
+                      "standalone_official_poster_record"
+                        ? "API에 임의로 합치지 않은 공식 포스터 자료입니다. 회차는 원문을 확인해 주세요."
+                        : "행사명·장소가 일치하는 유일 후보로 매칭했습니다. 회차는 원문을 함께 확인해 주세요."}
                     </p>
                   </>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  원본 CSV 행: {selected.sourceRows.join(", ")}
+                  출처 자료 CSV 행: {selected.sourceRows.join(", ")}
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">

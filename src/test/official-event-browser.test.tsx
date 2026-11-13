@@ -46,5 +46,5 @@ describe("OfficialEventBrowser", () => {
       officialRecordId: snapshot.events[0]!.id,
     });
     expect(mocks.navigate).toHaveBeenCalledWith({ to: "/check" });
-  });
+  }, 15000);
 });

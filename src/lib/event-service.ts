@@ -2,7 +2,7 @@
 // 실제 API를 붙일 때는 이 파일의 함수 내부만 바꾸면 화면은 그대로 동작합니다.
 import { events, type CategoryFilter, type ParkEvent } from "@/data/events";
 import { ALL_FACILITIES_ID, getFacility } from "@/data/facilities";
-import officialSnapshot from "@/data/official-events.json";
+import { officialEvents, officialRecordSource } from "@/lib/official-data";
 import { getOfficialSchedule } from "@/lib/official-posters";
 
 export type ListResult =
@@ -33,7 +33,7 @@ export type CheckInput = {
 
 export function searchOfficialEvents(query: string) {
   const value = norm(query.trim());
-  return officialSnapshot.events.filter(
+  return officialEvents.filter(
     (event) =>
       !value || norm(event.title).includes(value) || norm(event.venue ?? "").includes(value),
   );
@@ -43,6 +43,7 @@ export type FieldStatus = "same" | "different" | "missing";
 export type VerifyStatus = "match" | "partial" | "need-info" | "unverified";
 
 export type VerifyResult = {
+  sourceName?: string;
   dateSource?: "official_poster";
   scheduleIssue?: string;
   sourceType?: "demo" | "official_public_data";
@@ -77,7 +78,7 @@ export function formatRange(e: ParkEvent) {
 export function verifyEvent(input: CheckInput): VerifyResult {
   const t = norm(input.title);
   // Do not select an arbitrary performance when several official records share a title.
-  const byTitle = t ? officialSnapshot.events.filter((e) => norm(e.title) === t) : [];
+  const byTitle = t ? officialEvents.filter((e) => norm(e.title) === t) : [];
   const selected = input.officialRecordId
     ? byTitle.find((event) => event.id === input.officialRecordId)
     : undefined;
@@ -119,6 +120,7 @@ export function verifyEvent(input: CheckInput): VerifyResult {
       },
     ];
     return {
+      sourceName: record ? officialRecordSource(record.id) : "공식 행사 자료",
       ...(schedule.raw
         ? { dateSource: "official_poster" as const, scheduleIssue: schedule.issue ?? "" }
         : {}),
