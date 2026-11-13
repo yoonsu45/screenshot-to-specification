@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AlertCircle, Car, Database, LoaderCircle, RefreshCw } from "lucide-react";
 import {
   getParkingHistorySamples,
+  type ParkingHistoryErrorCode,
   type ParkingHistoryResult,
 } from "@/lib/parking-service";
 
@@ -17,8 +18,12 @@ export function ParkingHistoryCard() {
   async function load() {
     setState({ status: "loading" });
     try {
-      const data = await getParkingHistorySamples();
-      setState({ status: "success", data });
+      const response = await getParkingHistorySamples();
+      if (response.ok) {
+        setState({ status: "success", data: response.data });
+      } else {
+        setState({ status: "error", message: getParkingErrorMessage(response.code) });
+      }
     } catch (error) {
       setState({
         status: "error",
@@ -125,6 +130,27 @@ export function ParkingHistoryCard() {
       )}
     </section>
   );
+}
+
+function getParkingErrorMessage(code: ParkingHistoryErrorCode) {
+  switch (code) {
+    case "KEY_MISSING":
+      return "서버에 PARKING_SERVICE_KEY가 적용되지 않았어요. (KEY_MISSING)";
+    case "AUTH_FAILED":
+      return "서비스 키 인증에 실패했어요. API_CPM_009 활용 신청과 키를 확인해 주세요. (AUTH_FAILED)";
+    case "RATE_LIMITED":
+      return "제공기관의 호출 한도를 초과했어요. 잠시 후 다시 확인해 주세요. (RATE_LIMITED)";
+    case "NETWORK_ERROR":
+      return "주차 정보 제공기관에 연결하지 못했어요. (NETWORK_ERROR)";
+    case "PROVIDER_UNAVAILABLE":
+      return "주차 정보 제공기관이 응답하지 않거나 점검 중이에요. (PROVIDER_UNAVAILABLE)";
+    case "RESPONSE_FORMAT":
+      return "제공기관의 응답 형식을 확인할 수 없어요. (RESPONSE_FORMAT)";
+    case "NO_RECORDS":
+      return "응답은 받았지만 입출차 항목을 찾지 못했어요. (NO_RECORDS)";
+    default:
+      return "주차 데이터를 불러오지 못했어요. (UNKNOWN)";
+  }
 }
 
 function formatParkingDate(value: string) {

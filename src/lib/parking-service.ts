@@ -19,21 +19,47 @@ export type ParkingHistoryResult = {
   fetchedAt: string;
 };
 
+export type ParkingHistoryErrorCode =
+  | "KEY_MISSING"
+  | "AUTH_FAILED"
+  | "RATE_LIMITED"
+  | "NETWORK_ERROR"
+  | "PROVIDER_UNAVAILABLE"
+  | "RESPONSE_FORMAT"
+  | "NO_RECORDS"
+  | "UNKNOWN";
+
+export type ParkingHistoryResponse =
+  | { ok: true; data: ParkingHistoryResult }
+  | { ok: false; code: ParkingHistoryErrorCode };
+
+class ParkingServiceError extends Error {
+  constructor(readonly code: ParkingHistoryErrorCode) {
+    super(code);
+  }
+}
+
 let cachedResult: ParkingHistoryResult | null = null;
 let cachedAt = 0;
 let activeRequest: Promise<ParkingHistoryResult> | null = null;
 
 export const getParkingHistorySamples = createServerFn({ method: "GET" }).handler(
-  async (): Promise<ParkingHistoryResult> => {
-    if (cachedResult && Date.now() - cachedAt < CACHE_TTL_MS) return cachedResult;
-    if (activeRequest) return activeRequest;
-
-    activeRequest = fetchParkingHistorySamples();
+  async (): Promise<ParkingHistoryResponse> => {
     try {
+      if (cachedResult && Date.now() - cachedAt < CACHE_TTL_MS) {
+        return { ok: true, data: cachedResult };
+      }
+      if (!activeRequest) activeRequest = fetchParkingHistorySamples();
+
       const result = await activeRequest;
       cachedResult = result;
       cachedAt = Date.now();
-      return result;
+      return { ok: true, data: result };
+    } catch (error) {
+      return {
+        ok: false,
+        code: error instanceof ParkingServiceError ? error.code : "UNKNOWN",
+      };
     } finally {
       activeRequest = null;
     }
@@ -43,7 +69,7 @@ export const getParkingHistorySamples = createServerFn({ method: "GET" }).handle
 async function fetchParkingHistorySamples(): Promise<ParkingHistoryResult> {
   const rawServiceKey = process.env["PARKING_SERVICE_KEY"]?.trim();
   if (!rawServiceKey) {
-    throw new Error("주차 데이터 서비스 키가 서버에 설정되지 않았어요.");
+    throw new ParkingServiceError("KEY_MISSING");
   }
 
   const url = new URL(PARKING_API_URL);
@@ -58,24 +84,27 @@ async function fetchParkingHistorySamples(): Promise<ParkingHistoryResult> {
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
-    throw new Error("주차 정보 제공기관에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    throw new ParkingServiceError("NETWORK_ERROR");
   }
 
+  if (response.status === 401 || response.status === 403) {
+    throw new ParkingServiceError("AUTH_FAILED");
+  }
   if (response.status === 429) {
-    throw new Error("주차 정보 제공기관의 요청 한도가 초과됐어요. 잠시 후 다시 확인해 주세요.");
+    throw new ParkingServiceError("RATE_LIMITED");
   }
   if (!response.ok) {
-    throw new Error("주차 데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+    throw new ParkingServiceError("PROVIDER_UNAVAILABLE");
   }
 
   const body = await response.text();
   const payload = parseResponseBody(body, response.headers.get("content-type") ?? "");
   const upstreamError = findUpstreamError(payload);
-  if (upstreamError) throw new Error(upstreamError);
+  if (upstreamError) throw new ParkingServiceError(upstreamError);
 
   const result = parseParkingHistoryPayload(payload);
   if (result.samples.length === 0) {
-    throw new Error("응답은 받았지만 입차일시·출차일시·주차구역을 확인하지 못했어요.");
+    throw new ParkingServiceError("NO_RECORDS");
   }
   return result;
 }
@@ -100,7 +129,7 @@ function parseResponseBody(body: string, contentType: string): unknown {
     try {
       return JSON.parse(trimmed);
     } catch {
-      throw new Error("주차 데이터 응답 형식을 확인할 수 없어요.");
+      throw new ParkingServiceError("RESPONSE_FORMAT");
     }
   }
   return parseXmlPayload(trimmed);
@@ -179,12 +208,11 @@ function extractLabeledValue(text: string, labels: string[]) {
   return match?.[1]?.trim() ?? "";
 }
 
-function findUpstreamError(payload: unknown): string | null {
+function findUpstreamError(payload: unknown): ParkingHistoryErrorCode | null {
   const code = findStringByKey(payload, "resultcode").trim();
   if (!code || code === "0000") return null;
-  if (code === "9999") return "주차 정보 제공기관이 점검 중이에요. 잠시 후 다시 시도해 주세요.";
-  if (code === "F2013") return "주차 정보 제공기관의 서비스 주소를 호출하지 못했어요.";
-  return "주차 정보 제공기관에서 요청을 처리하지 못했어요.";
+  if (code === "9999" || code === "F2013") return "PROVIDER_UNAVAILABLE";
+  return "UNKNOWN";
 }
 
 function findStringByKey(payload: unknown, target: string): string {
