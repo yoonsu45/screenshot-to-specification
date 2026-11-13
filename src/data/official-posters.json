@@ -1,0 +1,83 @@
+{
+  "sourceName": "한국체육산업개발주식회사 공연 포스터 정보",
+  "sourceSha256": "66124f98361777578edbd7168226bf6d45fa570aebfc3cfd4df0c8fca018db97",
+  "matches": [
+    {
+      "eventId": "kspo-a7e9e48167e9411297c45f88209148294567770eebd3c977c3f8126e588b8d24",
+      "imageUrl": "https://www.ksponco.or.kr/attachFiles/gallery/0023/350_0.jpg",
+      "posterId": "5987",
+      "posterRow": 11,
+      "scheduleRaw": "2012-02-04(토) 7:00",
+      "posterTitle": "주다스 프리스트 고별 내한공연",
+      "venueRaw": "올림픽홀",
+      "dataAsOf": "2025-05-08",
+      "matchMethod": "unique_normalized_title_and_venue"
+    },
+    {
+      "eventId": "kspo-aa2dd301737f33f8f8d4cfe061ade0b6dc6be384b8f8876878fcdf6933697b07",
+      "imageUrl": "https://www.ksponco.or.kr/attachFiles/gallery/0023/337_0.jpg",
+      "posterId": "5994",
+      "posterRow": 18,
+      "scheduleRaw": "2012-12-05(수) 8:00",
+      "posterTitle": "스팅 내한공연",
+      "venueRaw": "KSPO DOME",
+      "dataAsOf": "2025-05-08",
+      "matchMethod": "unique_normalized_title_and_venue"
+    },
+    {
+      "eventId": "kspo-3dc27c2754819e054e15be86c3d432a1d8e1d95e376726f5a8559d9d83c91678",
+      "imageUrl": "https://www.ksponco.or.kr/attachFiles/gallery/0023/308_0.jpg",
+      "posterId": "5977",
+      "posterRow": 38,
+      "scheduleRaw": "2012-09-21(금) 20:00",
+      "posterTitle": "봄여름가을겨울 브라보마이라이프 10주년 콘서트",
+      "venueRaw": "올림픽홀",
+      "dataAsOf": "2025-05-08",
+      "matchMethod": "unique_normalized_title_and_venue"
+    },
+    {
+      "eventId": "kspo-673fe9771aac95731f8ffc91aa4a137467e97919f37da4943ff88de77b490277",
+      "imageUrl": "https://www.ksponco.or.kr/attachFiles/gallery/0023/385_0.jpg",
+      "posterId": "5874",
+      "posterRow": 75,
+      "scheduleRaw": "2012-03-16(금) / 2012-03-18(일)",
+      "posterTitle": "포맨 로맨틱 콘서트 White Day After Party 화이트데이 애프터파티",
+      "venueRaw": "우리금융아트홀 ",
+      "dataAsOf": "2025-05-08",
+      "matchMethod": "unique_normalized_title_and_venue"
+    },
+    {
+      "eventId": "kspo-518f9c56871ccb645eabb80252052ab6fd4236b1b28fa90f05ef9f3afd07395c",
+      "imageUrl": "https://www.ksponco.or.kr/attachFiles/gallery/0023/218_0.jpg",
+      "posterId": "5906",
+      "posterRow": 137,
+      "scheduleRaw": "2014-07-18(금) - 2014-07-20(일)",
+      "posterTitle": "VIXX LIVE FANTASIA HEX SIGN",
+      "venueRaw": "올림픽홀",
+      "dataAsOf": "2025-05-08",
+      "matchMethod": "unique_normalized_title_and_venue"
+    },
+    {
+      "eventId": "kspo-ee4a68224abfdf8fb43107a2382a986c3fa22ef3b235b4b8910f530f88974263",
+      "imageUrl": "https://www.ksponco.or.kr/attachFiles/gallery/0023/168_0.jpg",
+      "posterId": "5850",
+      "posterRow": 177,
+      "scheduleRaw": "2013-11-09(토)",
+      "posterTitle": "2013 THE 신승훈 SHOW GREAT WAVE",
+      "venueRaw": "KSPO DOME",
+      "dataAsOf": "2025-05-08",
+      "matchMethod": "unique_normalized_title_and_venue"
+    },
+    {
+      "eventId": "kspo-f68adad219ada2fbdb3ac832d4427adfc4c06d3d8afb6c4fe92ebd1cab28e751",
+      "imageUrl": "https://www.ksponco.or.kr/attachFiles/gallery/0023/42_0.jpg",
+      "posterId": "5836",
+      "posterRow": 184,
+      "scheduleRaw": "2019-10-26(토) 7:00/2019-10-27(일)4:00",
+      "posterTitle": "WINNER CROSS TOUR IN SEOUL",
+      "venueRaw": "KSPO DOME",
+      "dataAsOf": "2025-05-08",
+      "matchMethod": "unique_normalized_title_and_venue"
+    }
+  ]
+}

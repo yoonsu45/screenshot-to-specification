@@ -9,6 +9,7 @@ import {
 } from "react";
 import { ALL_FACILITIES_ID } from "@/data/facilities";
 import { events } from "@/data/events";
+import officialSnapshot from "@/data/official-events.json";
 import {
   authenticateAccount,
   createAccount,
@@ -27,6 +28,7 @@ import {
 import type { CheckInput } from "@/lib/event-service";
 
 export type PlanItem = {
+  dateKind?: "personal" | "event";
   id: string;
   kind: "event" | "place";
   title: string;
@@ -70,6 +72,18 @@ function placePlanKey(email: string) {
 }
 
 function eventPlanItem(eventId: string, visitDate: string): PlanItem | null {
+  const official = officialSnapshot.events.find((item) => item.id === eventId);
+  if (official)
+    return {
+      id: `event:${official.id}`,
+      dateKind: "personal",
+      kind: "event",
+      title: official.title,
+      subtitle: `개인 방문예정일 ${visitDate} · ${official.venue || "장소 확인 불가"} · 공식 개최일 아님`,
+      startDate: visitDate,
+      endDate: visitDate,
+      venue: official.venue || "장소 확인 불가",
+    };
   const event = events.find((item) => item.id === eventId);
   if (!event) return null;
   return {
@@ -98,7 +112,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const refreshEventSaveCounts = useCallback(async () => {
     try {
-      setEventSaveCounts(await getEventSaveCounts(events.map((event) => event.id)));
+      const ids = [
+        ...events.map((event) => event.id),
+        ...officialSnapshot.events.map((event) => event.id),
+      ];
+      const counts = await getEventSaveCounts(ids);
+      setEventSaveCounts(Object.fromEntries(ids.map((id) => [id, counts[id] ?? 0])));
     } catch {
       // Counts are supplemental; the rest of the service remains available if they fail.
     }
@@ -200,7 +219,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         if (!existing) {
           setEventSaveCounts((counts) => ({
             ...counts,
-            [eventId]: (counts[eventId] ?? 0) + 1,
+            ...(counts[eventId] === undefined ? {} : { [eventId]: counts[eventId] + 1 }),
           }));
         }
       }
@@ -210,9 +229,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           ? current.map((entry) => (entry.id === item.id ? item : entry))
           : [...current, item],
       );
+      if (item.kind === "event") void refreshEventSaveCounts();
       return true;
     },
-    [account, plan],
+    [account, plan, refreshEventSaveCounts],
   );
 
   const removePlan = useCallback(
@@ -233,14 +253,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         }
         setEventSaveCounts((counts) => ({
           ...counts,
-          [eventId]: Math.max(0, (counts[eventId] ?? 0) - 1),
+          ...(counts[eventId] === undefined ? {} : { [eventId]: Math.max(0, counts[eventId] - 1) }),
         }));
       }
 
       setPlan((current) => current.filter((item) => item.id !== id));
+      if (existing.kind === "event") void refreshEventSaveCounts();
       return true;
     },
-    [account, plan],
+    [account, plan, refreshEventSaveCounts],
   );
 
   const login = useCallback(async (email: string, password: string) => {

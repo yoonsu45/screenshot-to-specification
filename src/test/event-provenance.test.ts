@@ -4,6 +4,19 @@ import { events } from "@/data/events";
 import { EXAMPLE_CASE, verifyEvent, searchOfficialEvents } from "@/lib/event-service";
 
 describe("event data provenance", () => {
+  it("does not list or verify administrative entries as individual events", () => {
+    for (const title of [
+      "예약완료",
+      "준비대관",
+      "철거대관",
+      "무대점검",
+      "주간행사 계획(3.19-3.25)",
+    ]) {
+      expect(searchOfficialEvents(title)).toEqual([]);
+      expect(verifyEvent({ title, date: "", venue: "" }).status).toBe("unverified");
+    }
+    expect(searchOfficialEvents("차카게 살자").length).toBeGreaterThan(0);
+  });
   it("searches official titles and venues without including demo data", () => {
     expect(searchOfficialEvents("")).toHaveLength(snapshot.events.length);
     expect(searchOfficialEvents("올림픽홀").length).toBeGreaterThan(0);

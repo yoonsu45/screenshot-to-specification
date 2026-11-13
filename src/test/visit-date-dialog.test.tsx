@@ -16,6 +16,28 @@ const event: ParkEvent = {
 };
 
 describe("VisitDateDialog", () => {
+  it("allows a personal plan date when the official event date is unknown", () => {
+    const onConfirm = vi.fn();
+    const { container } = render(
+      <VisitDateDialog
+        event={{ title: "공식 행사", venue: "올림픽홀", startDate: null }}
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+    expect(screen.getByText("공식 개최일 확인 불가")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "방문 예정일 선택" }));
+    const today = new Date();
+    const dayButton = container.ownerDocument.querySelector<HTMLButtonElement>(
+      `[data-day="${today.toLocaleDateString()}"]`,
+    )!;
+    fireEvent.click(dayButton);
+    fireEvent.click(screen.getByRole("button", { name: "이 날짜로 담기" }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`,
+    );
+  });
   it("opens the in-app calendar and selects a visit date", () => {
     const onConfirm = vi.fn();
     const { container } = render(

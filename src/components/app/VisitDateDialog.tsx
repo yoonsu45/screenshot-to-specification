@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 
 type Props = {
-  event: ParkEvent;
+  event: Pick<ParkEvent, "title" | "venue"> & { startDate: string | null; endDate?: string | null };
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (visitDate: string) => void;
@@ -31,7 +31,10 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
     if (!open) return;
 
     const savedDate =
-      initialDate && initialDate >= event.startDate && initialDate <= lastDate ? initialDate : "";
+      initialDate &&
+      (!event.startDate || !lastDate || (initialDate >= event.startDate && initialDate <= lastDate))
+        ? initialDate
+        : "";
     setVisitDate(savedDate);
     setCalendarOpen(false);
   }, [event.startDate, initialDate, lastDate, open]);
@@ -50,14 +53,20 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-black text-primary">방문 예정일 선택</DialogTitle>
-          <DialogDescription>실제로 방문할 날짜 하루를 선택해 주세요.</DialogDescription>
+          <DialogDescription>
+            {event.startDate
+              ? "실제로 방문할 날짜 하루를 선택해 주세요."
+              : "공식 개최일이 없어 개인 방문예정일로 저장합니다. 행사 개최일을 확인한 결과가 아닙니다."}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="rounded-2xl bg-secondary/70 p-4">
           <p className="font-black text-primary">{event.title}</p>
           <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarDays className="h-4 w-4" />
-            행사 기간 {formatRange(event)}
+            {event.startDate
+              ? `행사 기간 ${formatDate(event.startDate)}${lastDate && lastDate !== event.startDate ? ` ~ ${formatDate(lastDate)}` : ""}`
+              : "공식 개최일 확인 불가"}
           </p>
           <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4" />
@@ -94,13 +103,21 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
                   mode="single"
                   locale={ko}
                   selected={visitDate ? parseDateKey(visitDate) : undefined}
-                  defaultMonth={parseDateKey(visitDate || event.startDate)}
-                  startMonth={parseDateKey(event.startDate)}
-                  endMonth={parseDateKey(lastDate)}
-                  disabled={{
-                    before: parseDateKey(event.startDate),
-                    after: parseDateKey(lastDate),
-                  }}
+                  defaultMonth={
+                    visitDate || event.startDate
+                      ? parseDateKey(visitDate || event.startDate!)
+                      : new Date()
+                  }
+                  {...(event.startDate && lastDate
+                    ? {
+                        startMonth: parseDateKey(event.startDate),
+                        endMonth: parseDateKey(lastDate),
+                        disabled: {
+                          before: parseDateKey(event.startDate),
+                          after: parseDateKey(lastDate),
+                        },
+                      }
+                    : {})}
                   onSelect={(date) => {
                     if (!date) return;
                     setVisitDate(toDateKey(date));
@@ -111,7 +128,9 @@ export function VisitDateDialog({ event, open, onOpenChange, onConfirm, initialD
               </div>
             )}
             <span className="mt-2 block text-xs text-muted-foreground">
-              행사 기간 안의 날짜만 선택할 수 있어요.
+              {event.startDate
+                ? "행사 기간 안의 날짜만 선택할 수 있어요."
+                : "선택한 날짜는 나의 계획이며 공식 행사 일정으로 사용되지 않습니다."}
             </span>
           </div>
           <DialogFooter>
