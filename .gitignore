@@ -36,6 +36,7 @@ dist-ssr
 # API 인증키 보호
 .env
 .env.*
+!.env.example
 
 # 수집한 데이터 파일 제외
 data/*.csv
