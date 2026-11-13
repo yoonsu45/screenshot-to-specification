@@ -28,3 +28,12 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project Context
+
+Before implementing features or changing data-processing logic,
+read PROJECT_CONTEXT.md for the project's goals, data sources,
+validation rules, and current development priorities.
+
+Follow the existing Lovable rules above.
+Do not treat demo data as verified official event data.
