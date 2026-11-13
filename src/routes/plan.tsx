@@ -7,7 +7,7 @@ import { getEvent } from "@/lib/event-service";
 export const Route = createFileRoute("/plan")({
   head: () => ({
     meta: [
-      { title: "내 방문 계획 — 올팍 행사체크" },
+      { title: "The:Check" },
       { name: "description", content: "담아둔 행사를 월간 달력에서 날짜별로 확인하세요." },
       { property: "og:title", content: "내 방문 계획 — 올팍 행사체크" },
       { property: "og:description", content: "담아둔 행사를 월간 달력에서 날짜별로 확인하세요." },

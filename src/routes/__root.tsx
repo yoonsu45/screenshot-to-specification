@@ -89,7 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { name: "apple-mobile-web-app-title", content: "The:Check" },
-      { title: "올팍 행사체크" },
+      { title: "The:Check" },
       { name: "description", content: "올림픽공원 행사 일정을 확인하고 공식 기록과 대조하세요." },
       { property: "og:title", content: "올팍 행사체크" },
       { property: "og:description", content: "올림픽공원 행사 일정을 확인하고 공식 기록과 대조하세요." },

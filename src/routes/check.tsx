@@ -21,7 +21,7 @@ import { EXAMPLE_CASE, formatRange } from "@/lib/event-service";
 export const Route = createFileRoute("/check")({
   head: () => ({
     meta: [
-      { title: "행사 정보 입력 — 올팍 행사체크" },
+      { title: "The:Check" },
       {
         name: "description",
         content:

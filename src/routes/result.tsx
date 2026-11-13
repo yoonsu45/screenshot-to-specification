@@ -19,7 +19,7 @@ import { VisitDateDialog } from "@/components/app/VisitDateDialog";
 export const Route = createFileRoute("/result")({
   head: () => ({
     meta: [
-      { title: "대조 결과 — 올팍 행사체크" },
+      { title: "The:Check" },
       { name: "description", content: "입력한 행사 정보와 공식 기록을 나란히 비교한 결과입니다." },
       { property: "og:title", content: "대조 결과 — 올팍 행사체크" },
       {

@@ -11,7 +11,7 @@ import { EventCalendar } from "@/components/app/EventCalendar";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "올팍 행사체크 — 시설별 행사 목록" },
+      { title: "The:Check" },
       {
         name: "description",
         content: "올림픽공원과 국민체육진흥공단 시설의 공개 행사를 날짜순으로 확인하세요.",

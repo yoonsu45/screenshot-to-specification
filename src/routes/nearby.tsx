@@ -9,7 +9,7 @@ import { resolveAnchor } from "@/lib/anchor";
 export const Route = createFileRoute("/nearby")({
   head: () => ({
     meta: [
-      { title: "공연장 주변 — 올팍 행사체크" },
+      { title: "The:Check" },
       {
         name: "description",
         content: "공연장 주변의 산책·사진, 카페·식사, 전시·문화 장소를 둘러보세요.",

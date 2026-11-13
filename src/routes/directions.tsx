@@ -9,7 +9,7 @@ import { resolveAnchor } from "@/lib/anchor";
 export const Route = createFileRoute("/directions")({
   head: () => ({
     meta: [
-      { title: "가는 길·주차 — 올팍 행사체크" },
+      { title: "The:Check" },
       {
         name: "description",
         content: "공연장까지 대중교통과 자가용으로 가는 방법, 가까운 주차장을 확인하세요.",
