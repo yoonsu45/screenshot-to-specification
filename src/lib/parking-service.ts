@@ -5,6 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 const PARKING_API_URL = "https://api.kcisa.kr/openapi/API_CPM_009/request";
 const SAMPLE_SIZE = 8;
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const TRANSIENT_RETRY_DELAY_MS = 400;
 
 export type ParkingHistorySample = {
   entryAt: string;
@@ -96,15 +97,7 @@ async function fetchParkingHistorySamples(): Promise<ParkingHistoryResult> {
   url.searchParams.set("numOfRows", String(SAMPLE_SIZE));
   url.searchParams.set("pageNo", "1");
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      headers: { Accept: "application/json, application/xml;q=0.9, text/xml;q=0.8" },
-      signal: AbortSignal.timeout(15_000),
-    });
-  } catch {
-    throw new ParkingServiceError("NETWORK_ERROR");
-  }
+  const response = await requestParkingApi(url);
 
   const httpFailure = classifyParkingHttpFailure(response.status);
   if (httpFailure) throw new ParkingServiceError(httpFailure.code, httpFailure);
@@ -119,6 +112,32 @@ async function fetchParkingHistorySamples(): Promise<ParkingHistoryResult> {
     throw new ParkingServiceError("NO_RECORDS");
   }
   return result;
+}
+
+async function requestParkingApi(url: URL): Promise<Response> {
+  let response = await fetchParkingApiOnce(url);
+  if (!shouldRetryParkingHttpStatus(response.status)) return response;
+
+  await new Promise((resolve) => setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS));
+  response = await fetchParkingApiOnce(url);
+  return response;
+}
+
+async function fetchParkingApiOnce(url: URL): Promise<Response> {
+  try {
+    return await fetch(url, {
+      // The official data format is XML. Avoid asking the provider to negotiate
+      // JSON first because this LINK API only documents an XML response.
+      headers: { Accept: "application/xml, text/xml;q=0.9" },
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    throw new ParkingServiceError("NETWORK_ERROR");
+  }
+}
+
+export function shouldRetryParkingHttpStatus(status: number) {
+  return status === 502 || status === 503 || status === 504;
 }
 
 export function parseParkingHistoryPayload(payload: unknown): ParkingHistoryResult {
