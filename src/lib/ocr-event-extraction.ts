@@ -34,8 +34,22 @@ export type OcrProgress = {
   label: string;
 };
 
+export type OcrLineObservation = {
+  text: string;
+  confidence: number;
+  height: number;
+  top: number;
+  imageHeight: number;
+};
+
 const bookingPattern = /예매|티켓|ticket|open|오픈|판매|예약/i;
 const datePattern = /(?:(20\d{2})\s*[.\-/년]\s*)?(\d{1,2})\s*[.\-/월]\s*(\d{1,2})\s*일?/g;
+const eventTitlePattern =
+  /콘서트|공연|페스티벌|축제|전시|뮤지컬|리사이틀|팬미팅|쇼케이스|라이브|투어|concert|festival|exhibition|musical|recital|fan\s*meeting|showcase|live|tour/i;
+const venuePattern =
+  /홀|돔|센터|공원|미술관|박물관|극장|아레나|스타디움|체육관|공연장|전시장|광장|마당|대학교|클럽|카페|(?:hall|dome|center|centre|park|museum|theater|theatre|arena|stadium|gallery)\b/i;
+const nonTitlePattern =
+  /예매|티켓|ticket|open|오픈|문의|주최|주관|후원|가격|입장|관람|시간|일시|장소|venue|place|www\.|https?:|@/i;
 
 export async function extractEventFromImage(
   imageDataUrl: string,
@@ -67,28 +81,40 @@ export async function extractEventFromImage(
       user_defined_dpi: "300",
     });
 
-    const variants: Array<string | HTMLCanvasElement> = [imageDataUrl];
+    const sourceImage = await loadOcrImage(imageDataUrl);
+    const variants: Array<HTMLImageElement | HTMLCanvasElement> = [sourceImage];
     try {
-      variants.push(await createHighContrastVariant(imageDataUrl));
+      variants.push(createHighContrastVariant(sourceImage));
     } catch {
       // The original image is still usable if a browser cannot create the enhanced canvas.
     }
 
     const recognizedTexts: string[] = [];
+    const observedLines: OcrLineObservation[] = [];
     for (let index = 0; index < variants.length; index += 1) {
       recognitionPass = index;
-      const result = await worker.recognize(variants[index]!, { rotateAuto: true });
+      const variant = variants[index]!;
+      const result = await worker.recognize(
+        variant,
+        { rotateAuto: true },
+        { text: true, blocks: true },
+      );
       recognizedTexts.push(result.data.text);
+      observedLines.push(
+        ...collectLineObservations(
+          result.data.blocks,
+          variant instanceof HTMLCanvasElement ? variant.height : variant.naturalHeight,
+        ),
+      );
     }
     onProgress?.({ progress: 100, label: "인식 결과 정리 중" });
-    return parseOcrText(mergeOcrTexts(recognizedTexts));
+    return parseOcrText(mergeOcrTexts(recognizedTexts), new Date().getFullYear(), observedLines);
   } finally {
     await worker.terminate();
   }
 }
 
-async function createHighContrastVariant(source: string) {
-  const image = await loadOcrImage(source);
+function createHighContrastVariant(image: HTMLImageElement) {
   const border = 16;
   const canvas = document.createElement("canvas");
   canvas.width = image.naturalWidth + border * 2;
@@ -127,6 +153,32 @@ async function createHighContrastVariant(source: string) {
   return canvas;
 }
 
+function collectLineObservations(
+  blocks: Array<{
+    paragraphs: Array<{
+      lines: Array<{
+        text: string;
+        confidence: number;
+        bbox: { y0: number; y1: number };
+      }>;
+    }>;
+  }> | null,
+  imageHeight: number,
+) {
+  if (!blocks) return [];
+  return blocks.flatMap((block) =>
+    block.paragraphs.flatMap((paragraph) =>
+      paragraph.lines.map((line) => ({
+        text: line.text.replace(/\s+/g, " ").trim(),
+        confidence: line.confidence,
+        height: Math.max(0, line.bbox.y1 - line.bbox.y0),
+        top: line.bbox.y0,
+        imageHeight,
+      })),
+    ),
+  );
+}
+
 function loadOcrImage(source: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
@@ -156,6 +208,7 @@ function mergeOcrTexts(texts: string[]) {
 export function parseOcrText(
   rawText: string,
   referenceYear = new Date().getFullYear(),
+  observedLines: OcrLineObservation[] = [],
 ): BrowserOcrResult {
   const lines = rawText
     .split(/\r?\n/)
@@ -175,7 +228,15 @@ export function parseOcrText(
   const isClearTitle = Boolean(
     first?.exactTitle && first.score >= 0.82 && (!second || first.score - second.score >= 0.12),
   );
-  const title = isClearTitle && first ? first.title : "";
+  const title =
+    isClearTitle && first
+      ? first.title
+      : inferTitle(
+          lines,
+          observedLines,
+          venue,
+          lines.some((line) => hasDate(line)),
+        );
   const date = detectedDates[0] ?? "";
   const foundFieldCount = [title, date, venue].filter(Boolean).length;
   const confidence: OcrConfidence =
@@ -267,12 +328,21 @@ function findVenue(rawText: string) {
     }))
     .sort((left, right) => right.score - left.score)[0];
 
-  return fuzzy && fuzzy.score >= 0.62 ? fuzzy.venue : "";
+  if (fuzzy && fuzzy.score >= 0.68) return fuzzy.venue;
+
+  const genericVenue = rawText
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^(?:장소|venue|place)\s*[:：-]?\s*/i, "").trim())
+    .filter((line) => normalize(line).length >= 2 && normalize(line).length <= 40)
+    .find((line) => venuePattern.test(line) && !datePattern.test(line));
+
+  return genericVenue ?? "";
 }
 
 function partialSimilarity(needle: string, text: string) {
   if (!needle || !text) return 0;
-  if (text.includes(needle) || needle.includes(text)) return 1;
+  if (text.includes(needle)) return 1;
+  if (needle.includes(text) && text.length / needle.length >= 0.7) return 0.9;
   const minLength = Math.max(2, needle.length - 1);
   const maxLength = Math.min(text.length, needle.length + 1);
   let best = similarity(needle, text);
@@ -283,6 +353,100 @@ function partialSimilarity(needle: string, text: string) {
     }
   }
   return best;
+}
+
+function inferTitle(
+  lines: string[],
+  observedLines: OcrLineObservation[],
+  venue: string,
+  hasRecognizedDate: boolean,
+) {
+  const hasEventContext =
+    hasRecognizedDate || Boolean(venue) || lines.some((line) => eventTitlePattern.test(line));
+  if (!hasEventContext) return "";
+
+  const observations = mergeLineObservations(lines, observedLines);
+  const maxHeight = Math.max(1, ...observations.map((line) => line.height));
+  const venueKey = normalize(venue);
+  const candidates = observations
+    .map((line, index) => {
+      const text = cleanTitleLine(line.text);
+      const normalized = normalize(text);
+      const digitCount = (normalized.match(/\d/g) ?? []).length;
+      const digitRatio = normalized.length ? digitCount / normalized.length : 1;
+      const isVenue = Boolean(
+        venueKey && (normalized === venueKey || normalized.includes(venueKey)),
+      );
+      const invalid =
+        normalized.length < 2 ||
+        normalized.length > 60 ||
+        digitRatio > 0.55 ||
+        isVenue ||
+        nonTitlePattern.test(text) ||
+        isDateLike(text);
+      if (invalid) return null;
+
+      const sizeScore = line.height > 0 ? line.height / maxHeight : 0.45;
+      const confidenceScore = Math.max(0, Math.min(1, line.confidence / 100));
+      const relativeTop = line.imageHeight > 0 ? line.top / line.imageHeight : index / lines.length;
+      const positionScore = relativeTop <= 0.65 ? 1 : 0.45;
+      const keywordScore = eventTitlePattern.test(text) ? 1 : 0;
+      const lengthScore = Math.min(1, normalized.length / 12);
+      return {
+        text,
+        score:
+          sizeScore * 0.42 +
+          confidenceScore * 0.2 +
+          positionScore * 0.16 +
+          keywordScore * 0.14 +
+          lengthScore * 0.08,
+      };
+    })
+    .filter((candidate): candidate is { text: string; score: number } => candidate !== null)
+    .sort((left, right) => right.score - left.score);
+
+  const best = candidates[0];
+  if (!best) return "";
+  const minimumScore = observedLines.length ? 0.48 : 0.38;
+  return best.score >= minimumScore ? best.text : "";
+}
+
+function mergeLineObservations(lines: string[], observations: OcrLineObservation[]) {
+  const byText = new Map<string, OcrLineObservation>();
+  observations.forEach((line) => {
+    const key = normalize(line.text);
+    if (!key) return;
+    const previous = byText.get(key);
+    if (!previous || line.confidence > previous.confidence || line.height > previous.height) {
+      byText.set(key, line);
+    }
+  });
+
+  return lines.map((text, index) => {
+    const observed = byText.get(normalize(text));
+    return (
+      observed ?? {
+        text,
+        confidence: 55,
+        height: 0,
+        top: index,
+        imageHeight: Math.max(1, lines.length),
+      }
+    );
+  });
+}
+
+function cleanTitleLine(value: string) {
+  return value
+    .replace(/^[\s|·•:：\-–—]+|[\s|·•:：\-–—]+$/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function isDateLike(value: string) {
+  datePattern.lastIndex = 0;
+  if (datePattern.test(value)) return true;
+  return /^\s*(?:20\d{2}\s*)?[.\-/년월일\d\s():~]+\s*$/.test(value);
 }
 
 function rankEventCandidates(

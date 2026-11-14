@@ -80,4 +80,29 @@ describe("parseOcrText", () => {
       sourceType: "official_public_data",
     });
   });
+
+  it("등록되지 않은 행사도 날짜와 장소 문맥으로 행사명을 추출한다", () => {
+    const result = parseOcrText("CRAVITY\n2026.11.14\n고척스카이돔", 2026);
+
+    expect(result.title).toBe("CRAVITY");
+    expect(result.date).toBe("2026-11-14");
+    expect(result.venue).toBe("고척스카이돔");
+  });
+
+  it("연도 없는 날짜도 행사명 추출 문맥으로 사용한다", () => {
+    const result = parseOcrText("CRAVITY\n11.14 SAT", 2026);
+
+    expect(result.title).toBe("CRAVITY");
+    expect(result.date).toBe("");
+  });
+
+  it("등록되지 않은 한글 행사명과 공연장을 원문에서 추출한다", () => {
+    const result = parseOcrText(
+      "별이 빛나는 밤 콘서트\n2026년 12월 24일\n블루스퀘어 마스터카드홀",
+      2026,
+    );
+
+    expect(result.title).toBe("별이 빛나는 밤 콘서트");
+    expect(result.venue).toBe("블루스퀘어 마스터카드홀");
+  });
 });
