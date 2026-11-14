@@ -90,9 +90,10 @@ function CheckPage() {
       });
       setForm((current) => ({
         ...current,
-        title: result.title || current.title,
-        date: result.date || current.date,
-        venue: result.venue || current.venue,
+        officialRecordId: undefined,
+        title: result.title,
+        date: result.date,
+        venue: result.venue,
       }));
       setAnalysis({ status: "success", result });
     } catch (caught) {
@@ -108,6 +109,24 @@ function CheckPage() {
       title: event.title,
       date: event.startDate,
       venue: event.venue,
+    }));
+    setSearchOpen(false);
+    setError(false);
+  }
+
+  function selectOcrCandidate(candidate: BrowserOcrResult["candidates"][number]) {
+    if (candidate.sourceType === "demo") {
+      const event = events.find((item) => item.id === candidate.eventId);
+      if (event) selectEvent(event);
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      officialRecordId: candidate.eventId,
+      title: candidate.title,
+      date: candidate.date || current.date,
+      venue: candidate.venue || current.venue,
     }));
     setSearchOpen(false);
     setError(false);
@@ -157,20 +176,17 @@ function CheckPage() {
 
       {ocrResult && ocrResult.candidates.length > 0 && (
         <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-card">
-          <h2 className="font-extrabold text-primary">시연용 행사 후보</h2>
+          <h2 className="font-extrabold text-primary">인식된 행사 후보</h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            아래 후보는 가상 행사입니다. 선택하면 시연용 정보로 채워지므로 포스터 원문과 구분해
-            주세요.
+            포스터 글자와 공식 행사 자료를 비교한 결과예요. 일치하는 행사만 선택해 주세요.
           </p>
           <div className="mt-3 space-y-2">
             {ocrResult.candidates.map((candidate) => {
-              const event = events.find((item) => item.id === candidate.eventId);
-              if (!event) return null;
               return (
                 <button
                   key={candidate.eventId}
                   type="button"
-                  onClick={() => selectEvent(event)}
+                  onClick={() => selectOcrCandidate(candidate)}
                   className="flex w-full items-center justify-between gap-3 rounded-xl bg-secondary px-3 py-3 text-left transition hover:ring-2 hover:ring-ring"
                 >
                   <span className="min-w-0">
@@ -178,7 +194,9 @@ function CheckPage() {
                       {candidate.title}
                     </span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {candidate.venue} · {formatRange(event)}
+                      {candidate.sourceType === "official_public_data" ? "공식 행사" : "시연용"}
+                      {candidate.venue ? ` · ${candidate.venue}` : ""}
+                      {candidate.date ? ` · ${candidate.date}` : ""}
                     </span>
                   </span>
                   <span className="shrink-0 text-xs font-bold text-primary">
@@ -365,6 +383,37 @@ function AnalysisBanner({ state, onRetry }: { state: AnalysisState; onRetry: () 
   }
 
   if (state.status === "success") {
+    const hasConfirmedField = Boolean(
+      state.result.title ||
+      state.result.date ||
+      state.result.venue ||
+      state.result.candidates.length,
+    );
+
+    if (!hasConfirmedField) {
+      return (
+        <div className="mb-5 rounded-2xl bg-amber-50 px-4 py-3 text-amber-900">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-extrabold">행사 정보를 확정하지 못했어요</p>
+              <p className="mt-0.5 text-xs leading-5">
+                관련 없는 후보는 표시하지 않았어요. OCR 원문을 확인하거나 글자가 크게 보이도록
+                이미지를 잘라 다시 시도해 주세요.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-extrabold"
+          >
+            <WandSparkles className="h-4 w-4" /> 다시 읽기
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="mb-5 flex items-center gap-3 rounded-2xl bg-emerald-50 px-4 py-3 text-emerald-800">
         <CheckCircle2 className="h-5 w-5 shrink-0" />

@@ -1,5 +1,6 @@
 import { events } from "@/data/events";
 import { ALL_FACILITIES_ID, facilities } from "@/data/facilities";
+import { officialEvents } from "@/lib/official-data";
 
 export type OcrConfidence = "high" | "medium" | "low";
 
@@ -9,6 +10,12 @@ export type OcrEventCandidate = {
   date: string;
   venue: string;
   score: number;
+  sourceType: "official_public_data" | "demo";
+};
+
+type RankedOcrEventCandidate = OcrEventCandidate & {
+  exactTitle: boolean;
+  corroborated: boolean;
 };
 
 export type BrowserOcrResult = {
@@ -166,7 +173,7 @@ export function parseOcrText(
   const first = candidates[0];
   const second = candidates[1];
   const isClearTitle = Boolean(
-    first && first.score >= 0.56 && (!second || first.score - second.score >= 0.08),
+    first?.exactTitle && first.score >= 0.82 && (!second || first.score - second.score >= 0.12),
   );
   const title = isClearTitle && first ? first.title : "";
   const date = detectedDates[0] ?? "";
@@ -283,31 +290,60 @@ function rankEventCandidates(
   rawText: string,
   venue: string,
   dates: string[],
-): OcrEventCandidate[] {
+): RankedOcrEventCandidate[] {
   const normalizedText = normalizeForTitle(rawText);
-  return events
+  const catalog = [
+    ...officialEvents.map((event) => ({
+      eventId: event.id,
+      title: event.title,
+      date: event.startDate ?? "",
+      venue: event.venue ?? "",
+      sourceType: "official_public_data" as const,
+    })),
+    ...events.map((event) => ({
+      eventId: event.id,
+      title: event.title,
+      date: event.startDate,
+      venue: event.venue,
+      sourceType: "demo" as const,
+    })),
+  ];
+
+  return catalog
     .map((event) => {
       const eventTitle = normalizeForTitle(event.title.replace(/^\[시연용\]\s*/, ""));
       const lineScore = Math.max(
         0,
         ...lines.map((line) => similarity(eventTitle, normalizeForTitle(line))),
       );
-      const textScore = normalizedText.includes(eventTitle)
-        ? 1
-        : similarity(eventTitle, normalizedText);
-      let score = Math.max(lineScore, textScore);
-      if (venue && normalize(venue) === normalize(event.venue)) score += 0.08;
-      if (dates.includes(event.startDate)) score += 0.08;
+      const exactTitle = eventTitle.length >= 3 && normalizedText.includes(eventTitle);
+      const venueMatch = Boolean(
+        venue && event.venue && normalize(venue) === normalize(event.venue),
+      );
+      const dateMatch = Boolean(event.date && dates.includes(event.date));
+      const corroborated = venueMatch || dateMatch;
+      let score = Math.max(lineScore, exactTitle ? 1 : 0);
+      if (venueMatch) score += 0.08;
+      if (dateMatch) score += 0.08;
 
       return {
-        eventId: event.id,
+        eventId: event.eventId,
         title: event.title,
-        date: event.startDate,
+        date: event.date,
         venue: event.venue,
         score: Math.min(1, Number(score.toFixed(3))),
+        sourceType: event.sourceType,
+        exactTitle,
+        corroborated,
       };
     })
-    .filter((candidate) => candidate.score >= 0.18)
+    .filter(
+      (candidate) =>
+        candidate.exactTitle ||
+        (candidate.sourceType === "official_public_data" &&
+          candidate.corroborated &&
+          candidate.score >= 0.72),
+    )
     .sort((left, right) => right.score - left.score)
     .slice(0, 3);
 }

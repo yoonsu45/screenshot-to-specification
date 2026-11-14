@@ -63,4 +63,21 @@ describe("parseOcrText", () => {
     expect(result.venue).toBe("올림픽홀");
     expect(result.candidates[0]?.eventId).toBe("demo-concert-2026");
   });
+
+  it("관련 없는 이미지에는 시연용 행사를 억지로 추천하지 않는다", () => {
+    const result = parseOcrText("오늘의 메뉴\n아메리카노 4500원\n영업시간 10:00", 2026);
+
+    expect(result.title).toBe("");
+    expect(result.candidates).toEqual([]);
+  });
+
+  it("공식 행사명이 정확히 읽히면 공식 후보를 우선 제시한다", () => {
+    const result = parseOcrText("김조한 콘서트\n우리금융아트홀", 2026);
+
+    expect(result.title).toBe("김조한 콘서트");
+    expect(result.candidates[0]).toMatchObject({
+      eventId: "official-poster-6002",
+      sourceType: "official_public_data",
+    });
+  });
 });
