@@ -105,4 +105,32 @@ describe("parseOcrText", () => {
     expect(result.title).toBe("별이 빛나는 밤 콘서트");
     expect(result.venue).toBe("블루스퀘어 마스터카드홀");
   });
+
+  it("해시태그 묶음을 행사명으로 사용하지 않는다", () => {
+    const result = parseOcrText(
+      "CRAVITY THE DREAM SHOW\n2026.11.14\n#크래비티 #CRAVITY #콘서트 #올림픽공원 #주말공연",
+      2026,
+    );
+
+    expect(result.title).toBe("CRAVITY THE DREAM SHOW");
+  });
+
+  it("행사명 뒤의 해시태그는 제거하고 실제 제목만 남긴다", () => {
+    const result = parseOcrText("별이 빛나는 밤 콘서트 #공연 #콘서트 #데이트\n2026.12.24", 2026);
+
+    expect(result.title).toBe("별이 빛나는 밤 콘서트");
+  });
+
+  it("해시태그와 날짜뿐이면 해시태그를 행사명으로 확정하지 않는다", () => {
+    const result = parseOcrText("#크래비티 #콘서트 #서울공연\n2026.11.14", 2026);
+
+    expect(result.title).toBe("");
+  });
+
+  it("등록된 행사명도 해시태그에만 있으면 행사 후보나 제목으로 확정하지 않는다", () => {
+    const result = parseOcrText("# 가상별빛콘서트 # 올림픽홀\n2026.11.14", 2026);
+
+    expect(result.title).toBe("");
+    expect(result.candidates).toEqual([]);
+  });
 });

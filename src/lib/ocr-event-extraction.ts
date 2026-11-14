@@ -50,6 +50,7 @@ const venuePattern =
   /홀|돔|센터|공원|미술관|박물관|극장|아레나|스타디움|체육관|공연장|전시장|광장|마당|대학교|클럽|카페|(?:hall|dome|center|centre|park|museum|theater|theatre|arena|stadium|gallery)\b/i;
 const nonTitlePattern =
   /예매|티켓|ticket|open|오픈|문의|주최|주관|후원|가격|입장|관람|시간|일시|장소|venue|place|www\.|https?:|@/i;
+const hashtagPattern = /[#＃]\s*[\p{L}\p{N}_-]+/gu;
 
 export async function extractEventFromImage(
   imageDataUrl: string,
@@ -362,7 +363,9 @@ function inferTitle(
   hasRecognizedDate: boolean,
 ) {
   const hasEventContext =
-    hasRecognizedDate || Boolean(venue) || lines.some((line) => eventTitlePattern.test(line));
+    hasRecognizedDate ||
+    Boolean(venue) ||
+    lines.some((line) => eventTitlePattern.test(removeHashtags(line)));
   if (!hasEventContext) return "";
 
   const observations = mergeLineObservations(lines, observedLines);
@@ -437,10 +440,14 @@ function mergeLineObservations(lines: string[], observations: OcrLineObservation
 }
 
 function cleanTitleLine(value: string) {
-  return value
+  return removeHashtags(value)
     .replace(/^[\s|·•:：\-–—]+|[\s|·•:：\-–—]+$/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+function removeHashtags(value: string) {
+  return value.replace(hashtagPattern, " ");
 }
 
 function isDateLike(value: string) {
@@ -455,7 +462,8 @@ function rankEventCandidates(
   venue: string,
   dates: string[],
 ): RankedOcrEventCandidate[] {
-  const normalizedText = normalizeForTitle(rawText);
+  const searchableLines = lines.map(removeHashtags).filter((line) => normalize(line).length > 0);
+  const normalizedText = normalizeForTitle(searchableLines.join("\n"));
   const catalog = [
     ...officialEvents.map((event) => ({
       eventId: event.id,
@@ -478,7 +486,7 @@ function rankEventCandidates(
       const eventTitle = normalizeForTitle(event.title.replace(/^\[시연용\]\s*/, ""));
       const lineScore = Math.max(
         0,
-        ...lines.map((line) => similarity(eventTitle, normalizeForTitle(line))),
+        ...searchableLines.map((line) => similarity(eventTitle, normalizeForTitle(line))),
       );
       const exactTitle = eventTitle.length >= 3 && normalizedText.includes(eventTitle);
       const venueMatch = Boolean(
