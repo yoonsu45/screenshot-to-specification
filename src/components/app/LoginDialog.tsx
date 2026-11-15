@@ -92,9 +92,9 @@ export function LoginDialog() {
           type="button"
           variant="outline"
           onClick={handleLogout}
-          className="h-12 rounded-full border-2 border-primary bg-background px-5 text-base font-extrabold text-primary hover:bg-secondary"
+          className="h-10 gap-1.5 rounded-full border border-primary bg-background px-3.5 text-sm font-extrabold text-primary hover:bg-secondary"
         >
-          <LogOut /> 로그아웃
+          <LogOut className="h-4 w-4" /> 로그아웃
         </Button>
       </div>
     );
