@@ -92,9 +92,9 @@ export function LoginDialog() {
           type="button"
           variant="outline"
           onClick={handleLogout}
-          className="h-10 gap-1.5 rounded-full border border-primary bg-background px-3.5 text-sm font-extrabold text-primary hover:bg-secondary"
+          className="h-9 gap-1 rounded-full border border-primary bg-background px-3 text-xs font-extrabold text-primary hover:bg-secondary"
         >
-          <LogOut className="h-4 w-4" /> 로그아웃
+          <LogOut className="h-3.5 w-3.5" /> 로그아웃
         </Button>
       </div>
     );
@@ -109,7 +109,7 @@ export function LoginDialog() {
         type="button"
         variant="outline"
         onClick={() => setAuthOpen(true)}
-        className="relative z-10 h-10 self-end rounded-full border border-primary bg-background px-5 text-sm font-extrabold text-primary hover:bg-secondary"
+        className="relative z-10 h-9 self-end rounded-full border border-primary bg-background px-4 text-xs font-extrabold text-primary hover:bg-secondary"
       >
         로그인
       </Button>

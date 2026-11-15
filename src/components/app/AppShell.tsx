@@ -40,11 +40,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="ml-auto flex items-center gap-2">
                 <Link
                   to="/plan"
-                  className="inline-flex h-10 items-center gap-1.5 rounded-full border border-primary bg-background px-2.5 text-sm font-extrabold text-primary hover:bg-secondary sm:px-3.5"
+                  className="inline-flex h-9 items-center gap-1 rounded-full border border-primary bg-background px-2.5 text-xs font-extrabold text-primary hover:bg-secondary sm:px-3"
                 >
-                  <CalendarCheck className="h-4 w-4" />
-                  <span className="sm:hidden">계획</span>
-                  <span className="hidden sm:inline">내 계획</span>
+                  <CalendarCheck className="h-3.5 w-3.5" />
+                  내 계획
                 </Link>
                 <LoginDialog />
               </div>
