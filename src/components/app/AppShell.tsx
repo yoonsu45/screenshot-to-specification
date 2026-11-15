@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Camera } from "lucide-react";
+import { CalendarCheck, Camera } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 import { BottomTabBar } from "./BottomTabBar";
 import { CheckSheet } from "./CheckSheet";
@@ -19,7 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <BrandMark className="text-3xl" />
         </Link>
         <button onClick={() => setCheckOpen(true)} className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 font-bold text-primary-foreground shadow-fab hover:opacity-95">
-          <Camera className="h-5 w-5" /> 행사 확인
+          <Camera className="h-5 w-5" /> 행사 검색
         </button>
         <nav className="flex flex-col gap-1">
           {navItems.map((n) => (
@@ -37,7 +37,17 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link to="/" className="lg:hidden" aria-label="홈으로 이동">
                 <BrandMark className="text-[2.15rem] sm:text-4xl" />
               </Link>
-              <div className="ml-auto"><LoginDialog /></div>
+              <div className="ml-auto flex items-center gap-2">
+                <Link
+                  to="/plan"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-full border border-primary bg-background px-2.5 text-sm font-extrabold text-primary hover:bg-secondary sm:px-3.5"
+                >
+                  <CalendarCheck className="h-4 w-4" />
+                  <span className="sm:hidden">계획</span>
+                  <span className="hidden sm:inline">내 계획</span>
+                </Link>
+                <LoginDialog />
+              </div>
             </div>
           </header>
           {children}

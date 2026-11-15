@@ -315,7 +315,7 @@ export function Plan() {
             </p>
             {plannedEvents.length === 0 && (
               <Link
-                to="/"
+                to="/events"
                 className="mt-3 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-extrabold text-primary-foreground"
               >
                 행사 둘러보기

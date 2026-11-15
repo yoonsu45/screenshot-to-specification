@@ -19,12 +19,12 @@ export function BottomTabBar({ onCheck }: { onCheck: () => void }) {
       <div className="mx-auto flex h-[5.35rem] max-w-2xl items-end px-1.5">
         <Tab item={a} />
         <Tab item={b} />
-        <button onClick={onCheck} className="flex flex-1 flex-col items-center gap-1 pb-3 text-xs font-extrabold text-primary sm:text-sm" aria-label="행사 확인">
+        <button onClick={onCheck} className="flex flex-1 flex-col items-center gap-1 pb-3 text-xs font-extrabold text-primary sm:text-sm" aria-label="행사 검색">
           <span className="relative -mt-9 grid h-[4.6rem] w-[4.6rem] place-items-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-fab">
             <Camera className="h-8 w-8" />
             <span className="pointer-events-none absolute h-2.5 w-2.5 rounded-full border-2 border-brand-orange" />
           </span>
-          행사 확인
+          행사 검색
         </button>
         <Tab item={c} />
         <Tab item={d} />

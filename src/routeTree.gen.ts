@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CheckRouteImport } from './routes/check'
 import { Route as DirectionsRouteImport } from './routes/directions'
+import { Route as EventsRouteImport } from './routes/events'
 import { Route as NearbyRouteImport } from './routes/nearby'
 import { Route as PlanRouteImport } from './routes/plan'
 import { Route as ResultRouteImport } from './routes/result'
@@ -29,6 +30,11 @@ const CheckRoute = CheckRouteImport.update({
 const DirectionsRoute = DirectionsRouteImport.update({
   id: '/directions',
   path: '/directions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsRoute = EventsRouteImport.update({
+  id: '/events',
+  path: '/events',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NearbyRoute = NearbyRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/directions': typeof DirectionsRoute
+  '/events': typeof EventsRoute
   '/nearby': typeof NearbyRoute
   '/plan': typeof PlanRoute
   '/result': typeof ResultRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/directions': typeof DirectionsRoute
+  '/events': typeof EventsRoute
   '/nearby': typeof NearbyRoute
   '/plan': typeof PlanRoute
   '/result': typeof ResultRoute
@@ -68,20 +76,24 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/directions': typeof DirectionsRoute
+  '/events': typeof EventsRoute
   '/nearby': typeof NearbyRoute
   '/plan': typeof PlanRoute
   '/result': typeof ResultRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/check' | '/directions' | '/nearby' | '/plan' | '/result'
+  fullPaths:
+    '/' | '/check' | '/directions' | '/events' | '/nearby' | '/plan' | '/result'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/check' | '/directions' | '/nearby' | '/plan' | '/result'
+  to:
+    '/' | '/check' | '/directions' | '/events' | '/nearby' | '/plan' | '/result'
   id:
     | '__root__'
     | '/'
     | '/check'
     | '/directions'
+    | '/events'
     | '/nearby'
     | '/plan'
     | '/result'
@@ -91,6 +103,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CheckRoute: typeof CheckRoute
   DirectionsRoute: typeof DirectionsRoute
+  EventsRoute: typeof EventsRoute
   NearbyRoute: typeof NearbyRoute
   PlanRoute: typeof PlanRoute
   ResultRoute: typeof ResultRoute
@@ -117,6 +130,13 @@ declare module '@tanstack/react-router' {
       path: '/directions'
       fullPath: '/directions'
       preLoaderRoute: typeof DirectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events': {
+      id: '/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nearby': {
@@ -147,6 +167,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CheckRoute: CheckRoute,
   DirectionsRoute: DirectionsRoute,
+  EventsRoute: EventsRoute,
   NearbyRoute: NearbyRoute,
   PlanRoute: PlanRoute,
   ResultRoute: ResultRoute,
