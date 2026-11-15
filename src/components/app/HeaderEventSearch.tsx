@@ -93,8 +93,11 @@ export function HeaderEventSearch() {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-xl overflow-hidden rounded-2xl p-0 sm:max-h-[90dvh] sm:w-full">
-          <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 pt-12 sm:max-h-[90dvh] sm:p-6 sm:pt-10">
+        <DialogContent
+          className="top-2 max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-xl translate-y-0 overflow-hidden rounded-2xl p-0 sm:top-1/2 sm:max-h-[90dvh] sm:w-full sm:-translate-y-1/2"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
+          <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain p-4 pt-12 sm:max-h-[90dvh] sm:p-6 sm:pt-10">
             <DialogHeader>
               <DialogTitle className="text-left text-xl font-black text-primary">행사 검색</DialogTitle>
               <DialogDescription className="text-left">
