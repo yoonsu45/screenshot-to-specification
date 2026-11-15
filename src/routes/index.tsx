@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   CalendarDays,
@@ -9,6 +9,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { events } from "@/data/events";
+import { olympicParkVenueDestinations } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
 import { formatRange } from "@/lib/event-service";
 import { officialEvents } from "@/lib/official-data";
@@ -19,12 +20,12 @@ export const Route = createFileRoute("/")({
       { title: "The:Check" },
       {
         name: "description",
-        content: "이번 달 행사와 담기 인기 순위, 장소별 인기 순위를 확인하세요.",
+        content: "이번 달 행사와 공연장별 인기 행사를 확인하세요.",
       },
       { property: "og:title", content: "The:Check — 올림픽공원 행사 홈" },
       {
         property: "og:description",
-        content: "이번 달 행사와 인기 행사, 인기 장소를 한눈에 확인하세요.",
+        content: "이번 달 행사와 공연장별 인기 행사를 한눈에 확인하세요.",
       },
     ],
   }),
@@ -38,6 +39,33 @@ type RankedEvent = {
   count: number;
   demo: boolean;
 };
+
+const venueOptions = olympicParkVenueDestinations.map((venue) => venue.name);
+const venueOptionSet = new Set<string>(venueOptions);
+
+function canonicalVenue(value: string) {
+  if (/뮤즈라이브/.test(value)) return "뮤즈라이브";
+  if (/KSPO\s?DOME|체조경기장|케이스포돔/i.test(value)) return "KSPO DOME";
+  if (/핸드볼경기장/.test(value)) return "핸드볼경기장";
+  if (/우리금융아트홀|역도경기장/.test(value)) return "우리금융아트홀";
+  if (/K-아트홀|케이아트홀/i.test(value)) return "K-아트홀";
+  if (/올림픽홀/.test(value)) return "올림픽홀";
+  if (/88잔디마당/.test(value)) return "88잔디마당";
+  if (/평화의광장/.test(value)) return "평화의광장";
+  return value;
+}
+
+function rankEvents(catalog: RankedEvent[]) {
+  return catalog
+    .slice()
+    .sort(
+      (left, right) =>
+        right.count - left.count ||
+        Number(right.demo) - Number(left.demo) ||
+        left.title.localeCompare(right.title, "ko"),
+    )
+    .slice(0, 5);
+}
 
 export function getMonthlyDemoEvents(referenceDate: Date) {
   const year = referenceDate.getFullYear();
@@ -54,46 +82,35 @@ export function buildHomeRankings(eventSaveCounts: Record<string, number>) {
     ...events.map((event) => ({
       id: event.id,
       title: event.title,
-      venue: event.venue,
+      venue: canonicalVenue(event.venue),
       count: eventSaveCounts[event.id] ?? 0,
       demo: true,
     })),
     ...officialEvents.map((event) => ({
       id: event.id,
       title: event.title,
-      venue: event.venue || "장소 확인 불가",
+      venue: canonicalVenue(event.venue || "장소 확인 불가"),
       count: eventSaveCounts[event.id] ?? 0,
       demo: false,
     })),
-  ];
-  const popular = catalog
-    .slice()
-    .sort(
-      (left, right) =>
-        right.count - left.count ||
-        Number(right.demo) - Number(left.demo) ||
-        left.title.localeCompare(right.title, "ko"),
-    )
-    .slice(0, 5);
-  const venueTotals = new Map<string, number>();
-  for (const event of catalog) {
-    if (event.venue === "장소 확인 불가") continue;
-    venueTotals.set(event.venue, (venueTotals.get(event.venue) ?? 0) + event.count);
-  }
-  const venues = [...venueTotals]
-    .map(([venue, count]) => ({ venue, count }))
-    .sort(
-      (left, right) =>
-        right.count - left.count || left.venue.localeCompare(right.venue, "ko"),
-    )
-    .slice(0, 5);
-  return { popular, venues };
+  ].filter((event) => venueOptionSet.has(event.venue));
+  return {
+    popular: rankEvents(catalog),
+    byVenue: Object.fromEntries(
+      venueOptions.map((venue) => [
+        venue,
+        rankEvents(catalog.filter((event) => event.venue === venue)),
+      ]),
+    ) as Record<string, RankedEvent[]>,
+  };
 }
 
 function HomePage() {
   const { eventSaveCounts } = useAppStore();
   const today = useMemo(() => new Date(), []);
   const [slide, setSlide] = useState(0);
+  const [selectedVenue, setSelectedVenue] = useState("전체");
+  const dragStartX = useRef<number | null>(null);
   const monthlyEvents = useMemo(() => getMonthlyDemoEvents(today), [today]);
 
   useEffect(() => {
@@ -106,12 +123,28 @@ function HomePage() {
   }, [monthlyEvents.length]);
 
   const rankings = useMemo(() => buildHomeRankings(eventSaveCounts), [eventSaveCounts]);
+  const visibleRanking =
+    selectedVenue === "전체" ? rankings.popular : (rankings.byVenue[selectedVenue] ?? []);
 
   const activeEvent = monthlyEvents[slide % Math.max(1, monthlyEvents.length)];
 
   function moveSlide(offset: number) {
     if (!monthlyEvents.length) return;
     setSlide((current) => (current + offset + monthlyEvents.length) % monthlyEvents.length);
+  }
+
+  function startSwipe(event: React.PointerEvent<HTMLDivElement>) {
+    if ((event.target as HTMLElement).closest("button, a")) return;
+    dragStartX.current = event.clientX;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function finishSwipe(event: React.PointerEvent<HTMLDivElement>) {
+    if (dragStartX.current === null) return;
+    const distance = event.clientX - dragStartX.current;
+    dragStartX.current = null;
+    if (Math.abs(distance) < 45) return;
+    moveSlide(distance < 0 ? 1 : -1);
   }
 
   return (
@@ -132,11 +165,19 @@ function HomePage() {
         </div>
 
         {activeEvent ? (
-          <div className="relative overflow-hidden rounded-[2rem] bg-primary shadow-card">
+          <div
+            className="relative touch-pan-y select-none overflow-hidden rounded-[2rem] bg-primary shadow-card sm:cursor-grab sm:active:cursor-grabbing"
+            onPointerDown={startSwipe}
+            onPointerUp={finishSwipe}
+            onPointerCancel={() => {
+              dragStartX.current = null;
+            }}
+          >
             <img
               key={activeEvent.id}
               src={activeEvent.image}
               alt={`${activeEvent.title} 포스터`}
+              draggable={false}
               className="h-72 w-full object-cover sm:h-96"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/20 to-transparent" />
@@ -183,7 +224,7 @@ function HomePage() {
           </div>
         )}
         {monthlyEvents.length > 1 && (
-          <div className="mt-3 flex justify-center gap-2" aria-label="포스터 위치">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2" aria-label="포스터 위치">
             {monthlyEvents.map((event, index) => (
               <button
                 key={event.id}
@@ -193,12 +234,33 @@ function HomePage() {
                 className={`h-2.5 rounded-full transition-all ${index === slide ? "w-7 bg-primary" : "w-2.5 bg-border"}`}
               />
             ))}
+            <span className="ml-1 text-xs font-semibold text-muted-foreground">
+              좌우로 밀어 넘기기
+            </span>
           </div>
         )}
       </section>
 
-      <RankingSection title="인기 행사" icon={<Flame className="h-6 w-6" />}>
-        {rankings.popular.map((event, index) => (
+      <RankingSection
+        title="인기 행사"
+        icon={<Flame className="h-6 w-6" />}
+        controls={
+          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0">
+            {["전체", ...venueOptions].map((venue) => (
+              <button
+                key={venue}
+                type="button"
+                aria-pressed={selectedVenue === venue}
+                onClick={() => setSelectedVenue(venue)}
+                className={`shrink-0 rounded-full border px-4 py-2 text-sm font-extrabold ${selectedVenue === venue ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-primary"}`}
+              >
+                {venue}
+              </button>
+            ))}
+          </div>
+        }
+      >
+        {visibleRanking.map((event, index) => (
           <li key={event.id} className="flex min-w-0 items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
             <RankNumber value={index + 1} />
             <div className="min-w-0 flex-1">
@@ -210,18 +272,11 @@ function HomePage() {
             </span>
           </li>
         ))}
-      </RankingSection>
-
-      <RankingSection title="장소별 인기 순위" icon={<MapPin className="h-6 w-6" />}>
-        {rankings.venues.map((venue, index) => (
-          <li key={venue.venue} className="flex min-w-0 items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
-            <RankNumber value={index + 1} />
-            <p className="min-w-0 flex-1 truncate font-black text-primary">{venue.venue}</p>
-            <span className="shrink-0 text-sm font-extrabold text-brand-orange">
-              {venue.count.toLocaleString("ko-KR")}회 담김
-            </span>
+        {visibleRanking.length === 0 && (
+          <li className="rounded-2xl border border-dashed border-border bg-card px-5 py-8 text-center text-muted-foreground">
+            이 장소의 등록된 행사가 없어요.
           </li>
-        ))}
+        )}
       </RankingSection>
     </div>
   );
@@ -230,10 +285,12 @@ function HomePage() {
 function RankingSection({
   title,
   icon,
+  controls,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
+  controls?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -242,6 +299,7 @@ function RankingSection({
         <span className="text-brand-orange">{icon}</span>
         <h2 className="text-2xl font-black">{title}</h2>
       </div>
+      {controls && <div className="mb-4">{controls}</div>}
       <ol className="space-y-3">{children}</ol>
     </section>
   );

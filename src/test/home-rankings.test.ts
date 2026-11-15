@@ -8,12 +8,13 @@ describe("홈 행사와 랭킹", () => {
     expect(november.map((event) => event.id)).not.toContain("kspo-winter");
   });
 
-  it("담기 수로 행사와 장소 순위를 계산한다", () => {
+  it("전체와 장소별 행사 순위를 담기 수로 계산한다", () => {
     const rankings = buildHomeRankings({
       "autumn-concert": 8,
       "demo-concert-2026": 3,
     });
     expect(rankings.popular[0]?.id).toBe("autumn-concert");
-    expect(rankings.venues[0]).toEqual({ venue: "88잔디마당", count: 8 });
+    expect(rankings.byVenue["88잔디마당"]?.[0]?.id).toBe("autumn-concert");
+    expect(rankings.byVenue["올림픽홀"]?.[0]?.id).toBe("demo-concert-2026");
   });
 });
