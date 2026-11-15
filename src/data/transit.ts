@@ -9,6 +9,17 @@ export type TransitGuide = {
   officialUrl: string;
 };
 
+export const olympicParkVenueDestinations = [
+  { id: "olympic-hall", name: "올림픽홀" },
+  { id: "kspo-dome", name: "KSPO DOME", keywords: ["체조경기장", "케이스포돔"] },
+  { id: "handball-arena", name: "핸드볼경기장", keywords: ["SK핸드볼경기장"] },
+  { id: "woori-art-hall", name: "우리금융아트홀", keywords: ["역도경기장"] },
+  { id: "k-art-hall", name: "K-아트홀", keywords: ["케이아트홀"] },
+  { id: "muse-live", name: "뮤즈라이브" },
+  { id: "88-lawn", name: "88잔디마당" },
+  { id: "peace-square", name: "평화의광장" },
+] as const;
+
 const PARK_GUIDE_URL = "https://www.ksponco.or.kr/olympicpark/";
 const PARK_ADDRESS = "서울 송파구 올림픽로 424";
 const PARK_PUBLIC_TRANSIT = [
@@ -37,7 +48,14 @@ export const transitGuides: TransitGuide[] = [
   },
   {
     anchor: "올림픽공원",
-    aliases: ["88잔디마당", "올림픽공원 산책로"],
+    aliases: [
+      "핸드볼경기장",
+      "우리금융아트홀",
+      "K-아트홀",
+      "뮤즈라이브",
+      "88잔디마당",
+      "올림픽공원 산책로",
+    ],
     address: PARK_ADDRESS,
     latitude: 37.5207,
     longitude: 127.1215,

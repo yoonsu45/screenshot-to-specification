@@ -13,11 +13,34 @@ type Props = {
   includeAll?: boolean;
   title?: string;
   description?: string;
+  items?: readonly PickerItem[];
+  searchPlaceholder?: string;
 };
 
-function PickerBody({ selectedId, onSelect, includeAll = true }: Pick<Props, "selectedId" | "onSelect" | "includeAll">) {
+export type PickerItem = {
+  id: string;
+  name: string;
+  keywords?: readonly string[];
+};
+
+function PickerBody({
+  selectedId,
+  onSelect,
+  includeAll = true,
+  items,
+  searchPlaceholder = "시설 이름 검색",
+}: Pick<Props, "selectedId" | "onSelect" | "includeAll" | "items" | "searchPlaceholder">) {
   const [q, setQ] = useState("");
-  const list = searchFacilities(q).filter((facility) => includeAll || facility.id !== ALL_FACILITIES_ID);
+  const normalizedQuery = q.trim().toLocaleLowerCase("ko-KR");
+  const list = items
+    ? items.filter((item) =>
+        [item.name, ...(item.keywords ?? [])].some((value) =>
+          value.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
+        ),
+      )
+    : searchFacilities(q).filter(
+        (facility) => includeAll || facility.id !== ALL_FACILITIES_ID,
+      );
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <label className="relative mb-3 block">
@@ -25,8 +48,8 @@ function PickerBody({ selectedId, onSelect, includeAll = true }: Pick<Props, "se
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="시설 이름 검색"
-          aria-label="시설 이름 검색"
+          placeholder={searchPlaceholder}
+          aria-label={searchPlaceholder}
           className="h-12 w-full rounded-full border border-input bg-card pl-12 pr-4 text-base outline-none focus:ring-2 focus:ring-ring"
         />
       </label>

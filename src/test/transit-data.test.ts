@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { transitGuides } from "@/data/transit";
+import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
 
 describe("교통 안내 데이터", () => {
   it("모든 시설의 교통·주차 항목을 화면에서 읽을 수 있다", () => {
@@ -12,6 +12,29 @@ describe("교통 안내 데이터", () => {
         }
       }
       expect(guide.car.some((item) => item.title === "행사일 혼잡 안내")).toBe(false);
+    }
+  });
+
+  it("도착지 선택에는 올림픽공원 공연장만 표시한다", () => {
+    expect(olympicParkVenueDestinations.map((destination) => destination.name)).toEqual([
+      "올림픽홀",
+      "KSPO DOME",
+      "핸드볼경기장",
+      "우리금융아트홀",
+      "K-아트홀",
+      "뮤즈라이브",
+      "88잔디마당",
+      "평화의광장",
+    ]);
+
+    for (const destination of olympicParkVenueDestinations) {
+      expect(
+        transitGuides.some(
+          (guide) =>
+            guide.anchor === destination.name || guide.aliases?.includes(destination.name),
+        ),
+        `${destination.name}의 교통 안내`,
+      ).toBe(true);
     }
   });
 });

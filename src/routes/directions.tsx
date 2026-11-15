@@ -3,9 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Car, ChevronDown, ExternalLink, MapPinned, Navigation, TrainFront } from "lucide-react";
 import { FacilityPicker } from "@/components/app/FacilityPicker";
 import { ParkingEventGuide } from "@/components/app/ParkingEventGuide";
-import { transitGuides } from "@/data/transit";
+import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
-import { resolveAnchor } from "@/lib/anchor";
 
 export const Route = createFileRoute("/directions")({
   head: () => ({
@@ -26,8 +25,11 @@ export const Route = createFileRoute("/directions")({
 });
 
 function Directions() {
-  const { anchor, facilityId, setAnchor, setFacilityId } = useAppStore();
-  const base = resolveAnchor(anchor, facilityId);
+  const { anchor, setAnchor, setFacilityId } = useAppStore();
+  const selectedDestination = olympicParkVenueDestinations.find(
+    (destination) => destination.name === anchor,
+  );
+  const base = selectedDestination?.name ?? "올림픽홀";
   const [mode, setMode] = useState<"public" | "car">("public");
   const [pickerOpen, setPickerOpen] = useState(false);
   const guide = transitGuides.find((g) => g.anchor === base || g.aliases?.includes(base));
@@ -129,13 +131,16 @@ function Directions() {
       <FacilityPicker
         open={pickerOpen}
         onOpenChange={setPickerOpen}
-        selectedId={facilityId}
-        includeAll={false}
-        title="도착지 선택"
-        description="지도와 교통 안내를 확인할 시설을 고르세요"
+        selectedId={selectedDestination?.id ?? "olympic-hall"}
+        items={olympicParkVenueDestinations}
+        searchPlaceholder="공연장 이름 검색"
+        title="도착 공연장 선택"
+        description="올림픽공원 안의 공연장을 고르세요"
         onSelect={(id) => {
-          setFacilityId(id);
-          setAnchor(null);
+          const destination = olympicParkVenueDestinations.find((item) => item.id === id);
+          if (!destination) return;
+          setFacilityId("olympic-park");
+          setAnchor(destination.name);
           setMode("public");
           setPickerOpen(false);
         }}

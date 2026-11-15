@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bookmark, CalendarDays, MapPin, Plus, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
@@ -14,7 +14,6 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { useAppStore } from "@/lib/app-store";
 import { searchOfficialEvents } from "@/lib/event-service";
-import { getFacility } from "@/data/facilities";
 import { officialRecordSource } from "@/lib/official-data";
 
 const PAGE_SIZE = 20;
@@ -29,7 +28,7 @@ export function OfficialEventBrowser() {
     ReturnType<typeof searchOfficialEvents>[number] | null
   >(null);
   const [pending, setPending] = useState(false);
-  const { facilityId, setDraft, plan, addPlan, removePlan, requireAuth, eventSaveCounts } =
+  const { setDraft, plan, addPlan, removePlan, requireAuth, eventSaveCounts } =
     useAppStore();
   async function toggleSave(event: ReturnType<typeof searchOfficialEvents>[number]) {
     if (pending || !requireAuth()) return;
@@ -43,22 +42,8 @@ export function OfficialEventBrowser() {
       }
     } else setSavingEvent(event);
   }
-  useEffect(() => {
-    setPage(0);
-  }, [facilityId]);
   const navigate = useNavigate();
   const matches = searchOfficialEvents(query)
-    .filter((event) => {
-      if (facilityId === "all") return true;
-      if (facilityId === "olympic-park")
-        return Boolean(
-          event.venue &&
-          /올림픽홀|KSPO\s?DOME|체조경기장|핸드볼경기장|뮤즈라이브|우리금융아트홀|K-아트홀|88잔디마당|평화의광장|소마미술관/.test(
-            event.venue,
-          ),
-        );
-      return event.venue === getFacility(facilityId)?.name;
-    })
     .sort(
       (left, right) =>
         Number(Boolean(getOfficialPoster(right.id))) - Number(Boolean(getOfficialPoster(left.id))),
@@ -74,14 +59,6 @@ export function OfficialEventBrowser() {
           공식 행사 정보
         </h1>
         <span className="mt-3 block h-1.5 w-10 rounded-full bg-brand-orange" />
-        <p className="mt-2 text-sm text-muted-foreground">
-          공식 공연정보 API와 공연 포스터 파일데이터를 함께 제공합니다. 과거 기록을 포함하며,
-          실시간으로 갱신되는 최신 일정은 아닙니다.
-        </p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          선택한 시설의 행사 정보를 확인하세요. 개최일이 없는 자료는 날짜 확인 불가로 표시합니다.
-          분류와 포스터가 제공되지 않은 자료는 임의로 채우지 않습니다.
-        </p>
       </div>
       <label className="block">
         <span className="sr-only">공식 행사명·장소 검색</span>
