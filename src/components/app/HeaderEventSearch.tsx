@@ -187,6 +187,30 @@ export function HeaderEventSearch() {
 
             {!submittedQuery && !selectedEvent && (
               <>
+                <section className="mt-6" aria-labelledby="recent-search-title">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 id="recent-search-title" className="flex items-center gap-2 font-extrabold text-primary">
+                      <Clock3 className="h-4 w-4" /> 최근 검색어
+                    </h2>
+                    {recentSearches.length > 0 && (
+                      <button type="button" onClick={clearRecentSearches} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
+                        <Trash2 className="h-3.5 w-3.5" /> 전체 삭제
+                      </button>
+                    )}
+                  </div>
+                  {recentSearches.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {recentSearches.map((term) => (
+                        <button key={term} type="button" onClick={() => search(term)} className="rounded-full bg-secondary px-3 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-primary-foreground">
+                          {term}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 rounded-xl bg-muted/60 p-4 text-sm text-muted-foreground">최근 검색한 행사가 없습니다.</p>
+                  )}
+                </section>
+
                 <section className="mt-6" aria-labelledby="popular-search-title">
                   <h2 id="popular-search-title" className="flex items-center gap-2 font-extrabold text-primary">
                     <Flame className="h-4 w-4 text-brand-orange" /> 지금 많이 검색하는 행사
@@ -221,30 +245,6 @@ export function HeaderEventSearch() {
                       검색 데이터가 쌓이면 최근 7일 인기 행사가 표시됩니다.
                     </p>
                   )}
-                </section>
-
-                <section className="mt-6" aria-labelledby="recent-search-title">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 id="recent-search-title" className="flex items-center gap-2 font-extrabold text-primary">
-                    <Clock3 className="h-4 w-4" /> 최근 검색어
-                  </h2>
-                  {recentSearches.length > 0 && (
-                    <button type="button" onClick={clearRecentSearches} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
-                      <Trash2 className="h-3.5 w-3.5" /> 전체 삭제
-                    </button>
-                  )}
-                </div>
-                {recentSearches.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {recentSearches.map((term) => (
-                      <button key={term} type="button" onClick={() => search(term)} className="rounded-full bg-secondary px-3 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-primary-foreground">
-                        {term}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 rounded-xl bg-muted/60 p-4 text-sm text-muted-foreground">최근 검색한 행사가 없습니다.</p>
-                )}
                 </section>
               </>
             )}
