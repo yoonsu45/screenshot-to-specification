@@ -90,6 +90,11 @@ export function HeaderEventSearch() {
     setSelectedEvent(null);
   }
 
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) resetSearch();
+  }
+
   return (
     <>
       <button
@@ -101,7 +106,7 @@ export function HeaderEventSearch() {
         <Search className="h-4 w-4" />
       </button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
           className="top-2 max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-xl translate-y-0 overflow-hidden rounded-2xl p-0 sm:top-1/2 sm:max-h-[90dvh] sm:w-full sm:-translate-y-1/2"
           onOpenAutoFocus={(event) => event.preventDefault()}
