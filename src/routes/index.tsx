@@ -42,22 +42,29 @@ function Home() {
       <button
         type="button"
         onClick={() => setCheckOpen(true)}
-        className="group mb-9 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[2rem] bg-[linear-gradient(115deg,#edf4ff_0%,#e7effc_100%)] px-6 py-7 text-left transition hover:-translate-y-0.5 hover:shadow-card sm:px-8 sm:py-8"
+        aria-label="캡처 이미지를 올려 행사 바로 확인하기"
+        className="group mb-9 flex w-full items-center justify-between gap-3 overflow-hidden rounded-[2rem] bg-[linear-gradient(115deg,#edf4ff_0%,#e7effc_100%)] px-5 py-6 text-left transition hover:-translate-y-0.5 hover:shadow-card active:scale-[0.99] sm:gap-4 sm:px-8 sm:py-8"
       >
         <span className="min-w-0">
           <span className="block text-2xl font-black text-primary sm:text-3xl">
             캡처로 행사 확인
           </span>
-          <span className="mt-2 block text-sm font-medium text-primary/90 sm:text-lg">
-            SNS에서 본 행사, 공식 일정과 비교해요
+          <span className="mt-2 block text-sm font-medium leading-relaxed text-primary/90 sm:text-lg">
+            <span className="block">SNS에서 본 행사,</span>
+            <span className="block">공식 일정과 비교해요</span>
           </span>
         </span>
-        <span className="flex shrink-0 items-center gap-3 text-primary">
-          <span className="relative grid h-16 w-16 place-items-center sm:h-20 sm:w-20">
-            <ScanLine className="absolute h-full w-full stroke-[1.5]" />
-            <Camera className="h-8 w-8 sm:h-10 sm:w-10" />
+        <span className="flex shrink-0 flex-col items-center gap-1.5 text-primary">
+          <span className="flex items-center gap-1.5 sm:gap-3">
+            <span className="relative grid h-14 w-14 place-items-center sm:h-20 sm:w-20">
+              <ScanLine className="absolute h-full w-full stroke-[1.5]" />
+              <Camera className="h-7 w-7 sm:h-10 sm:w-10" />
+            </span>
+            <ArrowRight className="h-7 w-7 text-brand-orange transition group-hover:translate-x-1 sm:h-8 sm:w-8" />
           </span>
-          <ArrowRight className="h-8 w-8 text-brand-orange transition group-hover:translate-x-1" />
+          <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-extrabold text-primary-foreground sm:text-xs">
+            눌러서 바로 확인
+          </span>
         </span>
       </button>
 
