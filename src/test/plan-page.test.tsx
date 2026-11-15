@@ -31,9 +31,9 @@ describe("내 방문 계획", () => {
   it("연월 이동, 월 전체 보기, 행사 상세와 공식 홈페이지 연결을 제공한다", () => {
     render(<Plan />);
 
-    fireEvent.change(screen.getByLabelText("연도"), { target: { value: "2026" } });
-    fireEvent.change(screen.getByLabelText("월"), { target: { value: "12" } });
-    fireEvent.click(screen.getByRole("button", { name: "이동" }));
+    fireEvent.change(screen.getByLabelText("연도와 월 선택"), {
+      target: { value: "2026-12" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "이달 전체" }));
 
     expect(screen.getByText("2026년 12월 전체 일정")).toBeInTheDocument();

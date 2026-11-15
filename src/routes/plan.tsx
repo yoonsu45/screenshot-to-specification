@@ -53,8 +53,6 @@ export function Plan() {
   const today = useMemo(() => new Date(), []);
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(() => toDateKey(today));
-  const [yearInput, setYearInput] = useState(() => String(today.getFullYear()));
-  const [monthInput, setMonthInput] = useState(() => String(today.getMonth() + 1));
   const [listMode, setListMode] = useState<"day" | "month">("day");
   const [selectedEvent, setSelectedEvent] = useState<PlannedEvent | null>(null);
 
@@ -108,29 +106,24 @@ export function Plan() {
     const next = new Date(month.getFullYear(), month.getMonth() + offset, 1);
     setMonth(next);
     setSelectedDate(toDateKey(next));
-    setYearInput(String(next.getFullYear()));
-    setMonthInput(String(next.getMonth() + 1));
   }
 
   function goToday() {
     const now = new Date();
     setMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     setSelectedDate(toDateKey(now));
-    setYearInput(String(now.getFullYear()));
-    setMonthInput(String(now.getMonth() + 1));
   }
 
-  function goToMonth() {
-    const requestedYear = Number.parseInt(yearInput, 10);
-    const requestedMonth = Number.parseInt(monthInput, 10);
+  function goToMonth(value: string) {
+    const [yearPart, monthPart] = value.split("-");
+    const requestedYear = Number.parseInt(yearPart ?? "", 10);
+    const requestedMonth = Number.parseInt(monthPart ?? "", 10);
     if (!Number.isFinite(requestedYear) || !Number.isFinite(requestedMonth)) return;
     const safeYear = Math.min(2100, Math.max(2000, requestedYear));
     const safeMonth = Math.min(12, Math.max(1, requestedMonth));
     const next = new Date(safeYear, safeMonth - 1, 1);
     setMonth(next);
     setSelectedDate(toDateKey(next));
-    setYearInput(String(safeYear));
-    setMonthInput(String(safeMonth));
   }
 
   if (!authLoaded) {
@@ -188,9 +181,17 @@ export function Plan() {
             <ChevronLeft className="h-6 w-6" />
           </button>
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-black text-primary sm:text-2xl">
-              {month.getFullYear()}년 {month.getMonth() + 1}월
-            </h2>
+            <label className="relative">
+              <span className="sr-only">연도와 월 선택</span>
+              <input
+                type="month"
+                min="2000-01"
+                max="2100-12"
+                value={toMonthKey(month)}
+                onChange={(event) => goToMonth(event.target.value)}
+                className="h-10 w-[9.5rem] rounded-xl border border-border bg-background px-2 text-base font-black text-primary sm:w-44 sm:px-3 sm:text-xl"
+              />
+            </label>
             <button
               type="button"
               onClick={goToday}
@@ -208,47 +209,6 @@ export function Plan() {
             <ChevronRight className="h-6 w-6" />
           </button>
         </div>
-
-        <form
-          className="flex flex-wrap items-end justify-center gap-2 border-t border-border px-4 py-3 sm:px-6"
-          onSubmit={(event) => {
-            event.preventDefault();
-            goToMonth();
-          }}
-        >
-          <label className="grid gap-1 text-xs font-bold text-muted-foreground">
-            연도
-            <input
-              type="number"
-              inputMode="numeric"
-              min={2000}
-              max={2100}
-              value={yearInput}
-              onChange={(event) => setYearInput(event.target.value)}
-              className="h-10 w-24 rounded-xl border border-input bg-background px-3 text-center text-sm font-bold text-foreground"
-            />
-          </label>
-          <label className="grid gap-1 text-xs font-bold text-muted-foreground">
-            월
-            <select
-              value={monthInput}
-              onChange={(event) => setMonthInput(event.target.value)}
-              className="h-10 w-20 rounded-xl border border-input bg-background px-3 text-sm font-bold text-foreground"
-            >
-              {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => (
-                <option key={value} value={value}>
-                  {value}월
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="submit"
-            className="h-10 rounded-xl bg-primary px-4 text-sm font-extrabold text-primary-foreground"
-          >
-            이동
-          </button>
-        </form>
 
         <div className="grid grid-cols-7 border-y border-border bg-secondary/70 text-center text-xs font-extrabold text-muted-foreground sm:text-sm">
           {WEEKDAYS.map((day, index) => (
@@ -545,6 +505,10 @@ function buildCalendarDays(month: Date) {
 
 function toDateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function toMonthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function isDateInRange(date: string, startDate: string, endDate: string) {
