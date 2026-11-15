@@ -4,15 +4,26 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   Flame,
   MapPin,
+  Ticket,
   UsersRound,
 } from "lucide-react";
-import { events } from "@/data/events";
+import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { events, type ParkEvent } from "@/data/events";
 import { olympicParkVenueDestinations } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
 import { formatRange } from "@/lib/event-service";
-import { officialEvents } from "@/lib/official-data";
+import { officialEvents, officialRecordSource, type OfficialRecord } from "@/lib/official-data";
+import { getOfficialSchedule } from "@/lib/official-posters";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -113,7 +124,9 @@ function HomePage() {
   const today = useMemo(() => new Date(), []);
   const [slide, setSlide] = useState(0);
   const [selectedVenue, setSelectedVenue] = useState("전체");
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const dragStartX = useRef<number | null>(null);
+  const suppressPosterClick = useRef(false);
   const monthlyEvents = useMemo(() => getMonthlyDemoEvents(today), [today]);
 
   useEffect(() => {
@@ -138,6 +151,7 @@ function HomePage() {
 
   function startSwipe(event: React.PointerEvent<HTMLDivElement>) {
     if ((event.target as HTMLElement).closest("button, a")) return;
+    suppressPosterClick.current = false;
     dragStartX.current = event.clientX;
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -147,7 +161,17 @@ function HomePage() {
     const distance = event.clientX - dragStartX.current;
     dragStartX.current = null;
     if (Math.abs(distance) < 45) return;
+    suppressPosterClick.current = true;
     moveSlide(distance < 0 ? 1 : -1);
+  }
+
+  function openPosterDetails(event: React.MouseEvent<HTMLDivElement>) {
+    if ((event.target as HTMLElement).closest("button, a")) return;
+    if (suppressPosterClick.current) {
+      suppressPosterClick.current = false;
+      return;
+    }
+    if (activeEvent) setSelectedEventId(activeEvent.id);
   }
 
   return (
@@ -172,9 +196,20 @@ function HomePage() {
             className="relative touch-pan-y select-none overflow-hidden rounded-[2rem] bg-primary shadow-card sm:cursor-grab sm:active:cursor-grabbing"
             onPointerDown={startSwipe}
             onPointerUp={finishSwipe}
+            onClick={openPosterDetails}
+            onKeyDown={(event) => {
+              if ((event.target as HTMLElement).closest("button, a")) return;
+              if ((event.key === "Enter" || event.key === " ") && activeEvent) {
+                event.preventDefault();
+                setSelectedEventId(activeEvent.id);
+              }
+            }}
             onPointerCancel={() => {
               dragStartX.current = null;
             }}
+            role="button"
+            tabIndex={0}
+            aria-label={`${activeEvent.title} 상세 정보 보기`}
           >
             <img
               key={activeEvent.id}
@@ -264,15 +299,22 @@ function HomePage() {
         }
       >
         {visibleRanking.map((event, index) => (
-          <li key={event.id} className="flex min-w-0 items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
-            <RankNumber value={index + 1} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-black text-primary">{event.title}</p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{event.venue}</p>
-            </div>
-            <span className="inline-flex shrink-0 items-center gap-1 text-sm font-extrabold text-brand-orange">
-              <UsersRound className="h-4 w-4" /> {event.count.toLocaleString("ko-KR")}명
-            </span>
+          <li key={event.id} className="overflow-hidden rounded-2xl bg-card shadow-card">
+            <button
+              type="button"
+              onClick={() => setSelectedEventId(event.id)}
+              aria-label={`${event.title} 상세 정보 보기`}
+              className="flex w-full min-w-0 items-center gap-3 p-4 text-left transition hover:bg-secondary/60 focus-visible:bg-secondary/60"
+            >
+              <RankNumber value={index + 1} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-black text-primary">{event.title}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{event.venue}</p>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 text-sm font-extrabold text-brand-orange">
+                <UsersRound className="h-4 w-4" /> {event.count.toLocaleString("ko-KR")}명
+              </span>
+            </button>
           </li>
         ))}
         {visibleRanking.length === 0 && (
@@ -281,7 +323,95 @@ function HomePage() {
           </li>
         )}
       </RankingSection>
+      <HomeEventDetails eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
     </div>
+  );
+}
+
+function HomeEventDetails({ eventId, onClose }: { eventId: string | null; onClose: () => void }) {
+  const demoEvent = eventId ? events.find((event) => event.id === eventId) : undefined;
+  const officialEvent = eventId
+    ? officialEvents.find((event) => event.id === eventId)
+    : undefined;
+
+  return (
+    <Dialog open={Boolean(eventId && (demoEvent || officialEvent))} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-md overflow-hidden rounded-2xl p-0 sm:max-h-[90dvh] sm:w-full">
+        <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 pt-12 sm:max-h-[90dvh] sm:p-6 sm:pt-10">
+          {demoEvent ? (
+            <DemoEventDetails event={demoEvent} />
+          ) : officialEvent ? (
+            <OfficialEventDetails event={officialEvent} />
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DemoEventDetails({ event }: { event: ParkEvent }) {
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="break-words pr-6 text-primary [overflow-wrap:anywhere]">
+          {event.title}
+        </DialogTitle>
+        <DialogDescription>{event.category} · {event.venue}</DialogDescription>
+      </DialogHeader>
+      <div className="mt-4 space-y-4">
+        <img src={event.image} alt={`${event.title} 포스터`} className="max-h-72 w-full rounded-xl object-cover" />
+        <div className="space-y-3 break-words rounded-xl bg-muted/50 p-4 text-sm [overflow-wrap:anywhere]">
+          <DetailLine icon={<CalendarDays className="h-4 w-4" />}>{formatRange(event)}</DetailLine>
+          {event.startTime && (
+            <DetailLine icon={<Clock3 className="h-4 w-4" />}>
+              {event.startTime}{event.endTime ? ` – ${event.endTime}` : ""}
+            </DetailLine>
+          )}
+          <DetailLine icon={<MapPin className="h-4 w-4" />}>
+            {event.venueDetail ?? event.venue}{event.address ? ` · ${event.address}` : ""}
+          </DetailLine>
+          {event.admission && (
+            <DetailLine icon={<Ticket className="h-4 w-4" />}>입장: {event.admission}</DetailLine>
+          )}
+          {event.description && <p className="leading-relaxed text-muted-foreground">{event.description}</p>}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function OfficialEventDetails({ event }: { event: OfficialRecord }) {
+  const schedule = getOfficialSchedule(event.id);
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="break-words pr-6 text-primary [overflow-wrap:anywhere]">
+          {event.title}
+        </DialogTitle>
+        <DialogDescription>행사 상세 정보</DialogDescription>
+      </DialogHeader>
+      <div className="mt-4 space-y-4">
+        <OfficialPosterImage eventId={event.id} title={event.title} className="max-h-72 min-h-40 w-full rounded-xl" />
+        <div className="space-y-3 break-words rounded-xl bg-muted/50 p-4 text-sm [overflow-wrap:anywhere]">
+          <DetailLine icon={<CalendarDays className="h-4 w-4" />}>
+            {schedule.raw || event.startDate || "날짜 확인 불가"}
+          </DetailLine>
+          <DetailLine icon={<MapPin className="h-4 w-4" />}>
+            {event.venue || "장소 확인 불가"}
+          </DetailLine>
+          <p className="text-xs text-muted-foreground">출처: {officialRecordSource(event.id)}</p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function DetailLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <p className="flex min-w-0 items-start gap-2">
+      <span className="mt-0.5 shrink-0 text-primary">{icon}</span>
+      <span className="min-w-0">{children}</span>
+    </p>
   );
 }
 
