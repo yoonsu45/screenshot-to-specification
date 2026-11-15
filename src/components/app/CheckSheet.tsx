@@ -1,10 +1,9 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronRight, ImageIcon, LoaderCircle, Pencil, Sparkles } from "lucide-react";
+import { ChevronRight, ImageIcon, LoaderCircle, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useAppStore } from "@/lib/app-store";
-import { EXAMPLE_CASE } from "@/lib/event-service";
 import { optimizeImage } from "@/lib/image-optimization";
 
 export function CheckSheet() {
@@ -93,17 +92,6 @@ export function CheckSheet() {
             }}
           />
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(EXAMPLE_CASE);
-            setCheckOpen(false);
-            navigate({ to: "/check" });
-          }}
-          className="mx-auto mt-4 flex items-center gap-1.5 text-sm font-semibold text-primary underline-offset-4 hover:underline"
-        >
-          <Sparkles className="h-4 w-4" /> 예시로 체험하기
-        </button>
         <input
           ref={fileRef}
           type="file"

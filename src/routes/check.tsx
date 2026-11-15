@@ -7,9 +7,16 @@ import {
   LoaderCircle,
   MapPin,
   Search,
-  Sparkles,
   WandSparkles,
 } from "lucide-react";
+import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { events, type ParkEvent } from "@/data/events";
 import { useAppStore } from "@/lib/app-store";
 import {
@@ -17,9 +24,10 @@ import {
   type BrowserOcrResult,
   type OcrConfidence,
 } from "@/lib/ocr-event-extraction";
-import { EXAMPLE_CASE, formatRange } from "@/lib/event-service";
+import { formatRange } from "@/lib/event-service";
 import { optimizeImage } from "@/lib/image-optimization";
-import { officialEvents } from "@/lib/official-data";
+import { officialEvents, officialRecordSource, type OfficialRecord } from "@/lib/official-data";
+import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 
 export const Route = createFileRoute("/check")({
   head: () => ({
@@ -54,6 +62,7 @@ function CheckPage() {
   const [analysis, setAnalysis] = useState<AnalysisState>({ status: "idle" });
   const [searchOpen, setSearchOpen] = useState(false);
   const [replacingImage, setReplacingImage] = useState(false);
+  const [selectedOfficialEvent, setSelectedOfficialEvent] = useState<OfficialRecord | null>(null);
   const replacementFileRef = useRef<HTMLInputElement>(null);
   const analyzedImage = useRef<string | null>(null);
   const analysisRequestId = useRef(0);
@@ -69,6 +78,31 @@ function CheckPage() {
           event.venue.toLocaleLowerCase("ko-KR").includes(query),
       )
       .slice(0, 6);
+  }, [form.title]);
+
+  const officialSearchResults = useMemo(() => {
+    const query = form.title.trim().toLocaleLowerCase("ko-KR");
+    if (!query) return [];
+
+    const matches = officialEvents.filter(
+      (event) =>
+        event.title.toLocaleLowerCase("ko-KR").includes(query) ||
+        event.venue?.toLocaleLowerCase("ko-KR").includes(query),
+    );
+    const preferredByTitle = new Map<string, OfficialRecord>();
+    matches.forEach((event) => {
+      const previous = preferredByTitle.get(event.title);
+      if (!previous || (!getOfficialPoster(previous.id) && getOfficialPoster(event.id))) {
+        preferredByTitle.set(event.title, event);
+      }
+    });
+    return [...preferredByTitle.values()]
+      .sort(
+        (left, right) =>
+          Number(Boolean(getOfficialPoster(right.id))) -
+          Number(Boolean(getOfficialPoster(left.id))),
+      )
+      .slice(0, 10);
   }, [form.title]);
 
   useEffect(() => {
@@ -157,6 +191,20 @@ function CheckPage() {
       date: candidate.date || current.date,
       venue: candidate.venue || current.venue,
     }));
+    setSearchOpen(false);
+    setError(false);
+  }
+
+  function selectOfficialRecord(event: OfficialRecord) {
+    const schedule = getOfficialSchedule(event.id);
+    setForm((current) => ({
+      ...current,
+      officialRecordId: event.id,
+      title: event.title,
+      date: event.startDate || (schedule.dates.length === 1 ? schedule.dates[0]! : current.date),
+      venue: event.venue || current.venue,
+    }));
+    setSelectedOfficialEvent(null);
     setSearchOpen(false);
     setError(false);
   }
@@ -291,32 +339,6 @@ function CheckPage() {
         </section>
       )}
 
-      <section className="mb-5 rounded-2xl border border-border bg-card p-4">
-        <h2 className="font-bold">공식 행사 자료 검색</h2>
-        <p className="text-xs text-muted-foreground">
-          행사명을 입력하면 공식 자료 후보가 표시됩니다. 날짜가 없는 자료는 확인 불가로 남습니다.
-        </p>
-        <ul className="mt-2 space-y-2">
-          {form.title.trim() &&
-            Array.from(new Set(officialEvents.map((event) => event.title)))
-              .filter((title) => title.toLowerCase().includes(form.title.trim().toLowerCase()))
-              .slice(0, 10)
-              .map((title) => (
-                <li key={title}>
-                  <button
-                    type="button"
-                    className="text-left text-sm font-semibold underline"
-                    onClick={() => {
-                      setForm((current) => ({ ...current, title, officialRecordId: undefined }));
-                      setError(false);
-                    }}
-                  >
-                    {title}
-                  </button>
-                </li>
-              ))}
-        </ul>
-      </section>
       {ocrResult && ocrResult.bookingDates.length > 0 && (
         <div className="mb-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <p className="font-extrabold">예매 관련 날짜는 행사일과 분리했어요</p>
@@ -344,9 +366,7 @@ function CheckPage() {
                 setSearchOpen(true);
               }}
               placeholder={
-                isCaptureMode
-                  ? "읽지 못한 경우 직접 입력해 주세요"
-                  : "공식 행사명 또는 시연 예시 검색"
+                isCaptureMode ? "읽지 못한 경우 직접 입력해 주세요" : "공식 행사명 또는 장소 검색"
               }
               autoComplete="off"
             />
@@ -408,35 +428,102 @@ function CheckPage() {
         </label>
       </div>
 
-      {ocrResult?.rawText && (
-        <details className="mt-4 rounded-2xl border border-border bg-card p-4 text-sm">
-          <summary className="cursor-pointer font-bold text-primary">OCR로 읽은 원문 보기</summary>
-          <pre className="mt-3 whitespace-pre-wrap break-words font-sans text-xs leading-5 text-muted-foreground">
-            {ocrResult.rawText}
-          </pre>
-        </details>
+      {form.title.trim() && (
+        <section className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-card">
+          <h2 className="font-extrabold text-primary">관련 공식 포스터</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            검색한 행사와 일치하는 공식 자료를 눌러 포스터와 상세 정보를 확인하세요.
+          </p>
+          {officialSearchResults.length > 0 ? (
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+              {officialSearchResults.map((event) => (
+                <li key={event.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOfficialEvent(event)}
+                    className="flex h-full w-full items-center gap-3 rounded-xl bg-secondary p-3 text-left transition hover:ring-2 hover:ring-ring"
+                  >
+                    <OfficialPosterImage
+                      eventId={event.id}
+                      title={event.title}
+                      className="h-24 w-20 shrink-0 rounded-lg"
+                    />
+                    <span className="min-w-0">
+                      <span className="line-clamp-2 block font-extrabold text-primary">
+                        {event.title}
+                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {event.venue || "장소 확인 불가"}
+                      </span>
+                      <span className="mt-2 block text-xs font-bold text-brand-orange">
+                        {getOfficialPoster(event.id) ? "포스터 보기" : "행사 정보 보기"}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 rounded-xl bg-secondary p-4 text-sm text-muted-foreground">
+              일치하는 공식 포스터 자료가 없어요. 행사명은 그대로 직접 입력할 수 있습니다.
+            </p>
+          )}
+        </section>
       )}
 
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-5">
         <button
           type="button"
           onClick={submit}
-          className="h-13 flex-1 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab"
+          className="h-13 w-full rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab"
         >
           출처를 구분해 비교하기
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            setForm({ ...EXAMPLE_CASE, image: form.image });
-            setError(false);
-            setSearchOpen(false);
-          }}
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-3.5 font-bold text-primary"
-        >
-          <Sparkles className="h-4 w-4" /> 예시로 체험하기
-        </button>
       </div>
+
+      <Dialog
+        open={Boolean(selectedOfficialEvent)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedOfficialEvent(null);
+        }}
+      >
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="pr-6 text-primary">{selectedOfficialEvent?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedOfficialEvent
+                ? officialRecordSource(selectedOfficialEvent.id)
+                : "공식 행사 정보"}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedOfficialEvent && (
+            <>
+              <OfficialPosterImage
+                key={selectedOfficialEvent.id}
+                eventId={selectedOfficialEvent.id}
+                title={selectedOfficialEvent.title}
+                className="max-h-[55vh] min-h-48 w-full rounded-xl"
+              />
+              <div className="space-y-1 rounded-xl bg-secondary p-4 text-sm">
+                <p>
+                  날짜:{" "}
+                  {getOfficialSchedule(selectedOfficialEvent.id).raw ||
+                    selectedOfficialEvent.startDate ||
+                    "확인 불가"}
+                </p>
+                <p>장소: {selectedOfficialEvent.venue || "확인 불가"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => selectOfficialRecord(selectedOfficialEvent)}
+                className="w-full rounded-xl bg-primary px-4 py-3 font-extrabold text-primary-foreground"
+              >
+                이 행사 선택
+              </button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -480,8 +567,8 @@ function AnalysisBanner({ state, onRetry }: { state: AnalysisState; onRetry: () 
             <div>
               <p className="font-extrabold">행사 정보를 확정하지 못했어요</p>
               <p className="mt-0.5 text-xs leading-5">
-                관련 없는 후보는 표시하지 않았어요. OCR 원문을 확인하거나 글자가 크게 보이도록
-                이미지를 잘라 다시 시도해 주세요.
+                관련 없는 후보는 표시하지 않았어요. 글자가 크게 보이도록 이미지를 잘라 다시
+                시도하거나 행사명을 직접 입력해 주세요.
               </p>
             </div>
           </div>
