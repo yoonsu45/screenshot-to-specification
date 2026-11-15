@@ -1,9 +1,10 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { CalendarDays, Clock3, MapPin, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, MapPin, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
 import { searchOfficialEvents } from "@/lib/event-service";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
+import type { OfficialRecord } from "@/lib/official-data";
 
 const RECENT_SEARCH_KEY = "the-check-recent-event-searches";
 const MAX_RECENT_SEARCHES = 6;
@@ -32,6 +33,7 @@ export function HeaderEventSearch() {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<OfficialRecord | null>(null);
 
   useEffect(() => {
     try {
@@ -68,6 +70,7 @@ export function HeaderEventSearch() {
     if (!term) return;
     setQuery(term);
     setSubmittedQuery(term);
+    setSelectedEvent(null);
     rememberSearch(term);
   }
 
@@ -79,6 +82,12 @@ export function HeaderEventSearch() {
   function clearRecentSearches() {
     setRecentSearches([]);
     localStorage.removeItem(RECENT_SEARCH_KEY);
+  }
+
+  function resetSearch() {
+    setQuery("");
+    setSubmittedQuery("");
+    setSelectedEvent(null);
   }
 
   return (
@@ -105,18 +114,30 @@ export function HeaderEventSearch() {
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="relative mt-5 flex gap-2">
-              <label htmlFor="header-event-search" className="sr-only">행사명 또는 장소 검색</label>
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                id="header-event-search"
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="행사명 또는 장소"
-                autoComplete="off"
-                className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background pl-10 pr-3 outline-none focus:border-primary"
-              />
+            <form onSubmit={handleSubmit} className="mt-5 flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <label htmlFor="header-event-search" className="sr-only">행사명 또는 장소 검색</label>
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  id="header-event-search"
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="행사명 또는 장소"
+                  autoComplete="off"
+                  className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-10 outline-none focus:border-primary"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={resetSearch}
+                    aria-label="검색 초기화"
+                    className="absolute right-2.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
               <button type="submit" className="h-11 shrink-0 rounded-xl bg-primary px-4 text-sm font-extrabold text-primary-foreground">
                 검색
               </button>
@@ -148,30 +169,40 @@ export function HeaderEventSearch() {
               </section>
             )}
 
-            {submittedQuery && (
+            {submittedQuery && !selectedEvent && (
               <section className="mt-6" aria-live="polite">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h2 className="font-extrabold text-primary">‘{submittedQuery}’ 검색 결과</h2>
-                  <span className="shrink-0 text-xs text-muted-foreground">최대 12건</span>
+                  <button type="button" onClick={resetSearch} className="flex shrink-0 items-center gap-1 text-xs font-bold text-muted-foreground hover:text-primary">
+                    <RotateCcw className="h-3.5 w-3.5" /> 검색 초기화
+                  </button>
                 </div>
                 {results.length > 0 ? (
                   <ul className="space-y-3">
                     {results.map((event) => {
                       const schedule = getOfficialSchedule(event.id);
                       return (
-                        <li key={event.id} className="flex min-w-0 gap-3 rounded-2xl border bg-card p-3">
-                          <OfficialPosterImage eventId={event.id} title={event.title} className="h-20 w-16 shrink-0 rounded-xl sm:w-20" />
-                          <div className="min-w-0 flex-1 py-0.5">
-                            <p className="line-clamp-2 font-black leading-snug text-primary">{event.title}</p>
-                            <p className="mt-2 flex items-start gap-1.5 text-xs text-foreground">
-                              <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                              <span className="break-words">{schedule.raw || event.startDate || "날짜 확인 불가"}</span>
-                            </p>
-                            <p className="mt-1 flex items-center gap-1.5 text-xs text-foreground">
-                              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-                              <span className="truncate">{event.venue || "장소 확인 불가"}</span>
-                            </p>
-                          </div>
+                        <li key={event.id}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEvent(event)}
+                            aria-label={`${event.title} 행사 정보 보기`}
+                            className="flex w-full min-w-0 gap-3 rounded-2xl border bg-card p-3 text-left transition hover:border-primary hover:bg-secondary/40"
+                          >
+                            <OfficialPosterImage eventId={event.id} title={event.title} className="h-20 w-16 shrink-0 rounded-xl sm:w-20" />
+                            <span className="min-w-0 flex-1 py-0.5">
+                              <span className="line-clamp-2 font-black leading-snug text-primary">{event.title}</span>
+                              <span className="mt-2 flex items-start gap-1.5 text-xs text-foreground">
+                                <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                                <span className="break-words">{schedule.raw || event.startDate || "날짜 확인 불가"}</span>
+                              </span>
+                              <span className="mt-1 flex items-center gap-1.5 text-xs text-foreground">
+                                <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                <span className="truncate">{event.venue || "장소 확인 불가"}</span>
+                              </span>
+                              <span className="mt-2 block text-xs font-extrabold text-brand-orange">행사 정보 보기</span>
+                            </span>
+                          </button>
                         </li>
                       );
                     })}
@@ -179,6 +210,37 @@ export function HeaderEventSearch() {
                 ) : (
                   <p className="rounded-xl bg-muted/60 p-5 text-center text-sm text-muted-foreground">일치하는 행사를 찾지 못했어요.</p>
                 )}
+              </section>
+            )}
+
+            {selectedEvent && (
+              <section className="mt-6" aria-label="선택한 행사 정보">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <button type="button" onClick={() => setSelectedEvent(null)} className="flex items-center gap-1 text-sm font-extrabold text-primary hover:underline">
+                    <ArrowLeft className="h-4 w-4" /> 검색 결과
+                  </button>
+                  <button type="button" onClick={resetSearch} className="flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-primary">
+                    <RotateCcw className="h-3.5 w-3.5" /> 검색 초기화
+                  </button>
+                </div>
+                <OfficialPosterImage
+                  eventId={selectedEvent.id}
+                  title={selectedEvent.title}
+                  className="max-h-72 min-h-40 w-full rounded-2xl"
+                />
+                <div className="mt-4 rounded-2xl border bg-card p-4">
+                  <h2 className="break-words text-xl font-black leading-snug text-primary [overflow-wrap:anywhere]">
+                    {selectedEvent.title}
+                  </h2>
+                  <p className="mt-4 flex items-start gap-2 text-sm">
+                    <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <span>{getOfficialSchedule(selectedEvent.id).raw || selectedEvent.startDate || "날짜 확인 불가"}</span>
+                  </p>
+                  <p className="mt-2 flex items-start gap-2 text-sm">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <span>{selectedEvent.venue || "장소 확인 불가"}</span>
+                  </p>
+                </div>
               </section>
             )}
           </div>
