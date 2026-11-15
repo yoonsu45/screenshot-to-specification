@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      event_searches: {
+        Row: {
+          anonymous_session_id: string
+          event_id: string
+          id: string
+          searched_at: string
+        }
+        Insert: {
+          anonymous_session_id: string
+          event_id: string
+          id?: string
+          searched_at?: string
+        }
+        Update: {
+          anonymous_session_id?: string
+          event_id?: string
+          id?: string
+          searched_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -49,6 +70,17 @@ export type Database = {
           event_id: string
           save_count: number
         }[]
+      }
+      get_top_event_searches: {
+        Args: never
+        Returns: {
+          event_id: string
+          search_count: number
+        }[]
+      }
+      record_event_search: {
+        Args: { p_anonymous_session_id: string; p_event_id: string }
+        Returns: undefined
       }
     }
     Enums: {

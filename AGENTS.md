@@ -37,3 +37,8 @@ validation rules, and current development priorities.
 
 Follow the existing Lovable rules above.
 Do not treat demo data as verified official event data.
+
+## Search analytics
+
+- Keep raw search analytics inaccessible to API users; write through `record_event_search` and expose only `get_top_event_searches` so session identifiers never appear in public results.
+- Deduplicate searches by event and anonymous session without refreshing the original timestamp, so repeated searches cannot inflate the seven-day ranking.
