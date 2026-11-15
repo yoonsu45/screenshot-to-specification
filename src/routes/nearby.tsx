@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { MapPin, Plus } from "lucide-react";
+import { ChevronDown, MapPin, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { FacilityPicker } from "@/components/app/FacilityPicker";
 import { nearbyPlaces, placeCategories } from "@/data/places";
+import { olympicParkVenueDestinations } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
-import { resolveAnchor } from "@/lib/anchor";
 
 export const Route = createFileRoute("/nearby")({
   head: () => ({
@@ -22,31 +23,34 @@ export const Route = createFileRoute("/nearby")({
 });
 
 function Nearby() {
-  const { anchor, facilityId, setAnchor, addPlan } = useAppStore();
-  const base = resolveAnchor(anchor, facilityId);
-  const [cat, setCat] = useState<(typeof placeCategories)[number]>("전체");
-  const places = nearbyPlaces.filter(
-    (p) => p.anchor === base && (cat === "전체" || p.category === cat),
+  const { anchor, setAnchor, setFacilityId, addPlan } = useAppStore();
+  const selectedDestination = olympicParkVenueDestinations.find(
+    (destination) => destination.name === anchor,
   );
-  const hasAny = nearbyPlaces.some((p) => p.anchor === base);
+  const base = selectedDestination?.name ?? "올림픽홀";
+  const nearbyAnchor = base === "올림픽홀" ? "올림픽홀" : "올림픽공원";
+  const [cat, setCat] = useState<(typeof placeCategories)[number]>("전체");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const places = nearbyPlaces.filter(
+    (p) => p.anchor === nearbyAnchor && (cat === "전체" || p.category === cat),
+  );
+  const hasAny = nearbyPlaces.some((p) => p.anchor === nearbyAnchor);
 
   return (
     <>
       <p className="text-sm font-semibold text-muted-foreground">기준 장소</p>
-      <div className="mb-4 mt-1 flex flex-wrap items-center gap-2">
-        <h1 className="flex items-center gap-1.5 text-2xl font-black text-primary sm:text-3xl">
+      <button
+        type="button"
+        onClick={() => setPickerOpen(true)}
+        className="mb-4 mt-1 flex max-w-full items-center gap-1.5 rounded-2xl bg-lime/60 px-3 py-2 text-left text-primary"
+        aria-label="주변을 찾을 장소 변경"
+      >
+        <span className="flex min-w-0 items-center gap-1.5 text-2xl font-black sm:text-3xl">
           <MapPin className="h-6 w-6" />
-          {base} 주변
-        </h1>
-        {anchor && (
-          <button
-            onClick={() => setAnchor(null)}
-            className="text-xs font-semibold text-muted-foreground underline"
-          >
-            선택 시설 기준으로
-          </button>
-        )}
-      </div>
+          <span className="truncate">{base} 주변</span>
+        </span>
+        <ChevronDown className="h-6 w-6 shrink-0" />
+      </button>
       <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
         {placeCategories.map((c) => (
           <button
@@ -107,6 +111,23 @@ function Nearby() {
           ))}
         </ul>
       )}
+      <FacilityPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        selectedId={selectedDestination?.id ?? "olympic-hall"}
+        items={olympicParkVenueDestinations}
+        searchPlaceholder="공연장 이름 검색"
+        title="주변 장소 선택"
+        description="올림픽공원 안의 공연장을 고르세요"
+        onSelect={(id) => {
+          const destination = olympicParkVenueDestinations.find((item) => item.id === id);
+          if (!destination) return;
+          setFacilityId("olympic-park");
+          setAnchor(destination.name);
+          setCat("전체");
+          setPickerOpen(false);
+        }}
+      />
     </>
   );
 }

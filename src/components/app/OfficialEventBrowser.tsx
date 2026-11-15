@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bookmark, CalendarDays, MapPin, Plus, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
@@ -21,6 +21,7 @@ const PAGE_SIZE = 20;
 export function OfficialEventBrowser() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
+  const [pageInput, setPageInput] = useState("1");
   const [selected, setSelected] = useState<ReturnType<typeof searchOfficialEvents>[number] | null>(
     null,
   );
@@ -51,6 +52,19 @@ export function OfficialEventBrowser() {
   const pageCount = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount - 1);
   const visible = matches.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+
+  useEffect(() => {
+    setPageInput(String(currentPage + 1));
+  }, [currentPage]);
+
+  function goToPage() {
+    const requestedPage = Number.parseInt(pageInput, 10);
+    if (!Number.isFinite(requestedPage)) {
+      setPageInput(String(currentPage + 1));
+      return;
+    }
+    setPage(Math.min(pageCount, Math.max(1, requestedPage)) - 1);
+  }
 
   return (
     <section className="space-y-5" aria-label="공식 공공데이터 행사 조회">
@@ -88,13 +102,13 @@ export function OfficialEventBrowser() {
               <button
                 type="button"
                 aria-label={`${event.title} 상세 보기`}
-                className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                className="flex min-w-0 flex-1 items-center gap-3 text-left sm:gap-4"
                 onClick={() => setSelected(event)}
               >
                 <OfficialPosterImage
                   eventId={event.id}
                   title={event.title}
-                  className="h-28 w-32 shrink-0 rounded-[1.35rem] sm:h-32 sm:w-40"
+                  className="h-24 w-24 shrink-0 rounded-[1.35rem] sm:h-32 sm:w-40"
                 />
                 <span className="min-w-0 flex-1 py-1">
                   <span className="mb-1 block text-xs font-semibold text-muted-foreground">
@@ -103,21 +117,25 @@ export function OfficialEventBrowser() {
                   <span className="mb-3 line-clamp-2 text-xl font-black leading-tight text-primary sm:text-2xl">
                     {event.title}
                   </span>
-                  <span className="flex items-center gap-2 text-sm">
-                    <CalendarDays className="h-5 w-5 shrink-0 text-primary" />
-                    {getOfficialSchedule(event.id).raw
-                      ? `${getOfficialSchedule(event.id).raw}${getOfficialSchedule(event.id).issue ? " · 확인 필요" : ""}`
-                      : event.startDate || "날짜 확인 불가"}
+                  <span className="flex min-w-0 items-start gap-2 text-sm">
+                    <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                    <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+                      {getOfficialSchedule(event.id).raw
+                        ? `${getOfficialSchedule(event.id).raw}${getOfficialSchedule(event.id).issue ? " · 확인 필요" : ""}`
+                        : event.startDate || "날짜 확인 불가"}
+                    </span>
                   </span>
                   <span className="mt-1 flex items-center gap-2 text-sm">
                     <MapPin className="h-5 w-5 shrink-0 text-primary" />
                     <span className="truncate">{event.venue || "장소 확인 불가"}</span>
                   </span>
-                  <span className="mt-2 flex items-center gap-1.5 text-xs font-bold text-brand-orange sm:text-sm">
-                    <UsersRound className="h-4 w-4 shrink-0" />
-                    {eventSaveCounts[event.id] === undefined
-                      ? "담은 인원 확인 중"
-                      : `${eventSaveCounts[event.id]!.toLocaleString("ko-KR")}명이 일정에 담았어요`}
+                  <span className="mt-2 flex min-w-0 items-start gap-1.5 text-xs font-bold text-brand-orange sm:text-sm">
+                    <UsersRound className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span className="min-w-0 break-words">
+                      {eventSaveCounts[event.id] === undefined
+                        ? "담은 인원 확인 중"
+                        : `${eventSaveCounts[event.id]!.toLocaleString("ko-KR")}명이 일정에 담았어요`}
+                    </span>
                   </span>
                 </span>
               </button>
@@ -130,7 +148,7 @@ export function OfficialEventBrowser() {
                     : "방문 계획에 담기"
                 }
                 onClick={() => void toggleSave(event)}
-                className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-primary hover:bg-secondary disabled:opacity-40"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-primary hover:bg-secondary disabled:opacity-40 sm:h-12 sm:w-12"
               >
                 <Bookmark
                   className={`h-7 w-7 ${plan.some((item) => item.id === `event:${event.id}`) ? "fill-brand-orange text-brand-orange" : ""}`}
@@ -141,7 +159,7 @@ export function OfficialEventBrowser() {
         ))}
       </ul>
       {matches.length > 0 && (
-        <nav aria-label="공식 자료 페이지" className="flex items-center justify-center gap-4">
+        <nav aria-label="공식 자료 페이지" className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
           <button
             type="button"
             disabled={currentPage === 0}
@@ -153,6 +171,30 @@ export function OfficialEventBrowser() {
           <span>
             {currentPage + 1} / {pageCount}
           </span>
+          <form
+            className="flex items-center gap-1.5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              goToPage();
+            }}
+          >
+            <label htmlFor="official-page-number" className="sr-only">
+              이동할 페이지
+            </label>
+            <input
+              id="official-page-number"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={pageCount}
+              value={pageInput}
+              onChange={(event) => setPageInput(event.target.value)}
+              className="h-10 w-16 rounded-xl border border-input bg-card px-2 text-center"
+            />
+            <button type="submit" className="h-10 rounded-xl border px-3 font-semibold">
+              이동
+            </button>
+          </form>
           <button
             type="button"
             disabled={currentPage + 1 >= pageCount}
@@ -172,7 +214,9 @@ export function OfficialEventBrowser() {
         <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-md overflow-hidden rounded-2xl p-0 sm:max-h-[90dvh] sm:w-full">
           <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 pt-12 sm:max-h-[90dvh] sm:p-6 sm:pt-10">
             <DialogHeader>
-              <DialogTitle className="pr-6 text-primary">{selected?.title}</DialogTitle>
+            <DialogTitle className="break-words pr-6 text-primary [overflow-wrap:anywhere]">
+              {selected?.title}
+            </DialogTitle>
               <DialogDescription>
                 {selected ? officialRecordSource(selected.id) : "공식 행사 정보"}
               </DialogDescription>
@@ -185,7 +229,7 @@ export function OfficialEventBrowser() {
                   title={selected.title}
                   className="max-h-64 min-h-32 w-full rounded-xl"
                 />
-                <div className="space-y-3 rounded-xl bg-muted/50 p-4 text-sm">
+                <div className="space-y-3 break-words rounded-xl bg-muted/50 p-4 text-sm [overflow-wrap:anywhere]">
                   <p>
                     개최일:{" "}
                     {getOfficialSchedule(selected.id).raw || selected.startDate || "확인 불가"}

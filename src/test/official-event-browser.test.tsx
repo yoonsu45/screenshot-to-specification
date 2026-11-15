@@ -32,6 +32,11 @@ describe("OfficialEventBrowser", () => {
     expect(screen.getByRole("button", { name: "이전" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     expect(screen.getByRole("button", { name: "이전" })).toBeEnabled();
+    fireEvent.change(screen.getByRole("spinbutton", { name: "이동할 페이지" }), {
+      target: { value: "1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "이동" }));
+    expect(screen.getByRole("button", { name: "이전" })).toBeDisabled();
     fireEvent.change(screen.getByRole("searchbox"), {
       target: { value: snapshot.events[0]!.title },
     });

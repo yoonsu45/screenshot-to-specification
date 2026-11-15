@@ -89,7 +89,7 @@ export function EventCard({
         <button
           type="button"
           onClick={() => setDetailsOpen(true)}
-          className="flex min-w-0 flex-1 items-center gap-4 text-left"
+          className="flex min-w-0 flex-1 items-center gap-3 text-left sm:gap-4"
         >
           <img
             src={event.image}
@@ -97,7 +97,7 @@ export function EventCard({
             loading="lazy"
             width={944}
             height={704}
-            className="h-28 w-32 shrink-0 rounded-[1.35rem] object-cover sm:h-32 sm:w-40"
+            className="h-24 w-24 shrink-0 rounded-[1.35rem] object-cover sm:h-32 sm:w-40"
           />
           <div className="min-w-0 flex-1 py-1">
             {event.sourceType === "demo" && (
@@ -108,9 +108,11 @@ export function EventCard({
             <h3 className="mb-3 line-clamp-2 text-xl font-black leading-tight text-primary sm:text-2xl">
               {event.title}
             </h3>
-            <p className="flex items-center gap-2 text-sm font-medium text-foreground sm:text-base">
-              <CalendarDays className="h-5 w-5 shrink-0 text-primary" />
-              <span className="truncate">{formatCompactRange(event)}</span>
+            <p className="flex min-w-0 items-start gap-2 text-sm font-medium text-foreground sm:text-base">
+              <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+                {formatCompactRange(event)}
+              </span>
             </p>
             <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground sm:text-base">
               <MapPin className="h-5 w-5 shrink-0 text-primary" />
@@ -119,9 +121,11 @@ export function EventCard({
                 {event.venue}
               </span>
             </p>
-            <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-brand-orange sm:text-sm">
-              <UsersRound className="h-4 w-4 shrink-0" />
-              {(eventSaveCounts[event.id] ?? 0).toLocaleString("ko-KR")}명이 일정에 담았어요
+            <p className="mt-2 flex min-w-0 items-start gap-1.5 text-xs font-bold text-brand-orange sm:text-sm">
+              <UsersRound className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="min-w-0 break-words">
+                {(eventSaveCounts[event.id] ?? 0).toLocaleString("ko-KR")}명이 일정에 담았어요
+              </span>
             </p>
           </div>
         </button>
@@ -129,7 +133,7 @@ export function EventCard({
           type="button"
           aria-label={isAdded ? "방문 계획에서 빼기" : "방문 계획에 담기"}
           onClick={toggleBookmark}
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-primary transition hover:bg-secondary"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-primary transition hover:bg-secondary sm:h-12 sm:w-12"
         >
           <Bookmark className={`h-7 w-7 ${isAdded ? "fill-brand-orange text-brand-orange" : ""}`} />
         </button>
@@ -138,19 +142,23 @@ export function EventCard({
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-primary">{event.title}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="break-words text-primary [overflow-wrap:anywhere]">
+              {event.title}
+            </DialogTitle>
+            <DialogDescription className="break-words [overflow-wrap:anywhere]">
               시연용 예시 데이터 · 실제 행사 아님 · {event.category} · {event.venue}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 rounded-xl bg-muted/50 p-4 text-sm">
-            <p className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-primary" />
-              {formatRange(event)}
+          <div className="space-y-3 break-words rounded-xl bg-muted/50 p-4 text-sm [overflow-wrap:anywhere]">
+            <p className="flex min-w-0 items-start gap-2">
+              <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span className="min-w-0">{formatRange(event)}</span>
             </p>
-            <p className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              {facility?.name ?? event.facilityId} · {event.venue}
+            <p className="flex min-w-0 items-start gap-2">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span className="min-w-0">
+                {facility?.name ?? event.facilityId} · {event.venue}
+              </span>
             </p>
             <p className="text-muted-foreground">행사 정보를 확인하고 방문 계획에 담아보세요.</p>
           </div>
