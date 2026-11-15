@@ -3,15 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import snapshot from "@/data/official-events.json";
 
 const mocks = vi.hoisted(() => ({
-  setDraft: vi.fn(),
-  navigate: vi.fn(),
   requireAuth: vi.fn(() => false),
   addPlan: vi.fn(),
   removePlan: vi.fn(),
 }));
 vi.mock("@/lib/app-store", () => ({
   useAppStore: () => ({
-    setDraft: mocks.setDraft,
     facilityId: "all",
     plan: [],
     eventSaveCounts: {},
@@ -20,7 +17,6 @@ vi.mock("@/lib/app-store", () => ({
     removePlan: mocks.removePlan,
   }),
 }));
-vi.mock("@tanstack/react-router", () => ({ useNavigate: () => mocks.navigate }));
 import { OfficialEventBrowser } from "@/components/app/OfficialEventBrowser";
 
 describe("OfficialEventBrowser", () => {
@@ -43,13 +39,9 @@ describe("OfficialEventBrowser", () => {
     expect(screen.getByRole("button", { name: "이전" })).toBeDisabled();
     fireEvent.click(screen.getAllByRole("button", { name: /상세 보기$/ })[0]!);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "이 공식 자료와 비교하기" }));
-    expect(mocks.setDraft).toHaveBeenCalledWith({
-      title: snapshot.events[0]!.title,
-      date: "",
-      venue: "",
-      officialRecordId: snapshot.events[0]!.id,
-    });
-    expect(mocks.navigate).toHaveBeenCalledWith({ to: "/check" });
+    expect(
+      screen.queryByRole("button", { name: "이 공식 자료와 비교하기" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/행사명·장소가 일치/)).not.toBeInTheDocument();
   }, 15000);
 });

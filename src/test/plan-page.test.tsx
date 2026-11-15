@@ -37,6 +37,9 @@ describe("내 방문 계획", () => {
     fireEvent.click(screen.getByRole("button", { name: "이달 전체" }));
 
     expect(screen.getByText("2026년 12월 전체 일정")).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "2026년 12월 1일 화 일정" }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: `${event.title} 행사 정보 보기` }));
 
     const dialog = screen.getByRole("dialog");

@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useNavigate } from "@tanstack/react-router";
 import { useAppStore } from "@/lib/app-store";
 import { searchOfficialEvents } from "@/lib/event-service";
 import { officialRecordSource } from "@/lib/official-data";
@@ -29,8 +28,7 @@ export function OfficialEventBrowser() {
     ReturnType<typeof searchOfficialEvents>[number] | null
   >(null);
   const [pending, setPending] = useState(false);
-  const { setDraft, plan, addPlan, removePlan, requireAuth, eventSaveCounts } =
-    useAppStore();
+  const { plan, addPlan, removePlan, requireAuth, eventSaveCounts } = useAppStore();
   async function toggleSave(event: ReturnType<typeof searchOfficialEvents>[number]) {
     if (pending || !requireAuth()) return;
     if (plan.some((item) => item.id === `event:${event.id}`)) {
@@ -43,7 +41,6 @@ export function OfficialEventBrowser() {
       }
     } else setSavingEvent(event);
   }
-  const navigate = useNavigate();
   const matches = searchOfficialEvents(query)
     .sort(
       (left, right) =>
@@ -217,9 +214,7 @@ export function OfficialEventBrowser() {
             <DialogTitle className="break-words pr-6 text-primary [overflow-wrap:anywhere]">
               {selected?.title}
             </DialogTitle>
-              <DialogDescription>
-                {selected ? officialRecordSource(selected.id) : "공식 행사 정보"}
-              </DialogDescription>
+              <DialogDescription className="sr-only">행사 상세 정보</DialogDescription>
             </DialogHeader>
             {selected && (
               <div className="mt-4 space-y-4">
@@ -251,23 +246,9 @@ export function OfficialEventBrowser() {
                         포스터 자료의 일정 원문:{" "}
                         {getOfficialPoster(selected.id)?.scheduleRaw || "확인 불가"}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {getOfficialPoster(selected.id)?.matchMethod ===
-                        "standalone_official_poster_record"
-                          ? "API에 임의로 합치지 않은 공식 포스터 자료입니다. 회차는 원문을 확인해 주세요."
-                          : "행사명·장소가 일치하는 유일 후보로 매칭했습니다. 회차는 원문을 함께 확인해 주세요."}
-                      </p>
                     </>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    출처 자료 CSV 행: {selected.sourceRows.join(", ")}
-                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {getOfficialSchedule(selected.id).dates.length
-                    ? "과거 공식 공연 기록입니다. 확인된 개최일 중 방문일을 선택할 수 있습니다."
-                    : "개최일이 미확인되거나 자료가 충돌하는 경우 선택한 날짜는 개인 방문예정일로 저장됩니다."}
-                </p>
                 <button
                   type="button"
                   className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground"
@@ -281,21 +262,6 @@ export function OfficialEventBrowser() {
                 >
                   <Plus className="h-4 w-4" />
                   {plan.some((item) => item.id === `event:${selected.id}`) ? "방문일 변경" : "담기"}
-                </button>
-                <button
-                  type="button"
-                  className="rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground"
-                  onClick={() => {
-                    setDraft({
-                      title: selected.title,
-                      date: "",
-                      venue: "",
-                      officialRecordId: selected.id,
-                    });
-                    void navigate({ to: "/check" });
-                  }}
-                >
-                  이 공식 자료와 비교하기
                 </button>
               </div>
             )}

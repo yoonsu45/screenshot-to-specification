@@ -94,6 +94,15 @@ export function Plan() {
     .filter((event) => event.startDate <= monthEnd && event.endDate >= monthStart)
     .sort((left, right) => left.startDate.localeCompare(right.startDate));
   const visibleEvents = listMode === "month" ? monthEvents : selectedEvents;
+  const visibleEventGroups = visibleEvents.reduce<
+    { date: string; events: PlannedEvent[] }[]
+  >((groups, event) => {
+    const date = listMode === "month" ? event.startDate : selectedDate;
+    const current = groups.at(-1);
+    if (current?.date === date) current.events.push(event);
+    else groups.push({ date, events: [event] });
+    return groups;
+  }, []);
 
   function moveMonth(offset: number) {
     const next = new Date(month.getFullYear(), month.getMonth() + offset, 1);
@@ -354,44 +363,57 @@ export function Plan() {
             )}
           </div>
         ) : (
-          <ul className="space-y-3">
-            {visibleEvents.map((event) => (
-              <li
-                key={event.item.id}
-                className="flex items-center gap-3 rounded-2xl border-l-4 border-brand-orange bg-card p-4 shadow-card"
-              >
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
-                  <CalendarCheck2 className="h-5 w-5" />
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedEvent(event)}
-                  className="min-w-0 flex-1 text-left"
-                  aria-label={`${event.item.title} 행사 정보 보기`}
-                >
-                  <p className="line-clamp-2 break-words font-black text-primary">
-                    {event.item.title}
-                  </p>
-                  <p className="mt-1 text-xs font-bold text-brand-orange">
-                    방문 예정일 {formatPlanDate(event.startDate)}
-                    {event.item.dateKind === "personal" ? " · 공식 개최일 아님" : ""}
-                  </p>
-                  <p className="mt-0.5 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{event.venue}</span>
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removePlan(event.item.id)}
-                  aria-label={`${event.item.title} 삭제`}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-destructive"
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
-              </li>
+          <div className="space-y-5">
+            {visibleEventGroups.map((group) => (
+              <section key={group.date} aria-label={`${formatPlanDate(group.date)} 일정`}>
+                {listMode === "month" && (
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-primary sm:text-base">
+                    <span className="h-2.5 w-2.5 rounded-full bg-brand-orange" />
+                    {formatPlanDate(group.date)}
+                    <span className="text-xs text-muted-foreground">{group.events.length}개</span>
+                  </h3>
+                )}
+                <ul className="space-y-3">
+                  {group.events.map((event) => (
+                    <li
+                      key={event.item.id}
+                      className="flex items-center gap-3 rounded-2xl border-l-4 border-brand-orange bg-card p-4 shadow-card"
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
+                        <CalendarCheck2 className="h-5 w-5" />
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEvent(event)}
+                        className="min-w-0 flex-1 text-left"
+                        aria-label={`${event.item.title} 행사 정보 보기`}
+                      >
+                        <p className="line-clamp-2 break-words font-black text-primary">
+                          {event.item.title}
+                        </p>
+                        <p className="mt-1 text-xs font-bold text-brand-orange">
+                          방문 예정일 {formatPlanDate(event.startDate)}
+                          {event.item.dateKind === "personal" ? " · 공식 개최일 아님" : ""}
+                        </p>
+                        <p className="mt-0.5 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{event.venue}</span>
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removePlan(event.item.id)}
+                        aria-label={`${event.item.title} 삭제`}
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-destructive"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         )}
       </section>
 
