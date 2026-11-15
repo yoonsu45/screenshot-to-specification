@@ -192,89 +192,93 @@ export function OfficialEventBrowser() {
           if (!open) setSelected(null);
         }}
       >
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-primary">{selected?.title}</DialogTitle>
-            <DialogDescription>
-              {selected ? officialRecordSource(selected.id) : "공식 행사 정보"}
-            </DialogDescription>
-          </DialogHeader>
-          {selected && (
-            <>
-              <OfficialPosterImage
-                key={selected.id}
-                eventId={selected.id}
-                title={selected.title}
-                className="max-h-64 min-h-32 w-full rounded-xl"
-              />
-              <div className="space-y-3 rounded-xl bg-muted/50 p-4 text-sm">
-                <p>
-                  개최일:{" "}
-                  {getOfficialSchedule(selected.id).raw || selected.startDate || "확인 불가"}
-                </p>
-                {getOfficialSchedule(selected.id).raw && <p>개최일 출처: 공식 공연 포스터 정보</p>}
-                {getOfficialSchedule(selected.id).issue && (
-                  <p className="font-bold text-brand-orange">
-                    {getOfficialSchedule(selected.id).issue}
+        <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-md overflow-hidden rounded-2xl p-0 sm:max-h-[90dvh] sm:w-full">
+          <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 pt-12 sm:max-h-[90dvh] sm:p-6 sm:pt-10">
+            <DialogHeader>
+              <DialogTitle className="pr-6 text-primary">{selected?.title}</DialogTitle>
+              <DialogDescription>
+                {selected ? officialRecordSource(selected.id) : "공식 행사 정보"}
+              </DialogDescription>
+            </DialogHeader>
+            {selected && (
+              <div className="mt-4 space-y-4">
+                <OfficialPosterImage
+                  key={selected.id}
+                  eventId={selected.id}
+                  title={selected.title}
+                  className="max-h-64 min-h-32 w-full rounded-xl"
+                />
+                <div className="space-y-3 rounded-xl bg-muted/50 p-4 text-sm">
+                  <p>
+                    개최일:{" "}
+                    {getOfficialSchedule(selected.id).raw || selected.startDate || "확인 불가"}
                   </p>
-                )}
-                <p>장소: {selected.venue || "확인 불가"}</p>
-                <p>출처: {officialRecordSource(selected.id)}</p>
-                {getOfficialPoster(selected.id) && (
-                  <>
-                    <p>포스터 출처: 한국체육산업개발 공연 포스터 정보</p>
-                    <p>
-                      포스터 자료의 일정 원문:{" "}
-                      {getOfficialPoster(selected.id)?.scheduleRaw || "확인 불가"}
+                  {getOfficialSchedule(selected.id).raw && (
+                    <p>개최일 출처: 공식 공연 포스터 정보</p>
+                  )}
+                  {getOfficialSchedule(selected.id).issue && (
+                    <p className="font-bold text-brand-orange">
+                      {getOfficialSchedule(selected.id).issue}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {getOfficialPoster(selected.id)?.matchMethod ===
-                      "standalone_official_poster_record"
-                        ? "API에 임의로 합치지 않은 공식 포스터 자료입니다. 회차는 원문을 확인해 주세요."
-                        : "행사명·장소가 일치하는 유일 후보로 매칭했습니다. 회차는 원문을 함께 확인해 주세요."}
-                    </p>
-                  </>
-                )}
+                  )}
+                  <p>장소: {selected.venue || "확인 불가"}</p>
+                  <p>출처: {officialRecordSource(selected.id)}</p>
+                  {getOfficialPoster(selected.id) && (
+                    <>
+                      <p>포스터 출처: 한국체육산업개발 공연 포스터 정보</p>
+                      <p>
+                        포스터 자료의 일정 원문:{" "}
+                        {getOfficialPoster(selected.id)?.scheduleRaw || "확인 불가"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {getOfficialPoster(selected.id)?.matchMethod ===
+                        "standalone_official_poster_record"
+                          ? "API에 임의로 합치지 않은 공식 포스터 자료입니다. 회차는 원문을 확인해 주세요."
+                          : "행사명·장소가 일치하는 유일 후보로 매칭했습니다. 회차는 원문을 함께 확인해 주세요."}
+                      </p>
+                    </>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    출처 자료 CSV 행: {selected.sourceRows.join(", ")}
+                  </p>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  출처 자료 CSV 행: {selected.sourceRows.join(", ")}
+                  {getOfficialSchedule(selected.id).dates.length
+                    ? "과거 공식 공연 기록입니다. 확인된 개최일 중 방문일을 선택할 수 있습니다."
+                    : "개최일이 미확인되거나 자료가 충돌하는 경우 선택한 날짜는 개인 방문예정일로 저장됩니다."}
                 </p>
+                <button
+                  type="button"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground"
+                  onClick={() => {
+                    const event = selected;
+                    setSelected(null);
+                    window.setTimeout(() => {
+                      if (requireAuth()) setSavingEvent(event);
+                    }, 220);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  {plan.some((item) => item.id === `event:${selected.id}`) ? "방문일 변경" : "담기"}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground"
+                  onClick={() => {
+                    setDraft({
+                      title: selected.title,
+                      date: "",
+                      venue: "",
+                      officialRecordId: selected.id,
+                    });
+                    void navigate({ to: "/check" });
+                  }}
+                >
+                  이 공식 자료와 비교하기
+                </button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {getOfficialSchedule(selected.id).dates.length
-                  ? "과거 공식 공연 기록입니다. 확인된 개최일 중 방문일을 선택할 수 있습니다."
-                  : "개최일이 미확인되거나 자료가 충돌하는 경우 선택한 날짜는 개인 방문예정일로 저장됩니다."}
-              </p>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground"
-                onClick={() => {
-                  const event = selected;
-                  setSelected(null);
-                  window.setTimeout(() => {
-                    if (requireAuth()) setSavingEvent(event);
-                  }, 220);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                {plan.some((item) => item.id === `event:${selected.id}`) ? "방문일 변경" : "담기"}
-              </button>
-              <button
-                type="button"
-                className="rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground"
-                onClick={() => {
-                  setDraft({
-                    title: selected.title,
-                    date: "",
-                    venue: "",
-                    officialRecordId: selected.id,
-                  });
-                  void navigate({ to: "/check" });
-                }}
-              >
-                이 공식 자료와 비교하기
-              </button>
-            </>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       {savingEvent && (

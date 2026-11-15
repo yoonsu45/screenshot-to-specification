@@ -24,9 +24,9 @@ import {
   type BrowserOcrResult,
   type OcrConfidence,
 } from "@/lib/ocr-event-extraction";
-import { formatRange } from "@/lib/event-service";
+import { formatRange, searchOfficialEvents } from "@/lib/event-service";
 import { optimizeImage } from "@/lib/image-optimization";
-import { officialEvents, officialRecordSource, type OfficialRecord } from "@/lib/official-data";
+import { officialRecordSource, type OfficialRecord } from "@/lib/official-data";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 
 export const Route = createFileRoute("/check")({
@@ -81,14 +81,8 @@ function CheckPage() {
   }, [form.title]);
 
   const officialSearchResults = useMemo(() => {
-    const query = form.title.trim().toLocaleLowerCase("ko-KR");
-    if (!query) return [];
-
-    const matches = officialEvents.filter(
-      (event) =>
-        event.title.toLocaleLowerCase("ko-KR").includes(query) ||
-        event.venue?.toLocaleLowerCase("ko-KR").includes(query),
-    );
+    if (!form.title.trim()) return [];
+    const matches = searchOfficialEvents(form.title);
     const preferredByTitle = new Map<string, OfficialRecord>();
     matches.forEach((event) => {
       const previous = preferredByTitle.get(event.title);
@@ -487,41 +481,45 @@ function CheckPage() {
           if (!open) setSelectedOfficialEvent(null);
         }}
       >
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="pr-6 text-primary">{selectedOfficialEvent?.title}</DialogTitle>
-            <DialogDescription>
-              {selectedOfficialEvent
-                ? officialRecordSource(selectedOfficialEvent.id)
-                : "공식 행사 정보"}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedOfficialEvent && (
-            <>
-              <OfficialPosterImage
-                key={selectedOfficialEvent.id}
-                eventId={selectedOfficialEvent.id}
-                title={selectedOfficialEvent.title}
-                className="max-h-[55vh] min-h-48 w-full rounded-xl"
-              />
-              <div className="space-y-1 rounded-xl bg-secondary p-4 text-sm">
-                <p>
-                  날짜:{" "}
-                  {getOfficialSchedule(selectedOfficialEvent.id).raw ||
-                    selectedOfficialEvent.startDate ||
-                    "확인 불가"}
-                </p>
-                <p>장소: {selectedOfficialEvent.venue || "확인 불가"}</p>
+        <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-md overflow-hidden rounded-2xl p-0 sm:max-h-[90dvh] sm:w-full">
+          <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 pt-12 sm:max-h-[90dvh] sm:p-6 sm:pt-10">
+            <DialogHeader>
+              <DialogTitle className="pr-6 text-primary">
+                {selectedOfficialEvent?.title}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedOfficialEvent
+                  ? officialRecordSource(selectedOfficialEvent.id)
+                  : "공식 행사 정보"}
+              </DialogDescription>
+            </DialogHeader>
+            {selectedOfficialEvent && (
+              <div className="mt-4 space-y-4">
+                <OfficialPosterImage
+                  key={selectedOfficialEvent.id}
+                  eventId={selectedOfficialEvent.id}
+                  title={selectedOfficialEvent.title}
+                  className="max-h-[55dvh] min-h-48 w-full rounded-xl"
+                />
+                <div className="space-y-1 rounded-xl bg-secondary p-4 text-sm">
+                  <p>
+                    날짜:{" "}
+                    {getOfficialSchedule(selectedOfficialEvent.id).raw ||
+                      selectedOfficialEvent.startDate ||
+                      "확인 불가"}
+                  </p>
+                  <p>장소: {selectedOfficialEvent.venue || "확인 불가"}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => selectOfficialRecord(selectedOfficialEvent)}
+                  className="w-full rounded-xl bg-primary px-4 py-3 font-extrabold text-primary-foreground"
+                >
+                  이 행사 선택
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => selectOfficialRecord(selectedOfficialEvent)}
-                className="w-full rounded-xl bg-primary px-4 py-3 font-extrabold text-primary-foreground"
-              >
-                이 행사 선택
-              </button>
-            </>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

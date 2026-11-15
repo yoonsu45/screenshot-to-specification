@@ -59,7 +59,7 @@ export type VerifyResult = {
   }[];
 };
 
-const norm = (s: string) => s.toLowerCase().replace(/[\s·.\-_]/g, "");
+const norm = (s: string) => s.toLocaleLowerCase("ko-KR").replace(/[^0-9a-z가-힣]/g, "");
 
 export function formatDate(d: string) {
   const dt = new Date(d + "T00:00:00");

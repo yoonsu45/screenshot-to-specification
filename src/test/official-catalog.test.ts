@@ -35,6 +35,13 @@ describe("공식 포스터 독립 자료", () => {
     });
     expect(result).toMatchObject({ status: "match", sourceName: "공식 공연 포스터 정보" });
   });
+  it("matches the Spring Summer Fall Winter poster despite spacing and artist-prefix differences", () => {
+    const matches = searchOfficialEvents("브라보 마이 라이프 10주년 콘서트");
+    const event = matches.find((item) => item.title.includes("봄여름가을겨울"));
+
+    expect(event?.title).toBe("봄여름가을겨울 브라보마이라이프 10주년 콘서트");
+    expect(event && getOfficialSchedule(event.id).raw).toContain("2012-09-21");
+  });
   it("validates unpadded dates and separated comma sessions without guessing malformed text", () => {
     expect(parsePosterSchedule("2011-9-18(일) 6:00").dates).toEqual(["2011-09-18"]);
     expect(parsePosterSchedule("2008-06-13(금) 8:00, 2008-06-14(토) 7:00").dates).toEqual([
