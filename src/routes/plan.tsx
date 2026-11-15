@@ -2,14 +2,27 @@ import { useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   CalendarCheck2,
+  CalendarRange,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   LockKeyhole,
   MapPin,
   Trash2,
 } from "lucide-react";
 import { useAppStore, type PlanItem } from "@/lib/app-store";
-import { getEvent } from "@/lib/event-service";
+import { formatRange, getEvent } from "@/lib/event-service";
+import { officialEvents, officialRecordSource, type OfficialRecord } from "@/lib/official-data";
+import { getOfficialSchedule } from "@/lib/official-posters";
+import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { ParkEvent } from "@/data/events";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({
@@ -28,27 +41,40 @@ type PlannedEvent = {
   startDate: string;
   endDate: string;
   venue: string;
+  eventId: string;
+  official: OfficialRecord | null;
+  demo: ParkEvent | null;
 };
 
-function Plan() {
+const OFFICIAL_EVENT_SITE_URL = "https://www.ksponco.or.kr/olympicpark/";
+
+export function Plan() {
   const { plan, removePlan, userEmail, authLoaded, setAuthOpen } = useAppStore();
   const today = useMemo(() => new Date(), []);
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(() => toDateKey(today));
+  const [yearInput, setYearInput] = useState(() => String(today.getFullYear()));
+  const [monthInput, setMonthInput] = useState(() => String(today.getMonth() + 1));
+  const [listMode, setListMode] = useState<"day" | "month">("day");
+  const [selectedEvent, setSelectedEvent] = useState<PlannedEvent | null>(null);
 
   const plannedEvents = useMemo<PlannedEvent[]>(() => {
     return plan.flatMap((item) => {
       if (item.kind !== "event") return [];
       const eventId = item.id.startsWith("event:") ? item.id.slice(6) : "";
-      const event = getEvent(eventId);
-      const startDate = item.startDate ?? event?.startDate;
+      const official = officialEvents.find((event) => event.id === eventId) ?? null;
+      const demo = getEvent(eventId) ?? null;
+      const startDate = item.startDate ?? demo?.startDate ?? official?.startDate ?? undefined;
       if (!startDate) return [];
       return [
         {
           item,
           startDate,
-          endDate: item.endDate ?? event?.endDate ?? startDate,
-          venue: item.venue ?? event?.venue ?? "장소 미정",
+          endDate: item.endDate ?? demo?.endDate ?? startDate,
+          venue: item.venue ?? demo?.venue ?? official?.venue ?? "장소 미정",
+          eventId,
+          official,
+          demo,
         },
       ];
     });
@@ -64,17 +90,38 @@ function Plan() {
   const monthEventCount = plannedEvents.filter(
     (event) => event.startDate <= monthEnd && event.endDate >= monthStart,
   ).length;
+  const monthEvents = plannedEvents
+    .filter((event) => event.startDate <= monthEnd && event.endDate >= monthStart)
+    .sort((left, right) => left.startDate.localeCompare(right.startDate));
+  const visibleEvents = listMode === "month" ? monthEvents : selectedEvents;
 
   function moveMonth(offset: number) {
     const next = new Date(month.getFullYear(), month.getMonth() + offset, 1);
     setMonth(next);
     setSelectedDate(toDateKey(next));
+    setYearInput(String(next.getFullYear()));
+    setMonthInput(String(next.getMonth() + 1));
   }
 
   function goToday() {
     const now = new Date();
     setMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     setSelectedDate(toDateKey(now));
+    setYearInput(String(now.getFullYear()));
+    setMonthInput(String(now.getMonth() + 1));
+  }
+
+  function goToMonth() {
+    const requestedYear = Number.parseInt(yearInput, 10);
+    const requestedMonth = Number.parseInt(monthInput, 10);
+    if (!Number.isFinite(requestedYear) || !Number.isFinite(requestedMonth)) return;
+    const safeYear = Math.min(2100, Math.max(2000, requestedYear));
+    const safeMonth = Math.min(12, Math.max(1, requestedMonth));
+    const next = new Date(safeYear, safeMonth - 1, 1);
+    setMonth(next);
+    setSelectedDate(toDateKey(next));
+    setYearInput(String(safeYear));
+    setMonthInput(String(safeMonth));
   }
 
   if (!authLoaded) {
@@ -153,6 +200,47 @@ function Plan() {
           </button>
         </div>
 
+        <form
+          className="flex flex-wrap items-end justify-center gap-2 border-t border-border px-4 py-3 sm:px-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            goToMonth();
+          }}
+        >
+          <label className="grid gap-1 text-xs font-bold text-muted-foreground">
+            연도
+            <input
+              type="number"
+              inputMode="numeric"
+              min={2000}
+              max={2100}
+              value={yearInput}
+              onChange={(event) => setYearInput(event.target.value)}
+              className="h-10 w-24 rounded-xl border border-input bg-background px-3 text-center text-sm font-bold text-foreground"
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted-foreground">
+            월
+            <select
+              value={monthInput}
+              onChange={(event) => setMonthInput(event.target.value)}
+              className="h-10 w-20 rounded-xl border border-input bg-background px-3 text-sm font-bold text-foreground"
+            >
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => (
+                <option key={value} value={value}>
+                  {value}월
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="h-10 rounded-xl bg-primary px-4 text-sm font-extrabold text-primary-foreground"
+          >
+            이동
+          </button>
+        </form>
+
         <div className="grid grid-cols-7 border-y border-border bg-secondary/70 text-center text-xs font-extrabold text-muted-foreground sm:text-sm">
           {WEEKDAYS.map((day, index) => (
             <div
@@ -178,7 +266,10 @@ function Plan() {
               <button
                 type="button"
                 key={dateKey}
-                onClick={() => setSelectedDate(dateKey)}
+                onClick={() => {
+                  setSelectedDate(dateKey);
+                  setListMode("day");
+                }}
                 aria-label={`${date.getMonth() + 1}월 ${date.getDate()}일${dayEvents.length ? `, 일정 ${dayEvents.length}개` : ""}`}
                 className={`min-h-20 min-w-0 bg-card p-1.5 text-left align-top transition hover:bg-secondary/60 sm:min-h-28 sm:p-2 ${!inCurrentMonth ? "text-muted-foreground/40" : "text-foreground"} ${selected ? "ring-2 ring-inset ring-primary" : ""}`}
               >
@@ -210,13 +301,49 @@ function Plan() {
       </section>
 
       <section className="mt-7">
-        <div className="mb-3 flex items-center gap-2">
-          <CalendarCheck2 className="h-5 w-5 text-brand-orange" />
-          <h2 className="text-lg font-black text-primary">{formatSelectedDate(selectedDate)}</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            {listMode === "month" ? (
+              <CalendarRange className="h-5 w-5 shrink-0 text-brand-orange" />
+            ) : (
+              <CalendarCheck2 className="h-5 w-5 shrink-0 text-brand-orange" />
+            )}
+            <h2 className="min-w-0 text-lg font-black text-primary">
+              {listMode === "month"
+                ? `${month.getFullYear()}년 ${month.getMonth() + 1}월 전체 일정`
+                : formatSelectedDate(selectedDate)}
+            </h2>
+          </div>
+          <div
+            role="group"
+            aria-label="일정 표시 범위"
+            className="flex rounded-full border border-border bg-card p-1"
+          >
+            <button
+              type="button"
+              aria-pressed={listMode === "day"}
+              onClick={() => setListMode("day")}
+              className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${listMode === "day" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+            >
+              선택한 날
+            </button>
+            <button
+              type="button"
+              aria-pressed={listMode === "month"}
+              onClick={() => setListMode("month")}
+              className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${listMode === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+            >
+              이달 전체
+            </button>
+          </div>
         </div>
-        {selectedEvents.length === 0 ? (
+        {visibleEvents.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-8 text-center">
-            <p className="font-bold text-muted-foreground">이 날에 담은 행사가 없어요.</p>
+            <p className="font-bold text-muted-foreground">
+              {listMode === "month"
+                ? "이달에 담은 행사가 없어요."
+                : "이 날에 담은 행사가 없어요."}
+            </p>
             {plannedEvents.length === 0 && (
               <Link
                 to="/"
@@ -228,7 +355,7 @@ function Plan() {
           </div>
         ) : (
           <ul className="space-y-3">
-            {selectedEvents.map((event) => (
+            {visibleEvents.map((event) => (
               <li
                 key={event.item.id}
                 className="flex items-center gap-3 rounded-2xl border-l-4 border-brand-orange bg-card p-4 shadow-card"
@@ -236,18 +363,24 @@ function Plan() {
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
                   <CalendarCheck2 className="h-5 w-5" />
                 </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-black text-primary">{event.item.title}</p>
-                  {event.item.dateKind === "personal" && (
-                    <p className="mt-1 text-xs font-bold text-brand-orange">
-                      개인 방문예정일 · 공식 개최일 아님
-                    </p>
-                  )}
-                  <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 shrink-0" />
-                    {event.venue}
+                <button
+                  type="button"
+                  onClick={() => setSelectedEvent(event)}
+                  className="min-w-0 flex-1 text-left"
+                  aria-label={`${event.item.title} 행사 정보 보기`}
+                >
+                  <p className="line-clamp-2 break-words font-black text-primary">
+                    {event.item.title}
                   </p>
-                </div>
+                  <p className="mt-1 text-xs font-bold text-brand-orange">
+                    방문 예정일 {formatPlanDate(event.startDate)}
+                    {event.item.dateKind === "personal" ? " · 공식 개최일 아님" : ""}
+                  </p>
+                  <p className="mt-0.5 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{event.venue}</span>
+                  </p>
+                </button>
                 <button
                   type="button"
                   onClick={() => removePlan(event.item.id)}
@@ -261,6 +394,85 @@ function Plan() {
           </ul>
         )}
       </section>
+
+      <Dialog
+        open={Boolean(selectedEvent)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedEvent(null);
+        }}
+      >
+        <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-md overflow-y-auto rounded-2xl sm:max-h-[90dvh] sm:w-full">
+          {selectedEvent && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="break-words pr-6 text-primary [overflow-wrap:anywhere]">
+                  {selectedEvent.item.title}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedEvent.official
+                    ? officialRecordSource(selectedEvent.eventId)
+                    : selectedEvent.demo
+                      ? "등록된 행사 정보"
+                      : "저장된 방문 계획"}
+                </DialogDescription>
+              </DialogHeader>
+
+              {selectedEvent.official ? (
+                <OfficialPosterImage
+                  eventId={selectedEvent.eventId}
+                  title={selectedEvent.item.title}
+                  className="max-h-64 min-h-32 w-full rounded-xl"
+                />
+              ) : selectedEvent.demo ? (
+                <img
+                  src={selectedEvent.demo.image}
+                  alt={`${selectedEvent.item.title} 포스터`}
+                  className="max-h-64 min-h-32 w-full rounded-xl object-cover"
+                />
+              ) : null}
+
+              <div className="space-y-3 break-words rounded-xl bg-muted/50 p-4 text-sm [overflow-wrap:anywhere]">
+                <p>
+                  <strong>방문 예정일</strong> {formatPlanDate(selectedEvent.startDate)}
+                </p>
+                <p>
+                  <strong>행사 일정</strong>{" "}
+                  {selectedEvent.official
+                    ? getOfficialSchedule(selectedEvent.eventId).raw ||
+                      selectedEvent.official.startDate ||
+                      "확인 불가"
+                    : selectedEvent.demo
+                      ? formatRange(selectedEvent.demo)
+                      : "확인 불가"}
+                </p>
+                <p>
+                  <strong>장소</strong> {selectedEvent.venue}
+                </p>
+                {selectedEvent.item.dateKind === "personal" && (
+                  <p className="font-bold text-brand-orange">
+                    선택한 날짜는 개인 방문예정일이며 공식 개최일이 아닙니다.
+                  </p>
+                )}
+              </div>
+
+              {selectedEvent.official || selectedEvent.demo?.officialUrl ? (
+                <a
+                  href={selectedEvent.demo?.officialUrl ?? OFFICIAL_EVENT_SITE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-extrabold text-primary-foreground"
+                >
+                  <ExternalLink className="h-4 w-4" /> 공식 홈페이지
+                </a>
+              ) : (
+                <p className="rounded-xl border border-dashed border-border px-4 py-3 text-center text-sm text-muted-foreground">
+                  연결된 공식 홈페이지가 없는 행사입니다.
+                </p>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {savedPlaces.length > 0 && (
         <section className="mt-8">
@@ -320,6 +532,17 @@ function isDateInRange(date: string, startDate: string, endDate: string) {
 function formatSelectedDate(dateKey: string) {
   const date = new Date(`${dateKey}T00:00:00`);
   return new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(date);
+}
+
+function formatPlanDate(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return dateKey;
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
     month: "long",
     day: "numeric",
     weekday: "short",
