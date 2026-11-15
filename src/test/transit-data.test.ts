@@ -17,14 +17,17 @@ describe("교통 안내 데이터", () => {
 
   it("도착지 선택에는 올림픽공원 공연장만 표시한다", () => {
     expect(olympicParkVenueDestinations.map((destination) => destination.name)).toEqual([
+      "KSPO-DOME",
+      "티켓링크 라이브 아레나",
       "올림픽홀",
-      "KSPO DOME",
-      "핸드볼경기장",
       "우리금융아트홀",
-      "K-아트홀",
       "뮤즈라이브",
-      "88잔디마당",
-      "평화의광장",
+      "평화의 광장",
+      "88마당",
+      "만남의 광장",
+      "수변무대",
+      "한얼광장",
+      "피크닉 광장",
     ]);
 
     for (const destination of olympicParkVenueDestinations) {

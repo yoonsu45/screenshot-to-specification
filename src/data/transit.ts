@@ -10,14 +10,25 @@ export type TransitGuide = {
 };
 
 export const olympicParkVenueDestinations = [
+  { id: "kspo-dome", name: "KSPO-DOME", keywords: ["KSPO DOME", "체조경기장", "케이스포돔"] },
+  {
+    id: "ticketlink-live-arena",
+    name: "티켓링크 라이브 아레나",
+    keywords: ["SK핸드볼경기장", "핸드볼경기장"],
+  },
   { id: "olympic-hall", name: "올림픽홀" },
-  { id: "kspo-dome", name: "KSPO DOME", keywords: ["체조경기장", "케이스포돔"] },
-  { id: "handball-arena", name: "핸드볼경기장", keywords: ["SK핸드볼경기장"] },
   { id: "woori-art-hall", name: "우리금융아트홀", keywords: ["역도경기장"] },
-  { id: "k-art-hall", name: "K-아트홀", keywords: ["케이아트홀"] },
   { id: "muse-live", name: "뮤즈라이브" },
-  { id: "88-lawn", name: "88잔디마당" },
-  { id: "peace-square", name: "평화의광장" },
+  { id: "peace-square", name: "평화의 광장", keywords: ["평화의광장"] },
+  { id: "88-madang", name: "88마당", keywords: ["88잔디마당"] },
+  { id: "meeting-square", name: "만남의 광장", keywords: ["만남의광장"] },
+  {
+    id: "waterside-stage",
+    name: "수변무대",
+    keywords: ["88호수 수변무대", "88호수수변무대"],
+  },
+  { id: "haneol-square", name: "한얼광장", keywords: ["올림픽공원 한얼광장"] },
+  { id: "picnic-square", name: "피크닉 광장", keywords: ["피크닉광장", "피크닉장"] },
 ] as const;
 
 const PARK_GUIDE_URL = "https://www.ksponco.or.kr/olympicpark/";
@@ -49,11 +60,22 @@ export const transitGuides: TransitGuide[] = [
   {
     anchor: "올림픽공원",
     aliases: [
+      "KSPO-DOME",
+      "KSPO DOME",
+      "티켓링크 라이브 아레나",
       "핸드볼경기장",
       "우리금융아트홀",
       "K-아트홀",
       "뮤즈라이브",
+      "88마당",
       "88잔디마당",
+      "만남의 광장",
+      "만남의광장",
+      "수변무대",
+      "88호수 수변무대",
+      "88호수수변무대",
+      "한얼광장",
+      "피크닉 광장",
       "올림픽공원 산책로",
     ],
     address: PARK_ADDRESS,
@@ -166,7 +188,8 @@ export const transitGuides: TransitGuide[] = [
     officialUrl: PARK_GUIDE_URL,
   },
   {
-    anchor: "평화의광장",
+    anchor: "평화의 광장",
+    aliases: ["평화의광장"],
     address: PARK_ADDRESS,
     latitude: 37.5175329,
     longitude: 127.11267,

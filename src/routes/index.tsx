@@ -45,13 +45,16 @@ const venueOptionSet = new Set<string>(venueOptions);
 
 function canonicalVenue(value: string) {
   if (/뮤즈라이브/.test(value)) return "뮤즈라이브";
-  if (/KSPO\s?DOME|체조경기장|케이스포돔/i.test(value)) return "KSPO DOME";
-  if (/핸드볼경기장/.test(value)) return "핸드볼경기장";
+  if (/KSPO[-\s]?DOME|체조경기장|케이스포돔/i.test(value)) return "KSPO-DOME";
+  if (/티켓링크 라이브 아레나|핸드볼경기장/.test(value)) return "티켓링크 라이브 아레나";
   if (/우리금융아트홀|역도경기장/.test(value)) return "우리금융아트홀";
-  if (/K-아트홀|케이아트홀/i.test(value)) return "K-아트홀";
   if (/올림픽홀/.test(value)) return "올림픽홀";
-  if (/88잔디마당/.test(value)) return "88잔디마당";
-  if (/평화의광장/.test(value)) return "평화의광장";
+  if (/88(?:잔디)?마당/.test(value)) return "88마당";
+  if (/평화의\s?광장/.test(value)) return "평화의 광장";
+  if (/만남의\s?광장/.test(value)) return "만남의 광장";
+  if (/수변무대/.test(value)) return "수변무대";
+  if (/한얼광장/.test(value)) return "한얼광장";
+  if (/피크닉\s?(?:광장|장)/.test(value)) return "피크닉 광장";
   return value;
 }
 
