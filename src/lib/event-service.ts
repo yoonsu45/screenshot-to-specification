@@ -184,7 +184,7 @@ export function verifyEvent(input: CheckInput): VerifyResult {
 }
 
 export const EXAMPLE_CASE: CheckInput = {
-  title: "[시연용] 가상 별빛 콘서트",
-  date: "2026-11-14",
-  venue: "올림픽홀",
+  title: "[시연용] 2026 서울 윈터 사운드 페스타",
+  date: "2026-11-21",
+  venue: "KSPO DOME",
 };

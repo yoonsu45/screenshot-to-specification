@@ -143,9 +143,10 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 const CATEGORY_COLORS: Record<EventCategory, { background: string; text: string; border: string; dot: string }> = {
   공연: { background: "bg-blue-100", text: "text-blue-800", border: "border-blue-500", dot: "bg-blue-500" },
+  스포츠: { background: "bg-emerald-100", text: "text-emerald-800", border: "border-emerald-500", dot: "bg-emerald-500" },
   체험: { background: "bg-orange-100", text: "text-orange-800", border: "border-orange-500", dot: "bg-orange-500" },
   전시: { background: "bg-violet-100", text: "text-violet-800", border: "border-violet-500", dot: "bg-violet-500" },
-  프로그램: { background: "bg-emerald-100", text: "text-emerald-800", border: "border-emerald-500", dot: "bg-emerald-500" },
+  축제: { background: "bg-rose-100", text: "text-rose-800", border: "border-rose-500", dot: "bg-rose-500" },
 };
 
 function EventLabel({ event }: { event: ParkEvent }) {

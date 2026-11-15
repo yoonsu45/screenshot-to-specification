@@ -3,26 +3,33 @@ import { getParkingEventNotices, toKoreaDateKey } from "@/lib/parking-guidance";
 
 describe("행사 일정 기반 주차 안내", () => {
   it("도착 장소의 오늘과 가까운 행사만 반환한다", () => {
-    const notices = getParkingEventNotices("올림픽홀", [], "2026-11-14");
+    const notices = getParkingEventNotices("올림픽홀", [], "2026-11-27");
 
-    expect(notices.map((notice) => notice.event.id)).toEqual(["demo-concert-2026"]);
+    expect(notices.map((notice) => notice.event.id)).toEqual([
+      "OLP-DEMO-002",
+      "OLP-DEMO-009",
+    ]);
     expect(notices[0]).toMatchObject({ daysUntil: 0, isActiveToday: true });
   });
 
   it("공원 전체를 선택하면 올림픽공원 내 일정을 함께 보여준다", () => {
-    const notices = getParkingEventNotices("올림픽공원", [], "2026-11-13", 2);
+    const notices = getParkingEventNotices("올림픽공원", [], "2026-11-21", 7);
 
-    expect(notices.map((notice) => notice.event.id)).toEqual(["park-walk", "demo-concert-2026"]);
+    expect(notices.map((notice) => notice.event.id)).toEqual([
+      "OLP-DEMO-001",
+      "OLP-DEMO-004",
+      "OLP-DEMO-002",
+    ]);
   });
 
   it("시설 별칭에 해당하는 행사도 찾는다", () => {
     const notices = getParkingEventNotices(
-      "일산올림픽스포츠센터",
-      ["일산 실내수영장", "일산 다목적실"],
-      "2026-11-15",
+      "올림픽공원 공연장",
+      ["KSPO DOME"],
+      "2026-11-20",
     );
 
-    expect(notices[0]?.event.id).toBe("ilsan-swim");
+    expect(notices[0]?.event.id).toBe("OLP-DEMO-001");
     expect(notices[0]?.daysUntil).toBe(1);
   });
 

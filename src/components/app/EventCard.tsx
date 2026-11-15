@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, CalendarDays, ExternalLink, MapPin, Plus, UsersRound } from "lucide-react";
+import { Bookmark, CalendarDays, Clock3, ExternalLink, MapPin, Plus, Ticket, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import type { ParkEvent } from "@/data/events";
 import { getFacility } from "@/data/facilities";
@@ -154,13 +154,28 @@ export function EventCard({
               <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <span className="min-w-0">{formatRange(event)}</span>
             </p>
+            {event.startTime && (
+              <p className="flex min-w-0 items-start gap-2">
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span className="min-w-0">
+                  {event.startTime}{event.endTime ? ` – ${event.endTime}` : ""}
+                </span>
+              </p>
+            )}
             <p className="flex min-w-0 items-start gap-2">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <span className="min-w-0">
-                {facility?.name ?? event.facilityId} · {event.venue}
+                {event.venueDetail ?? `${facility?.name ?? event.facilityId} · ${event.venue}`}
+                {event.address ? ` · ${event.address}` : ""}
               </span>
             </p>
-            <p className="text-muted-foreground">행사 정보를 확인하고 방문 계획에 담아보세요.</p>
+            {event.admission && (
+              <p className="flex min-w-0 items-start gap-2">
+                <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span className="min-w-0">입장: {event.admission}</span>
+              </p>
+            )}
+            {event.description && <p className="text-muted-foreground">{event.description}</p>}
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
             <Button type="button" onClick={openVisitDateDialog} className="rounded-xl font-bold">

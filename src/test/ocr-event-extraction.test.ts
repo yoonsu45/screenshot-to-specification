@@ -5,34 +5,34 @@ describe("parseOcrText", () => {
   it("행사 날짜와 예매 오픈 날짜를 분리한다", () => {
     const result = parseOcrText(
       `
-      가상 별빛 콘서트
-      2026.11.14 SAT
-      올림픽홀
+      2026 서울 윈터 사운드 페스타
+      2026.11.21 SAT
+      KSPO DOME
       TICKET OPEN 2026.10.20
     `,
       2026,
     );
 
-    expect(result.title).toBe("[시연용] 가상 별빛 콘서트");
-    expect(result.date).toBe("2026-11-14");
-    expect(result.venue).toBe("올림픽홀");
+    expect(result.title).toBe("[시연용] 2026 서울 윈터 사운드 페스타");
+    expect(result.date).toBe("2026-11-21");
+    expect(result.venue).toBe("KSPO DOME");
     expect(result.bookingDates).toEqual(["2026-10-20"]);
-    expect(result.candidates[0]?.eventId).toBe("demo-concert-2026");
+    expect(result.candidates[0]?.eventId).toBe("OLP-DEMO-001");
   });
 
   it("연도가 없는 날짜는 채우지 않고 시연 후보만 제시한다", () => {
     const result = parseOcrText(
       `
-      가을 음악회
-      11월 12일
-      88잔디마당
+      별빛 아래 인디나잇
+      11월 27일
+      올림픽홀
     `,
       2026,
     );
 
     expect(result.date).toBe("");
-    expect(result.venue).toBe("88잔디마당");
-    expect(result.candidates[0]?.eventId).toBe("autumn-concert");
+    expect(result.venue).toBe("올림픽홀");
+    expect(result.candidates[0]?.eventId).toBe("OLP-DEMO-002");
   });
 
   it("예매 날짜만 있으면 행사 날짜 입력칸을 비워 둔다", () => {
@@ -51,17 +51,17 @@ describe("parseOcrText", () => {
   });
 
   it("시연 접두어가 없는 포스터에서도 가상 행사 후보를 찾는다", () => {
-    const result = parseOcrText("윈터 페스타 라이브\nKSPO DOME", 2026);
+    const result = parseOcrText("재즈 온 더 파크\n우리금융아트홀", 2026);
 
-    expect(result.candidates[0]?.eventId).toBe("kspo-winter");
+    expect(result.candidates[0]?.eventId).toBe("OLP-DEMO-006");
     expect(result.candidates[0]?.score).toBeGreaterThan(0.8);
   });
 
   it("한 글자를 잘못 읽은 공연장도 유사도로 찾는다", () => {
-    const result = parseOcrText("가상 별빛 콘서트\n2026.11.14\n올림픽흘", 2026);
+    const result = parseOcrText("별빛 아래 인디나잇\n2026.11.27\n올림픽흘", 2026);
 
     expect(result.venue).toBe("올림픽홀");
-    expect(result.candidates[0]?.eventId).toBe("demo-concert-2026");
+    expect(result.candidates[0]?.eventId).toBe("OLP-DEMO-002");
   });
 
   it("관련 없는 이미지에는 시연용 행사를 억지로 추천하지 않는다", () => {
