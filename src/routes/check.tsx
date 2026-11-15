@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
   CheckCircle2,
+  ImagePlus,
   LoaderCircle,
   MapPin,
   Search,
@@ -17,6 +18,7 @@ import {
   type OcrConfidence,
 } from "@/lib/ocr-event-extraction";
 import { EXAMPLE_CASE, formatRange } from "@/lib/event-service";
+import { optimizeImage } from "@/lib/image-optimization";
 import { officialEvents } from "@/lib/official-data";
 
 export const Route = createFileRoute("/check")({
@@ -51,7 +53,10 @@ function CheckPage() {
   const [error, setError] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisState>({ status: "idle" });
   const [searchOpen, setSearchOpen] = useState(false);
+  const [replacingImage, setReplacingImage] = useState(false);
+  const replacementFileRef = useRef<HTMLInputElement>(null);
   const analyzedImage = useRef<string | null>(null);
+  const analysisRequestId = useRef(0);
   const isCaptureMode = Boolean(form.image);
 
   const suggestions = useMemo(() => {
@@ -72,6 +77,7 @@ function CheckPage() {
     setSearchOpen(false);
 
     if (!draft.image) {
+      analysisRequestId.current += 1;
       analyzedImage.current = null;
       setAnalysis({ status: "idle" });
       return;
@@ -83,11 +89,14 @@ function CheckPage() {
   }, [draft]);
 
   async function analyzeImage(imageDataUrl: string) {
+    const requestId = ++analysisRequestId.current;
     setAnalysis({ status: "analyzing", progress: 0, label: "OCR 엔진 준비 중" });
     try {
       const result = await extractEventFromImage(imageDataUrl, ({ progress, label }) => {
+        if (requestId !== analysisRequestId.current) return;
         setAnalysis({ status: "analyzing", progress, label });
       });
+      if (requestId !== analysisRequestId.current) return;
       setForm((current) => ({
         ...current,
         officialRecordId: undefined,
@@ -97,8 +106,28 @@ function CheckPage() {
       }));
       setAnalysis({ status: "success", result });
     } catch (caught) {
+      if (requestId !== analysisRequestId.current) return;
       const message = caught instanceof Error ? caught.message : "이미지의 글자를 읽지 못했어요.";
       setAnalysis({ status: "error", message });
+    }
+  }
+
+  async function replaceImage(file?: File) {
+    if (!file) return;
+    analysisRequestId.current += 1;
+    setReplacingImage(true);
+    setAnalysis({ status: "analyzing", progress: 0, label: "새 이미지 준비 중" });
+
+    try {
+      const image = await optimizeImage(file);
+      analyzedImage.current = null;
+      setDraft({ title: "", date: "", venue: "", image });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "이미지를 불러오지 못했어요.";
+      setAnalysis({ status: "error", message });
+    } finally {
+      setReplacingImage(false);
+      if (replacementFileRef.current) replacementFileRef.current.value = "";
     }
   }
 
@@ -163,11 +192,36 @@ function CheckPage() {
       )}
 
       {form.image && (
-        <img
-          src={form.image}
-          alt="선택한 캡처 이미지"
-          className="mb-4 max-h-72 w-full rounded-2xl border border-border bg-card object-contain"
-        />
+        <div className="mb-4 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <img
+            src={form.image}
+            alt="선택한 캡처 이미지"
+            className="max-h-72 w-full object-contain"
+          />
+          <div className="border-t border-border p-3">
+            <button
+              type="button"
+              onClick={() => replacementFileRef.current?.click()}
+              disabled={replacingImage}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3 text-sm font-extrabold text-primary transition hover:ring-2 hover:ring-ring disabled:cursor-wait disabled:opacity-60"
+            >
+              {replacingImage ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <ImagePlus className="h-4 w-4" />
+              )}
+              {replacingImage ? "새 이미지 준비 중" : "다른 사진 선택"}
+            </button>
+            <input
+              ref={replacementFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              aria-label="다른 사진 선택"
+              onChange={(event) => void replaceImage(event.target.files?.[0])}
+            />
+          </div>
+        </div>
       )}
 
       {form.image && (
