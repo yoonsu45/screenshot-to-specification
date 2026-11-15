@@ -109,7 +109,7 @@ export function LoginDialog() {
         type="button"
         variant="outline"
         onClick={() => setAuthOpen(true)}
-        className="relative z-10 h-12 self-end rounded-full border-2 border-primary bg-background px-7 text-lg font-extrabold text-primary hover:bg-secondary"
+        className="relative z-10 h-10 self-end rounded-full border border-primary bg-background px-5 text-sm font-extrabold text-primary hover:bg-secondary"
       >
         로그인
       </Button>
