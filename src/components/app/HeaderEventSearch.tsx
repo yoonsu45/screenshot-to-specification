@@ -1,10 +1,16 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Clock3, MapPin, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, Flame, LoaderCircle, MapPin, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
 import { searchOfficialEvents } from "@/lib/event-service";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 import type { OfficialRecord } from "@/lib/official-data";
+import { officialEvents } from "@/lib/official-data";
+import {
+  getTopEventSearches,
+  recordEventSearch,
+  type TopEventSearch,
+} from "@/lib/event-search-analytics";
 
 const RECENT_SEARCH_KEY = "the-check-recent-event-searches";
 const MAX_RECENT_SEARCHES = 6;
@@ -34,6 +40,8 @@ export function HeaderEventSearch() {
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<OfficialRecord | null>(null);
+  const [topSearches, setTopSearches] = useState<TopEventSearch[]>([]);
+  const [topSearchesLoading, setTopSearchesLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -49,6 +57,14 @@ export function HeaderEventSearch() {
   const results = useMemo(
     () => (submittedQuery ? uniqueSearchResults(submittedQuery) : []),
     [submittedQuery],
+  );
+  const visibleTopSearches = useMemo(
+    () =>
+      topSearches.flatMap((item) => {
+        const event = officialEvents.find((candidate) => candidate.id === item.eventId);
+        return event ? [{ ...item, event }] : [];
+      }),
+    [topSearches],
   );
 
   function rememberSearch(value: string) {
@@ -90,6 +106,27 @@ export function HeaderEventSearch() {
     setSelectedEvent(null);
   }
 
+  async function loadTopSearches() {
+    setTopSearchesLoading(true);
+    try {
+      setTopSearches(await getTopEventSearches());
+    } catch {
+      setTopSearches([]);
+    } finally {
+      setTopSearchesLoading(false);
+    }
+  }
+
+  function selectEvent(event: OfficialRecord) {
+    setSelectedEvent(event);
+    void recordEventSearch(event.id).catch(() => undefined);
+  }
+
+  function openSearch() {
+    setOpen(true);
+    void loadTopSearches();
+  }
+
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
     if (!nextOpen) resetSearch();
@@ -99,7 +136,7 @@ export function HeaderEventSearch() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openSearch}
         aria-label="행사 검색"
         className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-primary bg-background text-primary hover:bg-secondary"
       >
@@ -148,8 +185,45 @@ export function HeaderEventSearch() {
               </button>
             </form>
 
-            {!submittedQuery && (
-              <section className="mt-6" aria-labelledby="recent-search-title">
+            {!submittedQuery && !selectedEvent && (
+              <>
+                <section className="mt-6" aria-labelledby="popular-search-title">
+                  <h2 id="popular-search-title" className="flex items-center gap-2 font-extrabold text-primary">
+                    <Flame className="h-4 w-4 text-brand-orange" /> 지금 많이 검색하는 행사
+                  </h2>
+                  {topSearchesLoading ? (
+                    <div className="mt-3 flex items-center gap-2 rounded-xl bg-muted/60 p-4 text-sm text-muted-foreground">
+                      <LoaderCircle className="h-4 w-4 animate-spin" /> 인기 행사를 불러오는 중이에요.
+                    </div>
+                  ) : visibleTopSearches.length > 0 ? (
+                    <ol className="mt-3 space-y-2">
+                      {visibleTopSearches.map((item, index) => {
+                        const { event } = item;
+                        return (
+                          <li key={item.eventId}>
+                            <button
+                              type="button"
+                              onClick={() => selectEvent(event)}
+                              className="flex w-full items-center gap-3 rounded-xl border bg-card px-3 py-2.5 text-left hover:border-primary hover:bg-secondary/40"
+                            >
+                              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-black text-primary-foreground">
+                                {index + 1}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate font-extrabold text-primary">{event.title}</span>
+                              <span className="shrink-0 text-xs font-bold text-muted-foreground">{item.searchCount.toLocaleString("ko-KR")}회</span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  ) : (
+                    <p className="mt-3 rounded-xl bg-muted/60 p-4 text-sm text-muted-foreground">
+                      검색 데이터가 쌓이면 최근 7일 인기 행사가 표시됩니다.
+                    </p>
+                  )}
+                </section>
+
+                <section className="mt-6" aria-labelledby="recent-search-title">
                 <div className="flex items-center justify-between gap-3">
                   <h2 id="recent-search-title" className="flex items-center gap-2 font-extrabold text-primary">
                     <Clock3 className="h-4 w-4" /> 최근 검색어
@@ -171,7 +245,8 @@ export function HeaderEventSearch() {
                 ) : (
                   <p className="mt-3 rounded-xl bg-muted/60 p-4 text-sm text-muted-foreground">최근 검색한 행사가 없습니다.</p>
                 )}
-              </section>
+                </section>
+              </>
             )}
 
             {submittedQuery && !selectedEvent && (
@@ -190,7 +265,7 @@ export function HeaderEventSearch() {
                         <li key={event.id}>
                           <button
                             type="button"
-                            onClick={() => setSelectedEvent(event)}
+                            onClick={() => selectEvent(event)}
                             aria-label={`${event.title} 행사 정보 보기`}
                             className="flex w-full min-w-0 gap-3 rounded-2xl border bg-card p-3 text-left transition hover:border-primary hover:bg-secondary/40"
                           >
@@ -222,7 +297,7 @@ export function HeaderEventSearch() {
               <section className="mt-6" aria-label="선택한 행사 정보">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <button type="button" onClick={() => setSelectedEvent(null)} className="flex items-center gap-1 text-sm font-extrabold text-primary hover:underline">
-                    <ArrowLeft className="h-4 w-4" /> 검색 결과
+                    <ArrowLeft className="h-4 w-4" /> {submittedQuery ? "검색 결과" : "검색 화면"}
                   </button>
                   <button type="button" onClick={resetSearch} className="flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-primary">
                     <RotateCcw className="h-3.5 w-3.5" /> 검색 초기화
