@@ -133,4 +133,37 @@ describe("parseOcrText", () => {
     expect(result.title).toBe("");
     expect(result.candidates).toEqual([]);
   });
+
+  it("SNS 게시물의 설명문 대신 꺾쇠 안 작품명을 행사명으로 선택한다", () => {
+    const result = parseOcrText(
+      [
+        "글쓰기",
+        "2012년 9월 21일, SLE.",
+        "봄여름가을겨울의 <브라보 마이 라이프> 10",
+        "포스터.",
+        "두 사람이 소파에 기대어 웃고 있고, 그 위엔 큼직한 사인과",
+        "글씨로 적힌 “Bravo!”",
+        "사진 보고 있자니 오랜만에 이 노래 다시 듣고 싶어진다.",
+        "#봄여름가을겨울 #브라보마이라이프 #BravoMyLife #공연",
+      ].join("\n"),
+      2026,
+    );
+
+    expect(result.title).toBe("브라보 마이 라이프");
+    expect(result.titleSuggestions[0]).toBe("브라보 마이 라이프");
+    expect(result.titleSuggestions).not.toContain(
+      "두 사람이 소파에 기대어 웃고 있고, 그 위엔 큼직한 사인과",
+    );
+    expect(result.date).toBe("2012-09-21");
+  });
+
+  it("괄호 뒤의 회차와 공연 유형까지 행사명에 포함한다", () => {
+    const result = parseOcrText(
+      "2012년 9월 21일, 올림픽홀.\n봄여름가을겨울의 <브라보 마이 라이프> 10주년 콘서트\n포스터.",
+      2026,
+    );
+
+    expect(result.title).toBe("브라보 마이 라이프 10주년 콘서트");
+    expect(result.venue).toBe("올림픽홀");
+  });
 });

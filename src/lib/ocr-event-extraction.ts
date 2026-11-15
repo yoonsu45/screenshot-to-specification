@@ -21,6 +21,7 @@ type RankedOcrEventCandidate = OcrEventCandidate & {
 export type BrowserOcrResult = {
   rawText: string;
   title: string;
+  titleSuggestions: string[];
   date: string;
   venue: string;
   confidence: OcrConfidence;
@@ -51,6 +52,8 @@ const venuePattern =
 const nonTitlePattern =
   /예매|티켓|ticket|open|오픈|문의|주최|주관|후원|가격|입장|관람|시간|일시|장소|venue|place|www\.|https?:|@/i;
 const hashtagPattern = /[#＃]\s*[\p{L}\p{N}_-]+/gu;
+const narrativePattern =
+  /두\s*사람|사람이|사진\s*(?:보고|속|에는)|글씨로|적힌|기대어|웃고|있자니|듣고\s*싶|생각이\s*난|보인다|보여요|입니다|합니다|했어요|있습니다/i;
 
 export async function extractEventFromImage(
   imageDataUrl: string,
@@ -76,8 +79,6 @@ export async function extractEventFromImage(
 
   try {
     await worker.setParameters({
-      // Posters contain isolated text blocks rather than one uniform paragraph.
-      tessedit_pageseg_mode: PSM.SPARSE_TEXT,
       preserve_interword_spaces: "1",
       user_defined_dpi: "300",
     });
@@ -95,6 +96,10 @@ export async function extractEventFromImage(
     for (let index = 0; index < variants.length; index += 1) {
       recognitionPass = index;
       const variant = variants[index]!;
+      await worker.setParameters({
+        // Social posts work best as one text block; decorated posters need sparse-text detection.
+        tessedit_pageseg_mode: index === 0 ? PSM.SINGLE_BLOCK : PSM.SPARSE_TEXT,
+      });
       const result = await worker.recognize(
         variant,
         { rotateAuto: true },
@@ -229,15 +234,13 @@ export function parseOcrText(
   const isClearTitle = Boolean(
     first?.exactTitle && first.score >= 0.82 && (!second || first.score - second.score >= 0.12),
   );
-  const title =
-    isClearTitle && first
-      ? first.title
-      : inferTitle(
-          lines,
-          observedLines,
-          venue,
-          lines.some((line) => hasDate(line)),
-        );
+  const inferredTitles = inferTitleCandidates(
+    lines,
+    observedLines,
+    venue,
+    lines.some((line) => hasDate(line)),
+  );
+  const title = isClearTitle && first ? first.title : (inferredTitles[0] ?? "");
   const date = detectedDates[0] ?? "";
   const foundFieldCount = [title, date, venue].filter(Boolean).length;
   const confidence: OcrConfidence =
@@ -250,6 +253,7 @@ export function parseOcrText(
   return {
     rawText,
     title,
+    titleSuggestions: uniqueTitleSuggestions([title, ...inferredTitles]).slice(0, 4),
     date,
     venue,
     confidence,
@@ -356,7 +360,7 @@ function partialSimilarity(needle: string, text: string) {
   return best;
 }
 
-function inferTitle(
+function inferTitleCandidates(
   lines: string[],
   observedLines: OcrLineObservation[],
   venue: string,
@@ -366,7 +370,9 @@ function inferTitle(
     hasRecognizedDate ||
     Boolean(venue) ||
     lines.some((line) => eventTitlePattern.test(removeHashtags(line)));
-  if (!hasEventContext) return "";
+  if (!hasEventContext) return [];
+
+  const structuredTitles = extractBracketedTitles(lines);
 
   const observations = mergeLineObservations(lines, observedLines);
   const maxHeight = Math.max(1, ...observations.map((line) => line.height));
@@ -386,6 +392,7 @@ function inferTitle(
         digitRatio > 0.55 ||
         isVenue ||
         nonTitlePattern.test(text) ||
+        narrativePattern.test(text) ||
         isDateLike(text);
       if (invalid) return null;
 
@@ -408,10 +415,56 @@ function inferTitle(
     .filter((candidate): candidate is { text: string; score: number } => candidate !== null)
     .sort((left, right) => right.score - left.score);
 
-  const best = candidates[0];
-  if (!best) return "";
   const minimumScore = observedLines.length ? 0.48 : 0.38;
-  return best.score >= minimumScore ? best.text : "";
+  return uniqueTitleSuggestions([
+    ...structuredTitles,
+    ...candidates.filter((candidate) => candidate.score >= minimumScore).map(({ text }) => text),
+  ]);
+}
+
+function extractBracketedTitles(lines: string[]) {
+  const patterns = [/<([^<>]{2,60})>/g, /〈([^〈〉]{2,60})〉/g, /《([^《》]{2,60})》/g];
+  const titles: string[] = [];
+
+  lines.forEach((line) => {
+    const withoutHashtags = removeHashtags(line);
+    patterns.forEach((pattern) => {
+      pattern.lastIndex = 0;
+      for (const match of withoutHashtags.matchAll(pattern)) {
+        const title = cleanTitleLine(match[1] ?? "");
+        if (
+          normalize(title).length >= 2 &&
+          !nonTitlePattern.test(title) &&
+          !narrativePattern.test(title) &&
+          !isDateLike(title)
+        ) {
+          const suffix = cleanTitleLine(
+            withoutHashtags.slice((match.index ?? 0) + match[0].length).split(/[.!?]/, 1)[0] ?? "",
+          );
+          if (
+            eventTitlePattern.test(suffix) &&
+            normalize(suffix).length <= 30 &&
+            !nonTitlePattern.test(suffix)
+          ) {
+            titles.push(`${title} ${suffix}`);
+          }
+          titles.push(title);
+        }
+      }
+    });
+  });
+
+  return uniqueTitleSuggestions(titles);
+}
+
+function uniqueTitleSuggestions(values: string[]) {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    const key = normalizeForTitle(value);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function mergeLineObservations(lines: string[], observations: OcrLineObservation[]) {
