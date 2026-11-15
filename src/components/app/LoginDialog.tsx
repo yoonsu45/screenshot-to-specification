@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { LoaderCircle, LogOut, UserRound, UserRoundPlus } from "lucide-react";
+import { CalendarCheck, ChevronDown, LoaderCircle, LogOut, UserRound, UserRoundPlus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -11,6 +12,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/app-store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Mode = "login" | "signup";
 
@@ -84,19 +93,32 @@ export function LoginDialog() {
 
   if (userEmail) {
     return (
-      <div className="relative z-10 flex items-center gap-2 self-end">
-        <span className="hidden max-w-36 truncate rounded-full bg-background/90 px-3 py-2 text-xs font-semibold text-primary shadow-sm sm:inline-block">
-          {userEmail}
-        </span>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleLogout}
-          className="h-9 gap-1 rounded-full border border-primary bg-background px-3 text-xs font-extrabold text-primary hover:bg-secondary"
-        >
-          <LogOut className="h-3.5 w-3.5" /> 로그아웃
-        </Button>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="relative z-10 h-9 gap-1 rounded-full border border-primary bg-background px-3 text-xs font-extrabold text-primary hover:bg-secondary"
+          >
+            <UserRound className="h-3.5 w-3.5" /> 내 메뉴 <ChevronDown className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 rounded-xl p-2">
+          <DropdownMenuLabel className="truncate text-xs text-muted-foreground">
+            {userEmail}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild className="cursor-pointer rounded-lg py-2.5 font-bold text-primary">
+            <Link to="/plan"><CalendarCheck /> 내 계획</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer rounded-lg py-2.5 font-bold text-destructive focus:text-destructive"
+            onSelect={() => void handleLogout()}
+          >
+            <LogOut /> 로그아웃
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 

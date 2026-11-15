@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { CalendarCheck, Camera } from "lucide-react";
+import { Camera } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 import { BottomTabBar } from "./BottomTabBar";
 import { CheckSheet } from "./CheckSheet";
 import { navItems } from "./nav-items";
 import { useAppStore } from "@/lib/app-store";
 import { LoginDialog } from "./LoginDialog";
+import { HeaderEventSearch } from "./HeaderEventSearch";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { setCheckOpen } = useAppStore();
@@ -38,13 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <BrandMark className="text-[2.15rem] sm:text-4xl" />
               </Link>
               <div className="ml-auto flex items-center gap-2">
-                <Link
-                  to="/plan"
-                  className="inline-flex h-9 items-center gap-1 rounded-full border border-primary bg-background px-2.5 text-xs font-extrabold text-primary hover:bg-secondary sm:px-3"
-                >
-                  <CalendarCheck className="h-3.5 w-3.5" />
-                  내 계획
-                </Link>
+                <HeaderEventSearch />
                 <LoginDialog />
               </div>
             </div>
