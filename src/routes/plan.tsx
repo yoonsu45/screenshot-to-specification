@@ -330,19 +330,19 @@ export function Plan() {
           >
             <button
               type="button"
-              aria-pressed={listMode === "day"}
-              onClick={() => setListMode("day")}
-              className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${listMode === "day" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-            >
-              선택한 날
-            </button>
-            <button
-              type="button"
               aria-pressed={listMode === "month"}
               onClick={() => setListMode("month")}
               className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${listMode === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
               이달 전체
+            </button>
+            <button
+              type="button"
+              aria-pressed={listMode === "day"}
+              onClick={() => setListMode("day")}
+              className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${listMode === "day" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+            >
+              선택한 날
             </button>
           </div>
         </div>
