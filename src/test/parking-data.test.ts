@@ -1,7 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { getParkingMapDestination, getVenueParking, parseLiveParking, parseParkingHistory } from "@/lib/parking-data";
+import {
+  getParkingMapDestination,
+  getParkAvailability,
+  getVenueParking,
+  parseLiveParking,
+  parseParkingHistory,
+} from "@/lib/parking-data";
 
 describe("official parking data", () => {
+  it("calculates aggregate availability from the confirmed capacity and rejects inconsistent counts", () => {
+    expect(getParkAvailability(2110)).toEqual({ remaining: 90, label: "혼잡" });
+    expect(getParkAvailability(0)).toEqual({ remaining: 2200, label: "여유" });
+    expect(getParkAvailability(1540)?.label).toBe("보통");
+    expect(getParkAvailability(1980)?.label).toBe("혼잡");
+    expect(getParkAvailability(2200)).toEqual({ remaining: 0, label: "만차" });
+    for (const value of [-1, 2201, 1.5, NaN]) expect(getParkAvailability(value)).toBeNull();
+  });
   it("preserves zero but rejects missing, negative and textual live values", () => {
     expect(parseLiveParking([{ parking_sum: 0 }])).toBe(0);
     expect(parseLiveParking([{ parking_sum: 2110 }])).toBe(2110);

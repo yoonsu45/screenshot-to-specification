@@ -9,3 +9,8 @@ export const getSeoulParking = createServerFn({ method: "GET" }).handler(async (
   const { readSeoulParking } = await import("./seoul-parking.server");
   return readSeoulParking();
 });
+
+export const getTsParking = createServerFn({ method: "GET" }).handler(async () => {
+  const { readTsParking } = await import("./ts-parking.server");
+  return readTsParking();
+});

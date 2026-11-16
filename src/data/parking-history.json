@@ -1,0 +1,408 @@
+{
+  "monthly": {
+    "sourceFile": "한국체육산업개발주식회사_월별주차현황_20251231.csv",
+    "sourceRows": 72,
+    "rows": [
+      {
+        "year": 2023,
+        "month": 1,
+        "total": 55937
+      },
+      {
+        "year": 2023,
+        "month": 2,
+        "total": 63981
+      },
+      {
+        "year": 2023,
+        "month": 3,
+        "total": 79091
+      },
+      {
+        "year": 2023,
+        "month": 4,
+        "total": 81173
+      },
+      {
+        "year": 2023,
+        "month": 5,
+        "total": 96132
+      },
+      {
+        "year": 2023,
+        "month": 6,
+        "total": 83769
+      },
+      {
+        "year": 2023,
+        "month": 7,
+        "total": 66628
+      },
+      {
+        "year": 2023,
+        "month": 8,
+        "total": 72256
+      },
+      {
+        "year": 2023,
+        "month": 9,
+        "total": 75656
+      },
+      {
+        "year": 2023,
+        "month": 10,
+        "total": 122511
+      },
+      {
+        "year": 2023,
+        "month": 11,
+        "total": 69551
+      },
+      {
+        "year": 2023,
+        "month": 12,
+        "total": 76574
+      },
+      {
+        "year": 2024,
+        "month": 1,
+        "total": 57651
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "total": 49041
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "total": 83634
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "total": 86480
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "total": 98369
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "total": 86575
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "total": 59808
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "total": 76120
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "total": 86004
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "total": 98408
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "total": 79772
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "total": 68462
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "total": 56185
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "total": 59881
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "total": 72549
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "total": 85562
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "total": 102822
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "total": 87091
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "total": 68505
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "total": 76408
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "total": 83344
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "total": 82361
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "total": 99064
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "total": 76923
+      }
+    ]
+  },
+  "flow": {
+    "sourceFile": "한국체육산업개발주식회사_올림픽공원 입출차 정보_20240731.csv",
+    "sourceRows": 215528,
+    "validEntries": 215528,
+    "rejectedEntries": 0,
+    "durationSamples": 215528,
+    "medianStayMinutes": 74.0,
+    "start": "2024-07-01",
+    "end": "2024-07-31",
+    "days": 31,
+    "hours": [
+      {
+        "hour": 0,
+        "entries": 316,
+        "dailyAverage": 10.2
+      },
+      {
+        "hour": 1,
+        "entries": 226,
+        "dailyAverage": 7.3
+      },
+      {
+        "hour": 2,
+        "entries": 165,
+        "dailyAverage": 5.3
+      },
+      {
+        "hour": 3,
+        "entries": 216,
+        "dailyAverage": 7.0
+      },
+      {
+        "hour": 4,
+        "entries": 602,
+        "dailyAverage": 19.4
+      },
+      {
+        "hour": 5,
+        "entries": 8118,
+        "dailyAverage": 261.9
+      },
+      {
+        "hour": 6,
+        "entries": 9100,
+        "dailyAverage": 293.5
+      },
+      {
+        "hour": 7,
+        "entries": 7951,
+        "dailyAverage": 256.5
+      },
+      {
+        "hour": 8,
+        "entries": 20762,
+        "dailyAverage": 669.7
+      },
+      {
+        "hour": 9,
+        "entries": 16804,
+        "dailyAverage": 542.1
+      },
+      {
+        "hour": 10,
+        "entries": 16386,
+        "dailyAverage": 528.6
+      },
+      {
+        "hour": 11,
+        "entries": 10702,
+        "dailyAverage": 345.2
+      },
+      {
+        "hour": 12,
+        "entries": 11742,
+        "dailyAverage": 378.8
+      },
+      {
+        "hour": 13,
+        "entries": 15988,
+        "dailyAverage": 515.7
+      },
+      {
+        "hour": 14,
+        "entries": 13283,
+        "dailyAverage": 428.5
+      },
+      {
+        "hour": 15,
+        "entries": 14247,
+        "dailyAverage": 459.6
+      },
+      {
+        "hour": 16,
+        "entries": 13653,
+        "dailyAverage": 440.4
+      },
+      {
+        "hour": 17,
+        "entries": 13555,
+        "dailyAverage": 437.3
+      },
+      {
+        "hour": 18,
+        "entries": 13747,
+        "dailyAverage": 443.5
+      },
+      {
+        "hour": 19,
+        "entries": 11733,
+        "dailyAverage": 378.5
+      },
+      {
+        "hour": 20,
+        "entries": 10334,
+        "dailyAverage": 333.4
+      },
+      {
+        "hour": 21,
+        "entries": 3820,
+        "dailyAverage": 123.2
+      },
+      {
+        "hour": 22,
+        "entries": 1481,
+        "dailyAverage": 47.8
+      },
+      {
+        "hour": 23,
+        "entries": 597,
+        "dailyAverage": 19.3
+      }
+    ]
+  },
+  "congestion": {
+    "sourceFile": "한국체육산업개발주식회사_주차장 혼잡도 정보_20260812.csv",
+    "sourceRows": 699,
+    "rejectedRows": 1,
+    "start": "2025-02-12 14:02:12",
+    "end": "2026-08-12 17:08:12",
+    "latestByZone": [
+      {
+        "zone": "P10",
+        "at": "2026-01-10 11:01:10",
+        "statuses": [
+          "혼잡"
+        ]
+      },
+      {
+        "zone": "P11",
+        "at": "2026-01-10 16:01:10",
+        "statuses": [
+          "만차"
+        ]
+      },
+      {
+        "zone": "P1A",
+        "at": "2026-08-12 17:08:12",
+        "statuses": [
+          "혼잡"
+        ]
+      },
+      {
+        "zone": "P1B",
+        "at": "2026-08-12 17:08:12",
+        "statuses": [
+          "혼잡"
+        ]
+      },
+      {
+        "zone": "P2",
+        "at": "2026-06-06 00:06:06",
+        "statuses": [
+          "만차"
+        ]
+      },
+      {
+        "zone": "P4",
+        "at": "2026-06-06 00:06:06",
+        "statuses": [
+          "만차"
+        ]
+      },
+      {
+        "zone": "P5",
+        "at": "2026-06-06 00:06:06",
+        "statuses": [
+          "만차"
+        ]
+      },
+      {
+        "zone": "P6",
+        "at": "2026-06-06 00:06:06",
+        "statuses": [
+          "만차"
+        ]
+      },
+      {
+        "zone": "P7",
+        "at": "2026-06-06 00:06:06",
+        "statuses": [
+          "만차"
+        ]
+      },
+      {
+        "zone": "P8",
+        "at": "2026-02-06 15:02:06",
+        "statuses": [
+          "만차"
+        ]
+      },
+      {
+        "zone": "P9",
+        "at": "2025-12-25 15:12:25",
+        "statuses": [
+          "혼잡",
+          "만차"
+        ]
+      }
+    ]
+  }
+}

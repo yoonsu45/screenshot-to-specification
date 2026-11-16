@@ -1,9 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Car, ExternalLink, RefreshCw } from "lucide-react";
 import { getParkingOverview } from "@/lib/parking-api";
-import { getParkingMapDestination, getVenueParking, PARKING_GUIDE_URL, type ParkingSource } from "@/lib/parking-data";
+import {
+  getParkingMapDestination,
+  getParkAvailability,
+  getVenueParking,
+  PARK_AGGREGATE_CAPACITY,
+  PARKING_GUIDE_URL,
+  type ParkingSource,
+} from "@/lib/parking-data";
 import { openNaverMapPlace } from "@/lib/naver-map";
 import { SeoulParkingGuide } from "./SeoulParkingGuide";
+import { ParkingHistoryGuide } from "./ParkingHistoryGuide";
+import { TsParkingGuide } from "./TsParkingGuide";
 
 const sources = {
   live: "https://www.ksponco.or.kr/pubData/64?mid=a10106020000",
@@ -25,6 +34,7 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
   const live = query.data?.live;
   const fresh = live?.status === "ok" && Date.now() - Date.parse(live.fetchedAt) < 120000;
   const reading = fresh ? live.readings[0] : undefined;
+  const availability = reading ? getParkAvailability(reading.count) : null;
 
   return (
     <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-card" aria-label={`${venue} 주차 안내`}>
@@ -37,8 +47,15 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
       <div className="space-y-4 p-4">
         <div className="rounded-xl bg-secondary p-4" aria-live="polite">
           <p className="text-sm font-bold">공원 주차현황 · 동2/남2/북2문 제공 범위</p>
-          <p className="mt-1 text-2xl font-black">{reading ? `${reading.count.toLocaleString("ko-KR")}대` : query.isFetching ? "조회 중…" : "현재 현황 확인 불가"}</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">API 제공 주차대수입니다. 개별 주차장의 잔여 대수가 아닙니다. 원자료 측정 시각은 제공되지 않습니다.</p>
+          <p className="mt-1 text-2xl font-black">{availability ? `잔여 약 ${availability.remaining.toLocaleString("ko-KR")}대` : query.isFetching && !reading ? "조회 중…" : "잔여 대수 확인 불가"}</p>
+          <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">
+            <div><dt className="text-muted-foreground">총 수용 대수</dt><dd className="mt-1 font-bold">{PARK_AGGREGATE_CAPACITY.toLocaleString("ko-KR")}대</dd></div>
+            <div><dt className="text-muted-foreground">현재 주차 차량</dt><dd className="mt-1 font-bold">{reading ? `${reading.count.toLocaleString("ko-KR")}대` : "확인 불가"}</dd></div>
+            <div><dt className="text-muted-foreground">혼잡도 · 서비스 산정</dt><dd className="mt-1 font-bold">{availability?.label ?? "확인 불가"}</dd></div>
+          </dl>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">잔여 대수는 총 2,200대에서 현재 주차 차량 수를 뺀 계산값입니다. 이 제공 범위의 합계이며 P2·P5 등 개별 주차장의 빈자리가 아닙니다. 도착 시점의 주차를 보장하지 않습니다.</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">점유율 70% 미만 여유 · 70~90% 미만 보통 · 90% 이상 혼잡 · 잔여 0대 만차. 원자료 측정 시각은 제공되지 않습니다.</p>
+          {reading && !availability && <p className="mt-2 text-xs font-bold text-brand-orange">현재 차량 수가 수용 대수 범위를 벗어나 잔여 대수를 계산할 수 없습니다.</p>}
           {reading && <p className="text-xs text-muted-foreground">조회 시각 {new Date(live!.fetchedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (한국시간)</p>}
           <a className="text-xs underline" href={sources.live} target="_blank" rel="noopener noreferrer">실시간 데이터 출처</a>
         </div>
@@ -53,6 +70,8 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
         <a href={PARKING_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold underline">공식 주차장·요금·운영 안내 <ExternalLink className="h-3 w-3" /></a>
 
         <SeoulParkingGuide />
+        <TsParkingGuide />
+        <ParkingHistoryGuide parkingName={parking.primary} />
         <details className="border-t border-border pt-3">
           <summary className="cursor-pointer text-sm font-bold">과거 입출차 자료 확인</summary>
           <p className="mt-2 text-xs text-muted-foreground">조회된 일부 기록입니다. 최신 기록이나 현재 혼잡도·도착 시점 예측이 아닙니다.</p>

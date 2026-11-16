@@ -1,4 +1,18 @@
 export type ParkingReading = { at: string; count: number };
+
+// User confirmed on 2026-11-16: parking_sum is occupied vehicles;
+// 2,200 is the capacity used for this aggregate. Do not apply to individual lots.
+export const PARK_AGGREGATE_CAPACITY = 2200;
+
+export function getParkAvailability(occupied: number) {
+  if (!Number.isSafeInteger(occupied) || occupied < 0 || occupied > PARK_AGGREGATE_CAPACITY) return null;
+  const remaining = PARK_AGGREGATE_CAPACITY - occupied;
+  const ratio = occupied / PARK_AGGREGATE_CAPACITY;
+  return {
+    remaining,
+    label: remaining === 0 ? "만차" : ratio >= 0.9 ? "혼잡" : ratio >= 0.7 ? "보통" : "여유",
+  };
+}
 export type ParkingSource = {
   status: "ok" | "unavailable" | "missing_key";
   fetchedAt: string;
