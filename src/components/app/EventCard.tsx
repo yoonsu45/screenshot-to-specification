@@ -80,7 +80,11 @@ export function EventCard({
       onClick();
       return;
     }
-    toast.info("아직 연결된 공식 사이트가 없는 행사예요.");
+    if (event.officialUrl) {
+      window.open(event.officialUrl, "_blank", "noopener");
+      return;
+    }
+    toast.info("아직 연결된 예매 페이지가 없는 행사예요.");
   }
 
   return (
@@ -178,6 +182,15 @@ export function EventCard({
             {event.description && <p className="text-muted-foreground">{event.description}</p>}
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openOfficialSite}
+              className="rounded-xl font-bold"
+            >
+              <ExternalLink />
+              티켓링크 예매
+            </Button>
             <Button type="button" onClick={openVisitDateDialog} className="rounded-xl font-bold">
               <Plus />
               {isAdded ? "방문일 변경" : ADD_LABEL}

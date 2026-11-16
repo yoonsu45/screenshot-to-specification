@@ -51,6 +51,7 @@ type RankedEvent = {
   venue: string;
   count: number;
   demo: boolean;
+  endDate: string | null;
 };
 
 const venueOptions = olympicParkVenueDestinations.map((venue) => venue.name);
@@ -93,7 +94,11 @@ export function getMonthlyDemoEvents(referenceDate: Date) {
   );
 }
 
-export function buildHomeRankings(eventSaveCounts: Record<string, number>) {
+export function buildHomeRankings(
+  eventSaveCounts: Record<string, number>,
+  referenceDate = new Date(),
+) {
+  const todayKey = toKoreaDateKey(referenceDate);
   const catalog: RankedEvent[] = [
     ...events.map((event) => ({
       id: event.id,
@@ -101,15 +106,23 @@ export function buildHomeRankings(eventSaveCounts: Record<string, number>) {
       venue: canonicalVenue(event.venue),
       count: eventSaveCounts[event.id] ?? 0,
       demo: true,
+      endDate: event.endDate ?? event.startDate,
     })),
-    ...officialEvents.map((event) => ({
-      id: event.id,
-      title: event.title,
-      venue: canonicalVenue(event.venue || "장소 확인 불가"),
-      count: eventSaveCounts[event.id] ?? 0,
-      demo: false,
-    })),
-  ].filter((event) => venueOptionSet.has(event.venue));
+    ...officialEvents.map((event) => {
+      const schedule = getOfficialSchedule(event.id);
+      return {
+        id: event.id,
+        title: event.title,
+        venue: canonicalVenue(event.venue || "장소 확인 불가"),
+        count: eventSaveCounts[event.id] ?? 0,
+        demo: false,
+        endDate: schedule.dates[schedule.dates.length - 1] ?? event.startDate,
+      };
+    }),
+  ].filter(
+    (event) =>
+      venueOptionSet.has(event.venue) && (!event.endDate || event.endDate >= todayKey),
+  );
   return {
     popular: rankEvents(catalog),
     byVenue: Object.fromEntries(
@@ -119,6 +132,17 @@ export function buildHomeRankings(eventSaveCounts: Record<string, number>) {
       ]),
     ) as Record<string, RankedEvent[]>,
   };
+}
+
+function toKoreaDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values["year"]}-${values["month"]}-${values["day"]}`;
 }
 
 function HomePage() {

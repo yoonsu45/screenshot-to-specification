@@ -45,9 +45,9 @@ describe("내 방문 계획", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByText("방문 예정일")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "공식 홈페이지" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "티켓링크 예매" })).toHaveAttribute(
       "href",
-      "https://www.ksponco.or.kr/olympicpark/",
+      "https://www.ticketlink.co.kr/home",
     );
   });
 });

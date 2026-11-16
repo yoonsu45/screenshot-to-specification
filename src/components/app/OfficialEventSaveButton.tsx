@@ -5,6 +5,7 @@ import type { OfficialRecord } from "@/lib/official-data";
 import { getOfficialSchedule } from "@/lib/official-posters";
 import { useAppStore } from "@/lib/app-store";
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
+import { TicketlinkBookingButton } from "@/components/app/TicketlinkBookingButton";
 import { cn } from "@/lib/utils";
 
 export function OfficialEventSaveButton({
@@ -37,6 +38,7 @@ export function OfficialEventSaveButton({
         <Plus className="h-4 w-4" />
         {plannedItem ? "방문일 변경" : "담기"}
       </button>
+      <TicketlinkBookingButton title={event.title} className="mt-2 w-full" />
 
       <VisitDateDialog
         event={{

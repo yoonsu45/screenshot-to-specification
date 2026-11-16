@@ -1,4 +1,5 @@
 import olparkEventsCsv from "@/data/olpark-events.csv?raw";
+import { TICKETLINK_BOOKING_URL } from "@/lib/ticketlink";
 
 export type EventCategory = "공연" | "스포츠" | "전시" | "체험" | "축제";
 export const categories = ["전체", "공연", "스포츠", "전시", "체험", "축제"] as const;
@@ -126,6 +127,7 @@ function toParkEvent(row: CsvRow): ParkEvent {
     status: required(row, "status"),
     posterStatus: required(row, "poster_status"),
     image: posterPath.startsWith("/") ? posterPath : `/${posterPath}`,
+    officialUrl: TICKETLINK_BOOKING_URL,
     sourceType: "demo",
   };
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
+import { TicketlinkBookingButton } from "@/components/app/TicketlinkBookingButton";
 import type { ParkEvent } from "@/data/events";
 import { useAppStore } from "@/lib/app-store";
 import { formatDate } from "@/lib/event-service";
@@ -32,6 +33,7 @@ export function ParkEventSaveButton({ event, className }: { event: ParkEvent; cl
         <Plus className="h-4 w-4" />
         {plannedItem ? CHANGE_DATE_LABEL : SAVE_LABEL}
       </button>
+      <TicketlinkBookingButton title={event.title} className="mt-2 w-full" />
 
       <VisitDateDialog
         event={event}

@@ -46,7 +46,7 @@ type PlannedEvent = {
   demo: ParkEvent | null;
 };
 
-const OFFICIAL_EVENT_SITE_URL = "https://www.ksponco.or.kr/olympicpark/";
+const OFFICIAL_EVENT_SITE_URL = "https://www.ticketlink.co.kr/home";
 
 export function Plan() {
   const { plan, removePlan, userEmail, authLoaded, setAuthOpen } = useAppStore();
@@ -444,7 +444,7 @@ export function Plan() {
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-extrabold text-primary-foreground"
                 >
-                  <ExternalLink className="h-4 w-4" /> 공식 홈페이지
+                  <ExternalLink className="h-4 w-4" /> 티켓링크 예매
                 </a>
               ) : (
                 <p className="rounded-xl border border-dashed border-border px-4 py-3 text-center text-sm text-muted-foreground">

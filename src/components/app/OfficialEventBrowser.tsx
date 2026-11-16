@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Bookmark, CalendarDays, MapPin, Plus, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
+import { TicketlinkBookingButton } from "@/components/app/TicketlinkBookingButton";
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 import {
@@ -263,6 +264,7 @@ export function OfficialEventBrowser() {
                   <Plus className="h-4 w-4" />
                   {plan.some((item) => item.id === `event:${selected.id}`) ? "방문일 변경" : "담기"}
                 </button>
+                <TicketlinkBookingButton title={selected.title} className="w-full" />
               </div>
             )}
           </div>

@@ -57,7 +57,9 @@ describe("event data provenance", () => {
     expect(
       events.every(
         (event) =>
-          event.sourceType === "demo" && !event.title.startsWith("[시연용]") && !event.officialUrl,
+          event.sourceType === "demo" &&
+          !event.title.startsWith("[시연용]") &&
+          event.officialUrl === "https://www.ticketlink.co.kr/home",
       ),
     ).toBe(true);
     expect(verifyEvent(EXAMPLE_CASE)).toMatchObject({ sourceType: "demo", status: "match" });

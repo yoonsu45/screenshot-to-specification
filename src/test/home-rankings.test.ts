@@ -33,4 +33,14 @@ describe("홈 행사와 랭킹", () => {
     expect(rankings.byVenue["88마당"]?.[0]?.id).toBe("OLP-DEMO-005");
     expect(rankings.byVenue["올림픽홀"]?.[0]?.id).toBe("OLP-DEMO-002");
   });
+
+  it("종료일이 지난 행사는 인기 순위에서 제외한다", () => {
+    const rankings = buildHomeRankings(
+      { "OLP-DEMO-001": 999, "OLP-DEMO-002": 1 },
+      new Date("2026-11-23T00:00:00+09:00"),
+    );
+
+    expect(rankings.popular.map((event) => event.id)).not.toContain("OLP-DEMO-001");
+    expect(rankings.popular.map((event) => event.id)).toContain("OLP-DEMO-002");
+  });
 });
