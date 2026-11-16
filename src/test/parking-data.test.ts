@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getVenueParking, parseLiveParking, parseParkingHistory } from "@/lib/parking-data";
+import { getParkingMapDestination, getVenueParking, parseLiveParking, parseParkingHistory } from "@/lib/parking-data";
 
 describe("official parking data", () => {
   it("preserves zero but rejects missing, negative and textual live values", () => {
@@ -19,5 +19,28 @@ describe("official parking data", () => {
     expect(getVenueParking("우리금융아트홀")?.primary).toBe("P7");
     expect(getVenueParking("티켓링크 라이브 아레나")?.primary).toBe("P6");
     expect(getVenueParking("unknown")).toBeNull();
+  });
+  it("provides a fixed map coordinate for every internal parking candidate", () => {
+    const venues = [
+      "KSPO-DOME",
+      "티켓링크 라이브 아레나",
+      "우리금융아트홀",
+      "올림픽홀",
+      "뮤즈라이브",
+      "만남의 광장",
+      "88마당",
+      "한얼광장",
+      "피크닉 광장",
+      "수변무대",
+      "평화의 광장",
+    ];
+
+    for (const venue of venues) {
+      const parking = getVenueParking(venue);
+      expect(parking).not.toBeNull();
+      for (const name of [parking!.primary, ...parking!.alternatives]) {
+        expect(getParkingMapDestination(name), `${venue}: ${name}`).not.toBeNull();
+      }
+    }
   });
 });

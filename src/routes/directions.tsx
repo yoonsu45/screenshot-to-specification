@@ -6,6 +6,15 @@ import { ParkingEventGuide } from "@/components/app/ParkingEventGuide";
 import { VenueParkingGuide } from "@/components/app/VenueParkingGuide";
 import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
+import { openNaverMapRoute } from "@/lib/naver-map";
+
+export {
+  createNaverMapAndroidIntentUrl,
+  createNaverMapAppUrl,
+  createNaverMapPlaceUrl,
+  createNaverMapWebUrl,
+  isIOSDevice,
+} from "@/lib/naver-map";
 
 export const Route = createFileRoute("/directions")({
   head: () => ({
@@ -40,36 +49,11 @@ function Directions() {
 
   function openNaverDirections() {
     if (!guide) return;
-    const destinationName = `올림픽공원 ${base}`;
-    const webUrl = createNaverMapWebUrl(destinationName);
-    const appUrl = createNaverMapAppUrl({
+    openNaverMapRoute({
       latitude: guide.latitude,
       longitude: guide.longitude,
-      destinationName,
-      mode,
-      appName: window.location.origin,
-    });
-    const userAgent = window.navigator.userAgent;
-    const isIOS = isIOSDevice({
-      userAgent,
-      platform: window.navigator.platform,
-      maxTouchPoints: window.navigator.maxTouchPoints,
-      standalone:
-        "standalone" in window.navigator &&
-        Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone),
-    });
-
-    if (/Android/i.test(userAgent)) {
-      window.location.href = createNaverMapAndroidIntentUrl(appUrl, webUrl);
-      return;
-    }
-
-    if (isIOS) {
-      window.location.href = appUrl;
-      return;
-    }
-
-    window.open(webUrl, "_blank", "noopener,noreferrer");
+      name: `올림픽공원 ${base}`,
+    }, mode);
   }
 
   return (
@@ -184,7 +168,6 @@ function Directions() {
     </div>
   );
 }
-
 function createMapUrl(latitude: number, longitude: number) {
   const horizontalRange = 0.009;
   const verticalRange = 0.006;
@@ -202,53 +185,4 @@ function createMapUrl(latitude: number, longitude: number) {
   });
 
   return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
-}
-
-export function createNaverMapAppUrl({
-  latitude,
-  longitude,
-  destinationName,
-  mode,
-  appName,
-}: {
-  latitude: number;
-  longitude: number;
-  destinationName: string;
-  mode: "public" | "car";
-  appName: string;
-}) {
-  const params = new URLSearchParams({
-    dlat: String(latitude),
-    dlng: String(longitude),
-    dname: destinationName,
-    appname: appName,
-  });
-  return `nmap://route/${mode}?${params.toString()}`;
-}
-
-export function createNaverMapWebUrl(destinationName: string) {
-  return `https://map.naver.com/p/search/${encodeURIComponent(destinationName)}`;
-}
-
-export function createNaverMapAndroidIntentUrl(appUrl: string, fallbackUrl: string) {
-  const route = appUrl.replace(/^nmap:\/\//, "");
-  return `intent://${route}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
-}
-
-export function isIOSDevice({
-  userAgent,
-  platform,
-  maxTouchPoints,
-  standalone,
-}: {
-  userAgent: string;
-  platform: string;
-  maxTouchPoints: number;
-  standalone: boolean;
-}) {
-  const hasIOSUserAgent = /iPhone|iPad|iPod/i.test(userAgent);
-  const isTouchAppleDevice =
-    maxTouchPoints > 1 && (/Macintosh/i.test(userAgent) || /MacIntel/i.test(platform));
-
-  return hasIOSUserAgent || isTouchAppleDevice || standalone;
 }

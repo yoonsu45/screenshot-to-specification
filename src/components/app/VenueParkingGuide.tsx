@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Car, ExternalLink, RefreshCw } from "lucide-react";
 import { getParkingOverview } from "@/lib/parking-api";
-import { getVenueParking, PARKING_GUIDE_URL, type ParkingSource } from "@/lib/parking-data";
+import { getParkingMapDestination, getVenueParking, PARKING_GUIDE_URL, type ParkingSource } from "@/lib/parking-data";
+import { openNaverMapPlace } from "@/lib/naver-map";
 import { SeoulParkingGuide } from "./SeoulParkingGuide";
 
 const sources = {
@@ -64,11 +65,20 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
 }
 
 function ParkingCard({ name, label }: { name: string; label: string }) {
+  const destination = getParkingMapDestination(name);
   return <article className="rounded-xl border border-border p-3">
     <p className="text-xs font-semibold text-muted-foreground">{label}</p>
     <div className="mt-1 flex items-center justify-between gap-3">
       <h3 className="font-extrabold">{name}</h3>
-      <a href={`https://map.naver.com/p/search/${encodeURIComponent(`올림픽공원 ${name}`)}`} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground" aria-label={`${name} 지도에서 찾기`}>지도 보기</a>
+      <button
+        type="button"
+        onClick={() => destination && openNaverMapPlace(destination)}
+        disabled={!destination}
+        className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        aria-label={`${name} 네이버지도 앱에서 찾기`}
+      >
+        지도 보기
+      </button>
     </div>
     <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
       <div><dt className="text-muted-foreground">현재 혼잡도</dt><dd className="mt-1 font-bold">확인 불가</dd></div>

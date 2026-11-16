@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSeoulParking } from "@/lib/parking-api";
 import { getSeoulAvailability } from "@/lib/seoul-parking";
+import { openNaverMapPlace, openNaverMapSearch } from "@/lib/naver-map";
 
 export function SeoulParkingGuide() {
   const query = useQuery({
@@ -19,7 +20,24 @@ export function SeoulParkingGuide() {
         return <article key={lot.id} className="rounded-xl border border-border p-3">
           <div className="flex items-start justify-between gap-3">
             <div><h4 className="text-sm font-extrabold">{lot.name}</h4><p className="mt-1 text-xs text-muted-foreground">{lot.address}</p></div>
-            <a href={`https://map.naver.com/p/search/${encodeURIComponent(lot.name + " " + lot.address)}`} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">지도 보기</a>
+            <button
+              type="button"
+              onClick={() => {
+                if (lot.latitude !== null && lot.longitude !== null) {
+                  openNaverMapPlace({
+                    latitude: lot.latitude,
+                    longitude: lot.longitude,
+                    name: `${lot.name} 주차장`,
+                  });
+                  return;
+                }
+                openNaverMapSearch(`${lot.name} ${lot.address}`);
+              }}
+              className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
+              aria-label={`${lot.name} 네이버지도 앱에서 찾기`}
+            >
+              지도 보기
+            </button>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
             <div><dt className="text-muted-foreground">현재 혼잡도 · 서비스 산정</dt><dd className={`mt-1 font-bold ${availability?.label === "혼잡" || availability?.label === "만차" ? "text-brand-orange" : "text-primary"}`}>{availability?.label ?? "확인 불가"}</dd></div>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createNaverMapAndroidIntentUrl,
   createNaverMapAppUrl,
+  createNaverMapPlaceUrl,
   createNaverMapWebUrl,
   isIOSDevice,
 } from "@/routes/directions";
@@ -36,6 +37,18 @@ describe("네이버지도 길찾기 연결", () => {
     expect(intentUrl).toContain("intent://route/car?");
     expect(intentUrl).toContain("package=com.nhn.android.nmap");
     expect(intentUrl).toContain("S.browser_fallback_url=");
+  });
+
+  it("짧은 주차장 검색어 대신 고정 좌표로 장소를 연다", () => {
+    const url = createNaverMapPlaceUrl(
+      { latitude: 37.51833, longitude: 127.12789, name: "올림픽공원 주차장 P5" },
+      "https://the-check.example",
+    );
+
+    expect(url).toContain("nmap://place?");
+    expect(url).toContain("lat=37.51833");
+    expect(url).toContain("lng=127.12789");
+    expect(url).toContain("name=%EC%98%AC%EB%A6%BC%ED%94%BD%EA%B3%B5%EC%9B%90+%EC%A3%BC%EC%B0%A8%EC%9E%A5+P5");
   });
 
   it("recognizes an iPhone home-screen app even with a desktop user agent", () => {

@@ -6,6 +6,8 @@ export type SeoulParkingLot = {
   occupied: number | null;
   updatedAt: string | null;
   linked: boolean;
+  latitude: number | null;
+  longitude: number | null;
 };
 export type SeoulParkingResult = {
   status: "ok" | "unavailable" | "missing_key";
@@ -19,6 +21,11 @@ const candidateIds = ["173646", "173867", "1277145", "1475224"];
 function count(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) return null;
   return value;
+}
+
+function coordinate(value: unknown, minimum: number, maximum: number): number | null {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  return Number.isFinite(parsed) && parsed >= minimum && parsed <= maximum ? parsed : null;
 }
 
 export function parseSeoulParking(payload: unknown): SeoulParkingLot[] {
@@ -39,6 +46,8 @@ export function parseSeoulParking(payload: unknown): SeoulParkingLot[] {
       capacity: count(row["TPKCT"]), occupied: count(row["NOW_PRK_VHCL_CNT"]),
       linked: String(row["PRK_STTS_YN"]) === "1",
       updatedAt: typeof time === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(time) ? time : null,
+      latitude: coordinate(row["LAT"], 31.43, 44.35),
+      longitude: coordinate(row["LNG"] ?? row["LOT"], 122.37, 132),
     });
   }
   return candidateIds.flatMap((id) => lots.has(id) ? [lots.get(id)!] : []);
