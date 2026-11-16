@@ -3,6 +3,7 @@ import {
   createNaverMapAndroidIntentUrl,
   createNaverMapAppUrl,
   createNaverMapWebUrl,
+  isIOSDevice,
 } from "@/routes/directions";
 
 describe("네이버지도 길찾기 연결", () => {
@@ -35,5 +36,27 @@ describe("네이버지도 길찾기 연결", () => {
     expect(intentUrl).toContain("intent://route/car?");
     expect(intentUrl).toContain("package=com.nhn.android.nmap");
     expect(intentUrl).toContain("S.browser_fallback_url=");
+  });
+
+  it("recognizes an iPhone home-screen app even with a desktop user agent", () => {
+    expect(
+      isIOSDevice({
+        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+        platform: "MacIntel",
+        maxTouchPoints: 5,
+        standalone: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not treat a desktop Mac as an iOS device", () => {
+    expect(
+      isIOSDevice({
+        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+        platform: "MacIntel",
+        maxTouchPoints: 0,
+        standalone: false,
+      }),
+    ).toBe(false);
   });
 });

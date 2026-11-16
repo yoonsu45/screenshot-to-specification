@@ -49,13 +49,21 @@ function Directions() {
       appName: window.location.origin,
     });
     const userAgent = window.navigator.userAgent;
+    const isIOS = isIOSDevice({
+      userAgent,
+      platform: window.navigator.platform,
+      maxTouchPoints: window.navigator.maxTouchPoints,
+      standalone:
+        "standalone" in window.navigator &&
+        Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone),
+    });
 
     if (/Android/i.test(userAgent)) {
       window.location.href = createNaverMapAndroidIntentUrl(appUrl, webUrl);
       return;
     }
 
-    if (/iPhone|iPad|iPod/i.test(userAgent)) {
+    if (isIOS) {
       window.location.href = appUrl;
       return;
     }
@@ -221,4 +229,22 @@ export function createNaverMapWebUrl(destinationName: string) {
 export function createNaverMapAndroidIntentUrl(appUrl: string, fallbackUrl: string) {
   const route = appUrl.replace(/^nmap:\/\//, "");
   return `intent://${route}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+}
+
+export function isIOSDevice({
+  userAgent,
+  platform,
+  maxTouchPoints,
+  standalone,
+}: {
+  userAgent: string;
+  platform: string;
+  maxTouchPoints: number;
+  standalone: boolean;
+}) {
+  const hasIOSUserAgent = /iPhone|iPad|iPod/i.test(userAgent);
+  const isTouchAppleDevice =
+    maxTouchPoints > 1 && (/Macintosh/i.test(userAgent) || /MacIntel/i.test(platform));
+
+  return hasIOSUserAgent || isTouchAppleDevice || standalone;
 }
