@@ -11,6 +11,8 @@ import {
   UsersRound,
 } from "lucide-react";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
+import { OfficialEventSaveButton } from "@/components/app/OfficialEventSaveButton";
+import { ParkEventSaveButton } from "@/components/app/ParkEventSaveButton";
 import {
   Dialog,
   DialogContent,
@@ -234,6 +236,10 @@ function HomePage() {
                   <MapPin className="h-4 w-4" /> {activeEvent.venue}
                 </span>
               </p>
+              <ParkEventSaveButton
+                event={activeEvent}
+                className="mt-4 bg-white text-primary shadow-md hover:bg-white"
+              />
             </div>
             {monthlyEvents.length > 1 && (
               <>
@@ -315,6 +321,9 @@ function HomePage() {
                 <UsersRound className="h-4 w-4" /> {event.count.toLocaleString("ko-KR")}명
               </span>
             </button>
+            <div className="px-4 pb-4 pl-[4.25rem]">
+              <RankedSaveButton event={event} />
+            </div>
           </li>
         ))}
         {visibleRanking.length === 0 && (
@@ -347,6 +356,16 @@ function HomeEventDetails({ eventId, onClose }: { eventId: string | null; onClos
       </DialogContent>
     </Dialog>
   );
+}
+
+function RankedSaveButton({ event }: { event: RankedEvent }) {
+  if (event.demo) {
+    const parkEvent = events.find((candidate) => candidate.id === event.id);
+    return parkEvent ? <ParkEventSaveButton event={parkEvent} className="w-full" /> : null;
+  }
+
+  const officialEvent = officialEvents.find((candidate) => candidate.id === event.id);
+  return officialEvent ? <OfficialEventSaveButton event={officialEvent} className="w-full" /> : null;
 }
 
 function DemoEventDetails({ event }: { event: ParkEvent }) {
