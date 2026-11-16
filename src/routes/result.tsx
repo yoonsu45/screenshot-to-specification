@@ -3,7 +3,6 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   CheckCircle2,
-  ExternalLink,
   HelpCircle,
   Info,
   MapPin,
@@ -15,6 +14,8 @@ import { useAppStore } from "@/lib/app-store";
 import { verifyEvent, formatDate, formatRange, type VerifyStatus } from "@/lib/event-service";
 import { ComparisonCard, ComparisonTable } from "@/components/app/ComparisonCard";
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
+import { officialEvents } from "@/lib/official-data";
+import { getOfficialSchedule } from "@/lib/official-posters";
 
 export const Route = createFileRoute("/result")({
   head: () => ({
@@ -67,16 +68,35 @@ function ResultPage() {
   const [visitDateOpen, setVisitDateOpen] = useState(false);
   const result = useMemo(() => verifyEvent(draft), [draft]);
   const venueDiff = result.fields.find((f) => f.label === "장소")?.status === "different";
+  const officialEvent = useMemo(() => {
+    if (draft.officialRecordId) {
+      return officialEvents.find((event) => event.id === draft.officialRecordId) ?? null;
+    }
+    const title = normalizeTitle(draft.title);
+    const exactMatches = title
+      ? officialEvents.filter((event) => normalizeTitle(event.title) === title)
+      : [];
+    return exactMatches.length === 1 ? exactMatches[0]! : null;
+  }, [draft.officialRecordId, draft.title]);
 
   useEffect(() => {
     if (!draft.title) navigate({ to: "/check" });
   }, [draft.title, navigate]);
-  useEffect(() => {
-    if (result.event) setAnchor(result.event.venue);
-  }, [result.event, setAnchor]);
-
   const meta = statusMeta[result.status];
   const ev = result.event;
+  const saveTarget = ev ?? officialEvent;
+  const officialSchedule = officialEvent ? getOfficialSchedule(officialEvent.id) : null;
+  const saveVenue = saveTarget?.venue || "장소 확인 불가";
+  const saveStartDate = officialEvent
+    ? (officialSchedule?.dates[0] ?? officialEvent.startDate)
+    : (ev?.startDate ?? null);
+  const saveEndDate = officialEvent
+    ? (officialSchedule?.dates.at(-1) ?? officialEvent.startDate)
+    : (ev?.endDate ?? ev?.startDate ?? null);
+
+  useEffect(() => {
+    if (saveTarget?.venue) setAnchor(saveTarget.venue);
+  }, [saveTarget?.venue, setAnchor]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
@@ -110,6 +130,14 @@ function ResultPage() {
       </section>
 
       <section className="min-w-0 space-y-4">
+        {draft.image && saveTarget && (
+          <div className="rounded-2xl border border-primary/20 bg-secondary p-4">
+            <h2 className="text-lg font-black text-primary">찾으시는 행사가 맞으신가요?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              행사명과 날짜, 장소를 확인한 뒤 방문 계획에 담아 주세요.
+            </p>
+          </div>
+        )}
         {result.sourceType === "demo" && (
           <p role="note" className="rounded-xl bg-warn p-4 font-bold">
             시연용 예시 데이터와 비교한 결과입니다. 실제 행사나 공식 검증 결과가 아닙니다.
@@ -162,7 +190,7 @@ function ResultPage() {
           <ComparisonTable fields={result.fields} />
         </div>
 
-        {ev && (
+        {saveTarget && (
           <>
             <div className="flex flex-col gap-3 sm:flex-row">
               <button
@@ -172,9 +200,9 @@ function ResultPage() {
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab"
               >
                 <Plus className="h-4 w-4" />{" "}
-                {plan.some((item) => item.id === `event:${ev.id}`)
+                {plan.some((item) => item.id === `event:${saveTarget.id}`)
                   ? "방문일 변경"
-                  : "방문 계획에 담기"}
+                  : "담기"}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -182,33 +210,42 @@ function ResultPage() {
                 to="/nearby"
                 className="flex items-center justify-center gap-2 rounded-xl bg-secondary py-3 text-sm font-bold text-secondary-foreground"
               >
-                <MapPin className="h-4 w-4" /> {ev.venue} 주변
+                <MapPin className="h-4 w-4" /> {saveVenue} 주변
               </Link>
               <Link
                 to="/directions"
                 className="flex items-center justify-center gap-2 rounded-xl bg-secondary py-3 text-sm font-bold text-secondary-foreground"
               >
-                <RouteIcon className="h-4 w-4" /> {ev.venue} 가는 길
+                <RouteIcon className="h-4 w-4" /> {saveVenue} 가는 길
               </Link>
             </div>
           </>
         )}
       </section>
-      {ev && (
+      {saveTarget && (
         <VisitDateDialog
-          event={ev}
+          event={{
+            title: saveTarget.title,
+            venue: saveVenue,
+            startDate: saveStartDate,
+            endDate: saveEndDate,
+          }}
           open={visitDateOpen}
           onOpenChange={setVisitDateOpen}
-          initialDate={plan.find((item) => item.id === `event:${ev.id}`)?.startDate}
+          availableDates={officialSchedule?.dates.length ? officialSchedule.dates : undefined}
+          initialDate={plan.find((item) => item.id === `event:${saveTarget.id}`)?.startDate}
           onConfirm={async (visitDate) => {
             const added = await addPlan({
-              id: `event:${ev.id}`,
+              ...(officialSchedule?.dates.includes(visitDate)
+                ? { dateKind: "event" as const }
+                : {}),
+              id: `event:${saveTarget.id}`,
               kind: "event",
-              title: ev.title,
-              subtitle: `${formatDate(visitDate)} · ${ev.venue}`,
+              title: saveTarget.title,
+              subtitle: `${formatDate(visitDate)} · ${saveVenue}`,
               startDate: visitDate,
               endDate: visitDate,
-              venue: ev.venue,
+              venue: saveVenue,
             });
             if (!added) {
               toast.error("일정을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -221,4 +258,8 @@ function ResultPage() {
       )}
     </div>
   );
+}
+
+function normalizeTitle(value: string) {
+  return value.toLocaleLowerCase("ko-KR").replace(/[^0-9a-z가-힣]/g, "");
 }

@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import snapshot from "@/data/official-events.json";
 import { officialEvents } from "@/lib/official-data";
 import { events } from "@/data/events";
-import { EXAMPLE_CASE, verifyEvent, searchOfficialEvents } from "@/lib/event-service";
+import {
+  EXAMPLE_CASE,
+  matchesEventSearch,
+  verifyEvent,
+  searchOfficialEvents,
+} from "@/lib/event-service";
 
 describe("event data provenance", () => {
   it("does not list or verify administrative entries as individual events", () => {
@@ -22,6 +27,15 @@ describe("event data provenance", () => {
     expect(searchOfficialEvents("")).toHaveLength(officialEvents.length);
     expect(searchOfficialEvents("올림픽홀").length).toBeGreaterThan(0);
     expect(searchOfficialEvents("존재하지 않는 검색 xyz")).toEqual([]);
+  });
+
+  it("matches English event titles searched by their Korean pronunciation", () => {
+    expect(matchesEventSearch("CRAVITY CONCERT", "올림픽홀", "크래비티")).toBe(true);
+    expect(searchOfficialEvents("크래비티").some((event) => event.title.includes("CRAVITY")))
+      .toBe(true);
+    expect(searchOfficialEvents("스프링 페스티벌").some((event) => event.title === "Spring Festival"))
+      .toBe(true);
+    expect(searchOfficialEvents("전혀 다른 행사 이름")).toEqual([]);
   });
 
   it("compares the selected official record even when another record shares its title", () => {

@@ -24,7 +24,7 @@ import {
   type BrowserOcrResult,
   type OcrConfidence,
 } from "@/lib/ocr-event-extraction";
-import { formatRange, searchOfficialEvents } from "@/lib/event-service";
+import { formatRange, matchesEventSearch, searchOfficialEvents } from "@/lib/event-service";
 import { optimizeImage } from "@/lib/image-optimization";
 import { officialRecordSource, type OfficialRecord } from "@/lib/official-data";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
@@ -69,14 +69,10 @@ function CheckPage() {
   const isCaptureMode = Boolean(form.image);
 
   const suggestions = useMemo(() => {
-    const query = form.title.trim().toLocaleLowerCase("ko-KR");
+    const query = form.title.trim();
     if (!query) return events.slice(0, 6);
     return events
-      .filter(
-        (event) =>
-          event.title.toLocaleLowerCase("ko-KR").includes(query) ||
-          event.venue.toLocaleLowerCase("ko-KR").includes(query),
-      )
+      .filter((event) => matchesEventSearch(event.title, event.venue, query))
       .slice(0, 6);
   }, [form.title]);
 

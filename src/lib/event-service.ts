@@ -32,10 +32,26 @@ export type CheckInput = {
 };
 
 export function searchOfficialEvents(query: string) {
-  const value = norm(query.trim());
   return officialEvents.filter(
-    (event) =>
-      !value || norm(event.title).includes(value) || norm(event.venue ?? "").includes(value),
+    (event) => matchesEventSearch(event.title, event.venue ?? "", query),
+  );
+}
+
+export function matchesEventSearch(title: string, venue: string, query: string) {
+  const value = norm(query.trim());
+  if (!value) return true;
+  if (norm(title).includes(value) || norm(venue).includes(value)) return true;
+
+  // 영문 행사명을 한글 발음으로 검색할 때 양쪽의 자음 소리를 비교한다.
+  // 예: CRAVITY -> krbt, 크래비티 -> krbt
+  if (!/^[가-힣\s]+$/.test(query.trim()) || !/[a-z]/i.test(title)) return false;
+  const querySound = phoneticSkeleton(query);
+  const englishTitle = title.replace(/[^a-z0-9]+/gi, " ");
+  const titleSound = phoneticSkeleton(englishTitle);
+  return (
+    querySound.length >= 4 &&
+    titleSound.length >= 4 &&
+    titleSound.includes(querySound)
   );
 }
 
@@ -60,6 +76,63 @@ export type VerifyResult = {
 };
 
 const norm = (s: string) => s.toLocaleLowerCase("ko-KR").replace(/[^0-9a-z가-힣]/g, "");
+
+const INITIAL_SOUNDS = [
+  "k", "k", "n", "t", "t", "r", "m", "b", "b", "s", "s", "", "j", "j", "j", "k", "t", "b", "h",
+] as const;
+const FINAL_SOUNDS = [
+  "", "k", "k", "k", "n", "n", "n", "t", "r", "k", "m", "b", "r", "r", "b", "r", "m", "b", "b", "t", "t", "ng", "t", "t", "k", "t", "b", "h",
+] as const;
+
+function phoneticSkeleton(value: string) {
+  const lower = value.toLocaleLowerCase("ko-KR");
+  let sound = "";
+
+  for (let index = 0; index < lower.length; index += 1) {
+    const character = lower[index]!;
+    const code = character.charCodeAt(0);
+    if (code >= 0xac00 && code <= 0xd7a3) {
+      const syllable = code - 0xac00;
+      sound += INITIAL_SOUNDS[Math.floor(syllable / 588)] ?? "";
+      sound += FINAL_SOUNDS[syllable % 28] ?? "";
+      continue;
+    }
+
+    const pair = lower.slice(index, index + 2);
+    const pairSound: Record<string, string> = {
+      ch: "j",
+      ck: "k",
+      ng: "ng",
+      ph: "b",
+      qu: "k",
+      sh: "s",
+      th: "t",
+    };
+    if (pairSound[pair]) {
+      sound += pairSound[pair];
+      index += 1;
+      continue;
+    }
+
+    if (character === "c") {
+      sound += /[eiy]/.test(lower[index + 1] ?? "") ? "s" : "k";
+      continue;
+    }
+    if (character === "g") {
+      sound += /[eiy]/.test(lower[index + 1] ?? "") ? "j" : "k";
+      continue;
+    }
+
+    const characterSound: Record<string, string> = {
+      b: "b", d: "t", f: "b", h: "h", j: "j", k: "k", l: "r", m: "m", n: "n",
+      p: "b", r: "r", s: "s", t: "t", v: "b", x: "ks", z: "s",
+      "1": "n", "2": "t", "4": "br", "6": "sks", "8": "t",
+    };
+    sound += characterSound[character] ?? "";
+  }
+
+  return sound.replace(/(.)\1+/g, "$1");
+}
 
 export function formatDate(d: string) {
   const dt = new Date(d + "T00:00:00");
