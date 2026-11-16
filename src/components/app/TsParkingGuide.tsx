@@ -12,7 +12,7 @@ export function TsParkingGuide() {
       <div className="flex items-center justify-between gap-3"><h4 className="text-sm font-extrabold">{lot.name}</h4><a className="shrink-0 text-xs font-bold underline" href={`https://map.naver.com/p/search/${encodeURIComponent(lot.name + " " + lot.address)}`} target="_blank" rel="noopener noreferrer">지도 보기</a></div>
       <p className="mt-1 text-xs text-muted-foreground">{lot.address}</p>
       <p className="mt-2 text-sm font-bold">조회된 잔여 {lot.remaining.toLocaleString("ko-KR")}대 / 총 {lot.capacity.toLocaleString("ko-KR")}대</p>
-    </article>) : <p className="rounded-xl bg-secondary p-3 text-xs text-muted-foreground">{query.isFetching ? "추가 주차정보 조회 중…" : source?.status === "ok" && fresh ? "이번 조회 범위에서 검증 가능한 주차정보가 없습니다." : "현재 추가 주차정보를 확인할 수 없습니다."}</p>}</div>
+    </article>) : <p className="rounded-xl bg-secondary p-3 text-xs text-muted-foreground">{query.isFetching ? "추가 주차정보 조회 중…" : source?.status === "missing_key" ? "한국교통안전공단 주차정보 연결이 아직 설정되지 않았습니다." : query.isError ? "주차정보 서버에 연결하지 못했습니다. 다시 조회해 주세요." : source?.status === "ok" && fresh ? "이번 조회 범위에서 검증 가능한 주차정보가 없습니다." : source?.status === "ok" ? "조회한 주차정보가 오래되어 다시 조회해야 합니다." : "한국교통안전공단 제공기관의 응답을 확인할 수 없습니다."}</p>}</div>
     {fresh && <p className="mt-2 text-xs text-muted-foreground">조회 시각 {new Date(source.fetchedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (한국시간) · 원자료 측정 시각 미제공</p>}
     <a className="text-xs underline" href="https://www.data.go.kr/data/15099883/openapi.do" target="_blank" rel="noopener noreferrer">출처: 한국교통안전공단 주차정보 제공 API</a>
   </div>;
