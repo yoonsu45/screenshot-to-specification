@@ -274,7 +274,10 @@ export function OfficialEventBrowser() {
             title: savingEvent.title,
             venue: savingEvent.venue || "장소 확인 불가",
             startDate: getOfficialSchedule(savingEvent.id).dates[0] ?? savingEvent.startDate,
-            endDate: getOfficialSchedule(savingEvent.id).dates.at(-1) ?? null,
+            endDate:
+              getOfficialSchedule(savingEvent.id).dates[
+                getOfficialSchedule(savingEvent.id).dates.length - 1
+              ] ?? null,
           }}
           open
           availableDates={

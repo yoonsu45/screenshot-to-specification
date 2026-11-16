@@ -91,7 +91,7 @@ function ResultPage() {
     ? (officialSchedule?.dates[0] ?? officialEvent.startDate)
     : (ev?.startDate ?? null);
   const saveEndDate = officialEvent
-    ? (officialSchedule?.dates.at(-1) ?? officialEvent.startDate)
+    ? (officialSchedule?.dates[(officialSchedule?.dates.length ?? 0) - 1] ?? officialEvent.startDate)
     : (ev?.endDate ?? ev?.startDate ?? null);
 
   useEffect(() => {

@@ -43,7 +43,7 @@ export function OfficialEventSaveButton({
           title: event.title,
           venue,
           startDate: schedule.dates[0] ?? event.startDate,
-          endDate: schedule.dates.at(-1) ?? event.startDate,
+          endDate: schedule.dates[schedule.dates.length - 1] ?? event.startDate,
         }}
         open={visitDateOpen}
         onOpenChange={setVisitDateOpen}

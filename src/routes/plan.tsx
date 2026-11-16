@@ -96,7 +96,7 @@ export function Plan() {
     { date: string; events: PlannedEvent[] }[]
   >((groups, event) => {
     const date = listMode === "month" ? event.startDate : selectedDate;
-    const current = groups.at(-1);
+    const current = groups[groups.length - 1];
     if (current?.date === date) current.events.push(event);
     else groups.push({ date, events: [event] });
     return groups;

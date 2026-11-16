@@ -16,6 +16,33 @@ import {
 const RECENT_SEARCH_KEY = "the-check-recent-event-searches";
 const MAX_RECENT_SEARCHES = 6;
 
+function readRecentSearches() {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(RECENT_SEARCH_KEY) ?? "[]");
+    return Array.isArray(stored)
+      ? stored.filter((item): item is string => typeof item === "string").slice(0, MAX_RECENT_SEARCHES)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentSearches(searches: string[]) {
+  try {
+    window.localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(searches));
+  } catch {
+    // iOS 홈 화면 앱이나 비공개 모드에서 저장소가 막혀도 검색은 계속 동작해야 한다.
+  }
+}
+
+function removeRecentSearches() {
+  try {
+    window.localStorage.removeItem(RECENT_SEARCH_KEY);
+  } catch {
+    // 저장소를 사용할 수 없는 환경에서는 메모리 상태만 비운다.
+  }
+}
+
 function uniqueSearchResults(query: string) {
   const preferredByTitle = new Map<string, ReturnType<typeof searchOfficialEvents>[number]>();
 
@@ -45,14 +72,7 @@ export function HeaderEventSearch() {
   const [topSearchesLoading, setTopSearchesLoading] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(RECENT_SEARCH_KEY) ?? "[]");
-      if (Array.isArray(stored)) {
-        setRecentSearches(stored.filter((item): item is string => typeof item === "string").slice(0, MAX_RECENT_SEARCHES));
-      }
-    } catch {
-      localStorage.removeItem(RECENT_SEARCH_KEY);
-    }
+    setRecentSearches(readRecentSearches());
   }, []);
 
   const results = useMemo(
@@ -77,7 +97,7 @@ export function HeaderEventSearch() {
         term,
         ...current.filter((item) => item.toLocaleLowerCase("ko-KR") !== term.toLocaleLowerCase("ko-KR")),
       ].slice(0, MAX_RECENT_SEARCHES);
-      localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(next));
+      saveRecentSearches(next);
       return next;
     });
   }
@@ -98,7 +118,7 @@ export function HeaderEventSearch() {
 
   function clearRecentSearches() {
     setRecentSearches([]);
-    localStorage.removeItem(RECENT_SEARCH_KEY);
+    removeRecentSearches();
   }
 
   function resetSearch() {
