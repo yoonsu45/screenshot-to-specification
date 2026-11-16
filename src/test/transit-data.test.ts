@@ -40,4 +40,14 @@ describe("교통 안내 데이터", () => {
       ).toBe(true);
     }
   });
+
+  it("만남의 광장과 피크닉 광장은 각 장소의 개별 좌표를 사용한다", () => {
+    const meeting = transitGuides.find((guide) => guide.anchor === "만남의 광장");
+    const picnic = transitGuides.find((guide) => guide.anchor === "피크닉 광장");
+
+    expect(meeting).toMatchObject({ latitude: 37.5169907, longitude: 127.1302628 });
+    expect(picnic).toMatchObject({ latitude: 37.5205553754, longitude: 127.1150515712 });
+    expect(meeting?.latitude).not.toBe(picnic?.latitude);
+    expect(meeting?.longitude).not.toBe(picnic?.longitude);
+  });
 });

@@ -36,7 +36,38 @@ function Directions() {
   const items = guide ? (mode === "public" ? guide.publicTransit : guide.car) : [];
   const Icon = mode === "public" ? TrainFront : Car;
   const mapUrl = guide ? createMapUrl(guide.latitude, guide.longitude) : null;
-  const naverMapUrl = `https://map.naver.com/p/search/${encodeURIComponent(base)}`;
+
+  function openNaverDirections() {
+    if (!guide) return;
+    const destinationName = `올림픽공원 ${base}`;
+    const webUrl = createNaverMapWebUrl(destinationName);
+    const appUrl = createNaverMapAppUrl({
+      latitude: guide.latitude,
+      longitude: guide.longitude,
+      destinationName,
+      mode,
+      appName: window.location.origin,
+    });
+    const userAgent = window.navigator.userAgent;
+
+    if (/Android/i.test(userAgent)) {
+      window.location.href = createNaverMapAndroidIntentUrl(appUrl, webUrl);
+      return;
+    }
+
+    if (/iPhone|iPad|iPod/i.test(userAgent)) {
+      const openedAt = Date.now();
+      window.location.href = appUrl;
+      window.setTimeout(() => {
+        if (document.visibilityState === "visible" && Date.now() - openedAt < 2500) {
+          window.location.href = webUrl;
+        }
+      }, 1600);
+      return;
+    }
+
+    window.open(webUrl, "_blank", "noopener,noreferrer");
+  }
 
   return (
     <div className="max-w-3xl">
@@ -65,14 +96,13 @@ function Directions() {
                 <p className="truncate text-xs text-muted-foreground">{guide.address}</p>
               </div>
             </div>
-            <a
-              href={naverMapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={openNaverDirections}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
             >
               <Navigation className="h-3.5 w-3.5" /> 길찾기
-            </a>
+            </button>
           </div>
           <iframe
             src={mapUrl}
@@ -166,4 +196,35 @@ function createMapUrl(latitude: number, longitude: number) {
   });
 
   return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+}
+
+export function createNaverMapAppUrl({
+  latitude,
+  longitude,
+  destinationName,
+  mode,
+  appName,
+}: {
+  latitude: number;
+  longitude: number;
+  destinationName: string;
+  mode: "public" | "car";
+  appName: string;
+}) {
+  const params = new URLSearchParams({
+    dlat: String(latitude),
+    dlng: String(longitude),
+    dname: destinationName,
+    appname: appName,
+  });
+  return `nmap://route/${mode}?${params.toString()}`;
+}
+
+export function createNaverMapWebUrl(destinationName: string) {
+  return `https://map.naver.com/p/search/${encodeURIComponent(destinationName)}`;
+}
+
+export function createNaverMapAndroidIntentUrl(appUrl: string, fallbackUrl: string) {
+  const route = appUrl.replace(/^nmap:\/\//, "");
+  return `intent://${route}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
 }
