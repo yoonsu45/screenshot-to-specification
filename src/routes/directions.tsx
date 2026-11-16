@@ -56,13 +56,7 @@ function Directions() {
     }
 
     if (/iPhone|iPad|iPod/i.test(userAgent)) {
-      const openedAt = Date.now();
       window.location.href = appUrl;
-      window.setTimeout(() => {
-        if (document.visibilityState === "visible" && Date.now() - openedAt < 2500) {
-          window.location.href = webUrl;
-        }
-      }, 1600);
       return;
     }
 
