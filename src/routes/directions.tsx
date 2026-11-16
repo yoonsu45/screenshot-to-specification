@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Car, ChevronDown, ExternalLink, MapPinned, Navigation, TrainFront } from "lucide-react";
 import { FacilityPicker } from "@/components/app/FacilityPicker";
 import { ParkingEventGuide } from "@/components/app/ParkingEventGuide";
+import { VenueParkingGuide } from "@/components/app/VenueParkingGuide";
 import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
 
@@ -132,7 +133,7 @@ function Directions() {
       ) : (
         <>
           <ul className="space-y-3">
-            {items.map((i) => (
+            {(mode === "car" ? [] : items).map((i) => (
               <li
                 key={i.title}
                 className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card"
@@ -148,7 +149,10 @@ function Directions() {
             ))}
           </ul>
           {mode === "car" && (
-            <ParkingEventGuide anchor={guide.anchor} aliases={[base, ...(guide.aliases ?? [])]} />
+            <>
+              <VenueParkingGuide venue={base} />
+              <ParkingEventGuide anchor={guide.anchor} aliases={[base, ...(guide.aliases ?? [])]} />
+            </>
           )}
           <a
             href={guide.officialUrl}

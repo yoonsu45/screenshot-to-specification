@@ -8,6 +8,13 @@
 // hosting already compresses at the edge.
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { loadEnv } from "vite";
+
+// Server-only local credentials. Never add these keys to VITE_* or define.
+const localParkingEnv = loadEnv("development", process.cwd(), "CULTURE_");
+for (const name of ["CULTURE_API_SERVICE_KEY", "CULTURE_PARKING_FLOW_API_SERVICE_KEY"]) {
+  if (!process.env[name] && localParkingEnv[name]) process.env[name] = localParkingEnv[name];
+}
 
 export default defineConfig({
   vite: {
