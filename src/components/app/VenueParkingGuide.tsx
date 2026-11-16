@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Car, ExternalLink, RefreshCw } from "lucide-react";
 import { getParkingOverview } from "@/lib/parking-api";
 import { getVenueParking, PARKING_GUIDE_URL, type ParkingSource } from "@/lib/parking-data";
+import { SeoulParkingGuide } from "./SeoulParkingGuide";
 
 const sources = {
   live: "https://www.ksponco.or.kr/pubData/64?mid=a10106020000",
@@ -47,9 +48,10 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
           <p className="mb-3 text-xs leading-5 text-muted-foreground">이용 가능한 자리가 확인된 곳은 아닙니다. 입구 통제·운영 여부와 도보 경로를 확인해 주세요.</p>
           <div className="space-y-2">{parking.alternatives.map((name) => <ParkingCard key={name} name={name} label="대체 후보" />)}</div>
         </div>
-        <p className="text-xs leading-5 text-muted-foreground">주차장별 실시간 대수와 동일 범위의 총 주차면 수가 제공되지 않아 혼잡도와 예상 주차 가능 대수를 산출할 수 없습니다.</p>
+        <p className="text-xs leading-5 text-muted-foreground">공원 내부 주차장별 실시간 대수와 동일 범위의 총 주차면 수가 제공되지 않아 내부 주차장의 혼잡도와 예상 주차 가능 대수를 산출할 수 없습니다.</p>
         <a href={PARKING_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold underline">공식 주차장·요금·운영 안내 <ExternalLink className="h-3 w-3" /></a>
 
+        <SeoulParkingGuide />
         <details className="border-t border-border pt-3">
           <summary className="cursor-pointer text-sm font-bold">과거 입출차 자료 확인</summary>
           <p className="mt-2 text-xs text-muted-foreground">조회된 일부 기록입니다. 최신 기록이나 현재 혼잡도·도착 시점 예측이 아닙니다.</p>
