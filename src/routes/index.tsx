@@ -213,13 +213,13 @@ function HomePage() {
             tabIndex={0}
             aria-label={`${activeEvent.title} 상세 정보 보기`}
           >
-            <div className="relative flex min-h-80 max-h-[70dvh] items-center justify-center bg-black/95">
+            <div className="relative flex h-72 items-center justify-center bg-black/95 sm:h-96">
               <img
                 key={activeEvent.id}
                 src={activeEvent.image}
                 alt={`${activeEvent.title} 포스터`}
                 draggable={false}
-                className="max-h-[70dvh] max-w-full object-contain"
+                className="h-full w-full object-contain"
               />
               {monthlyEvents.length > 1 && (
                 <>
