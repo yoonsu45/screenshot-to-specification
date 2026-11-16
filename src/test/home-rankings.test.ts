@@ -3,14 +3,18 @@ import { buildHomeRankings, getMonthlyDemoEvents } from "@/routes/index";
 import { events } from "@/data/events";
 
 describe("홈 행사와 랭킹", () => {
-  it("CSV의 시연용 행사 20개를 사용한다", () => {
-    expect(events).toHaveLength(20);
-    expect(new Set(events.map((event) => event.id)).size).toBe(20);
-    expect(events.every((event) => event.dataSource === "FICTIONAL_DEMO")).toBe(true);
+  it("CSV의 행사 30개와 포스터 경로를 사용한다", () => {
+    expect(events).toHaveLength(30);
+    expect(new Set(events.map((event) => event.id)).size).toBe(30);
+    expect(new Set(events.map((event) => event.posterFilename)).size).toBe(30);
+    expect(events.every((event) => event.dataSource?.includes("시연용 가상 데이터"))).toBe(true);
+    expect(events.every((event) => event.image === event.posterPath)).toBe(true);
     expect(events.at(-1)).toMatchObject({
-      id: "OLP-DEMO-020",
-      startDate: "2027-01-16",
-      venue: "KSPO DOME",
+      id: "OLP-DEMO-030",
+      sourceId: "OP-DEMO-030",
+      startDate: "2027-01-31",
+      venue: "KSPO-DOME",
+      posterFilename: "event_30.jpg",
     });
   });
 

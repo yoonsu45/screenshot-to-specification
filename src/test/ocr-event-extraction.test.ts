@@ -13,9 +13,9 @@ describe("parseOcrText", () => {
       2026,
     );
 
-    expect(result.title).toBe("[시연용] 2026 서울 윈터 사운드 페스타");
+    expect(result.title).toBe("서울 윈터 사운드 페스타");
     expect(result.date).toBe("2026-11-21");
-    expect(result.venue).toBe("KSPO DOME");
+    expect(result.venue).toBe("KSPO-DOME");
     expect(result.bookingDates).toEqual(["2026-10-20"]);
     expect(result.candidates[0]?.eventId).toBe("OLP-DEMO-001");
   });

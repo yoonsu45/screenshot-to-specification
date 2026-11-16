@@ -14,14 +14,14 @@ export function getParkingEventNotices(
   todayKey: string,
   horizonDays = 14,
 ): ParkingEventNotice[] {
-  const venueNames = new Set([anchor, ...aliases]);
+  const venueNames = new Set([anchor, ...aliases].map(normalizeVenueName));
   const isWholeOlympicPark = anchor === "올림픽공원";
 
   return events
     .filter((event) => {
       const matchesDestination = isWholeOlympicPark
         ? event.facilityId === "olympic-park"
-        : venueNames.has(event.venue);
+        : venueNames.has(normalizeVenueName(event.venue));
       if (!matchesDestination) return false;
 
       const endDate = event.endDate ?? event.startDate;
@@ -35,6 +35,10 @@ export function getParkingEventNotices(
       daysUntil: Math.max(0, differenceInDays(todayKey, event.startDate)),
       isActiveToday: event.startDate <= todayKey && (event.endDate ?? event.startDate) >= todayKey,
     }));
+}
+
+function normalizeVenueName(value: string) {
+  return value.toLocaleLowerCase("ko-KR").replace(/[^0-9a-z가-힣]/g, "");
 }
 
 export function toKoreaDateKey(date: Date) {
