@@ -44,6 +44,21 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+function preventDocumentCaching(request: Request, response: Response) {
+  const accept = request.headers.get("accept") ?? "";
+  if (request.method !== "GET" || !accept.includes("text/html")) return response;
+
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store, max-age=0, must-revalidate");
+  headers.set("pragma", "no-cache");
+  headers.set("expires", "0");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 // Hosting compresses every response at the edge. Never compress a body (gzip, brotli,
 // CompressionStream) or set content-encoding here or in a server route: the body gets encoded
 // twice and renders garbled.
@@ -52,7 +67,8 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      return preventDocumentCaching(request, normalized);
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
