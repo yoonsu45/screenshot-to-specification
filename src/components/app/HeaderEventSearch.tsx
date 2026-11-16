@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, Clock3, Flame, LoaderCircle, MapPin, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
+import { OfficialEventSaveButton } from "@/components/app/OfficialEventSaveButton";
 import { searchOfficialEvents } from "@/lib/event-service";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 import type { OfficialRecord } from "@/lib/official-data";
@@ -263,26 +264,29 @@ export function HeaderEventSearch() {
                       const schedule = getOfficialSchedule(event.id);
                       return (
                         <li key={event.id}>
-                          <button
-                            type="button"
-                            onClick={() => selectEvent(event)}
-                            aria-label={`${event.title} 행사 정보 보기`}
-                            className="flex w-full min-w-0 gap-3 rounded-2xl border bg-card p-3 text-left transition hover:border-primary hover:bg-secondary/40"
-                          >
-                            <OfficialPosterImage eventId={event.id} title={event.title} className="h-20 w-16 shrink-0 rounded-xl sm:w-20" />
-                            <span className="min-w-0 flex-1 py-0.5">
-                              <span className="line-clamp-2 font-black leading-snug text-primary">{event.title}</span>
-                              <span className="mt-2 flex items-start gap-1.5 text-xs text-foreground">
-                                <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                                <span className="break-words">{schedule.raw || event.startDate || "날짜 확인 불가"}</span>
-                              </span>
-                              <span className="mt-1 flex items-center gap-1.5 text-xs text-foreground">
-                                <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                <span className="truncate">{event.venue || "장소 확인 불가"}</span>
-                              </span>
-                              <span className="mt-2 block text-xs font-extrabold text-brand-orange">행사 정보 보기</span>
-                            </span>
-                          </button>
+                            <article className="rounded-2xl border bg-card p-3 transition hover:border-primary">
+                              <button
+                                type="button"
+                                onClick={() => selectEvent(event)}
+                                aria-label={`${event.title} 행사 정보 보기`}
+                                className="flex w-full min-w-0 gap-3 text-left hover:opacity-80"
+                              >
+                                <OfficialPosterImage eventId={event.id} title={event.title} className="h-20 w-16 shrink-0 rounded-xl sm:w-20" />
+                                <span className="min-w-0 flex-1 py-0.5">
+                                  <span className="line-clamp-2 font-black leading-snug text-primary">{event.title}</span>
+                                  <span className="mt-2 flex items-start gap-1.5 text-xs text-foreground">
+                                    <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                                    <span className="break-words">{schedule.raw || event.startDate || "날짜 확인 불가"}</span>
+                                  </span>
+                                  <span className="mt-1 flex items-center gap-1.5 text-xs text-foreground">
+                                    <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                    <span className="truncate">{event.venue || "장소 확인 불가"}</span>
+                                  </span>
+                                  <span className="mt-2 block text-xs font-extrabold text-brand-orange">행사 정보 보기</span>
+                                </span>
+                              </button>
+                              <OfficialEventSaveButton event={event} className="mt-3 w-full" />
+                            </article>
                         </li>
                       );
                     })}
@@ -320,6 +324,7 @@ export function HeaderEventSearch() {
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span>{selectedEvent.venue || "장소 확인 불가"}</span>
                   </p>
+                  <OfficialEventSaveButton event={selectedEvent} className="mt-4 w-full" />
                 </div>
               </section>
             )}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertCircle,
   CheckCircle2,
@@ -10,6 +10,7 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
+import { OfficialEventSaveButton } from "@/components/app/OfficialEventSaveButton";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +57,6 @@ type AnalysisState =
 
 function CheckPage() {
   const { draft, setDraft } = useAppStore();
-  const navigate = useNavigate();
   const [form, setForm] = useState(draft);
   const [error, setError] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisState>({ status: "idle" });
@@ -197,15 +197,6 @@ function CheckPage() {
     setSelectedOfficialEvent(null);
     setSearchOpen(false);
     setError(false);
-  }
-
-  function submit() {
-    if (!form.title.trim()) {
-      setError(true);
-      return;
-    }
-    setDraft(form);
-    navigate({ to: "/result" });
   }
 
   const field =
@@ -420,36 +411,41 @@ function CheckPage() {
 
       {form.title.trim() && (
         <section className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-card">
-          <h2 className="font-extrabold text-primary">관련 공식 포스터</h2>
+          <h2 className="font-extrabold text-primary">
+            {isCaptureMode ? "찾으시는 행사가 맞으신가요?" : "관련 공식 행사"}
+          </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            검색한 행사와 일치하는 공식 자료를 눌러 포스터와 상세 정보를 확인하세요.
+            행사 정보를 확인하고 맞는 행사를 바로 방문 계획에 담아 보세요.
           </p>
           {officialSearchResults.length > 0 ? (
             <ul className="mt-3 grid gap-3 sm:grid-cols-2">
               {officialSearchResults.map((event) => (
                 <li key={event.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedOfficialEvent(event)}
-                    className="flex h-full w-full items-center gap-3 rounded-xl bg-secondary p-3 text-left transition hover:ring-2 hover:ring-ring"
-                  >
-                    <OfficialPosterImage
-                      eventId={event.id}
-                      title={event.title}
-                      className="h-24 w-20 shrink-0 rounded-lg"
-                    />
-                    <span className="min-w-0">
-                      <span className="line-clamp-2 block font-extrabold text-primary">
-                        {event.title}
+                  <article className="flex h-full flex-col rounded-xl bg-secondary p-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOfficialEvent(event)}
+                      className="flex flex-1 items-center gap-3 text-left transition hover:opacity-80"
+                    >
+                      <OfficialPosterImage
+                        eventId={event.id}
+                        title={event.title}
+                        className="h-24 w-20 shrink-0 rounded-lg"
+                      />
+                      <span className="min-w-0">
+                        <span className="line-clamp-2 block font-extrabold text-primary">
+                          {event.title}
+                        </span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {event.venue || "장소 확인 불가"}
+                        </span>
+                        <span className="mt-2 block text-xs font-bold text-brand-orange">
+                          {getOfficialPoster(event.id) ? "포스터 보기" : "행사 정보 보기"}
+                        </span>
                       </span>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        {event.venue || "장소 확인 불가"}
-                      </span>
-                      <span className="mt-2 block text-xs font-bold text-brand-orange">
-                        {getOfficialPoster(event.id) ? "포스터 보기" : "행사 정보 보기"}
-                      </span>
-                    </span>
-                  </button>
+                    </button>
+                    <OfficialEventSaveButton event={event} className="mt-3 w-full" />
+                  </article>
                 </li>
               ))}
             </ul>
@@ -460,16 +456,6 @@ function CheckPage() {
           )}
         </section>
       )}
-
-      <div className="mt-5">
-        <button
-          type="button"
-          onClick={submit}
-          className="h-13 w-full rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab"
-        >
-          출처를 구분해 비교하기
-        </button>
-      </div>
 
       <Dialog
         open={Boolean(selectedOfficialEvent)}
@@ -513,6 +499,7 @@ function CheckPage() {
                 >
                   이 행사 선택
                 </button>
+                <OfficialEventSaveButton event={selectedOfficialEvent} className="w-full" />
               </div>
             )}
           </div>
