@@ -2,7 +2,6 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Car, ChevronDown, ExternalLink, MapPinned, Navigation, TrainFront } from "lucide-react";
 import { FacilityPicker } from "@/components/app/FacilityPicker";
-import { ParkingEventGuide } from "@/components/app/ParkingEventGuide";
 import { VenueParkingGuide } from "@/components/app/VenueParkingGuide";
 import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
@@ -133,10 +132,7 @@ function Directions() {
             ))}
           </ul>
           {mode === "car" && (
-            <>
-              <VenueParkingGuide venue={base} />
-              <ParkingEventGuide anchor={guide.anchor} aliases={[base, ...(guide.aliases ?? [])]} />
-            </>
+            <VenueParkingGuide venue={base} />
           )}
           <a
             href={guide.officialUrl}
