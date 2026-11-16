@@ -281,7 +281,6 @@ function HomePage() {
                   <MapPin className="h-4 w-4" /> {activeEvent.venue}
                 </span>
               </p>
-              <ParkEventSaveButton event={activeEvent} className="mt-4" />
             </div>
           </div>
         ) : (
