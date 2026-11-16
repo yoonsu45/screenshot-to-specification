@@ -195,7 +195,7 @@ function HomePage() {
 
         {activeEvent ? (
           <div
-            className="relative touch-pan-y select-none overflow-hidden rounded-[2rem] bg-primary shadow-card sm:cursor-grab sm:active:cursor-grabbing"
+            className="relative touch-pan-y select-none overflow-hidden rounded-[2rem] bg-card shadow-card sm:cursor-grab sm:active:cursor-grabbing"
             onPointerDown={startSwipe}
             onPointerUp={finishSwipe}
             onClick={openPosterDetails}
@@ -213,22 +213,43 @@ function HomePage() {
             tabIndex={0}
             aria-label={`${activeEvent.title} 상세 정보 보기`}
           >
-            <img
-              key={activeEvent.id}
-              src={activeEvent.image}
-              alt={`${activeEvent.title} 포스터`}
-              draggable={false}
-              className="h-72 w-full object-cover sm:h-96"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-5 text-primary-foreground sm:p-7">
+            <div className="relative flex min-h-80 max-h-[70dvh] items-center justify-center bg-black/95">
+              <img
+                key={activeEvent.id}
+                src={activeEvent.image}
+                alt={`${activeEvent.title} 포스터`}
+                draggable={false}
+                className="max-h-[70dvh] max-w-full object-contain"
+              />
+              {monthlyEvents.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => moveSlide(-1)}
+                    aria-label="이전 포스터"
+                    className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white backdrop-blur"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveSlide(1)}
+                    aria-label="다음 포스터"
+                    className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white backdrop-blur"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="p-5 sm:p-7">
               <span className="inline-flex rounded-full bg-brand-orange px-2.5 py-1 text-[11px] font-extrabold text-white">
                 시연용
               </span>
-              <h2 className="mt-2 line-clamp-2 text-2xl font-black sm:text-3xl">
+              <h2 className="mt-2 line-clamp-2 text-2xl font-black text-primary sm:text-3xl">
                 {activeEvent.title}
               </h2>
-              <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-semibold text-white/90">
+              <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-semibold text-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarDays className="h-4 w-4" /> {formatRange(activeEvent)}
                 </span>
@@ -236,31 +257,8 @@ function HomePage() {
                   <MapPin className="h-4 w-4" /> {activeEvent.venue}
                 </span>
               </p>
-              <ParkEventSaveButton
-                event={activeEvent}
-                className="mt-4 bg-white text-primary shadow-md hover:bg-white"
-              />
+              <ParkEventSaveButton event={activeEvent} className="mt-4" />
             </div>
-            {monthlyEvents.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => moveSlide(-1)}
-                  aria-label="이전 포스터"
-                  className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveSlide(1)}
-                  aria-label="다음 포스터"
-                  className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-              </>
-            )}
           </div>
         ) : (
           <div className="rounded-[2rem] border border-dashed border-border bg-card px-6 py-16 text-center text-muted-foreground">
@@ -321,9 +319,6 @@ function HomePage() {
                 <UsersRound className="h-4 w-4" /> {event.count.toLocaleString("ko-KR")}명
               </span>
             </button>
-            <div className="px-4 pb-4 pl-[4.25rem]">
-              <RankedSaveButton event={event} />
-            </div>
           </li>
         ))}
         {visibleRanking.length === 0 && (
@@ -358,16 +353,6 @@ function HomeEventDetails({ eventId, onClose }: { eventId: string | null; onClos
   );
 }
 
-function RankedSaveButton({ event }: { event: RankedEvent }) {
-  if (event.demo) {
-    const parkEvent = events.find((candidate) => candidate.id === event.id);
-    return parkEvent ? <ParkEventSaveButton event={parkEvent} className="w-full" /> : null;
-  }
-
-  const officialEvent = officialEvents.find((candidate) => candidate.id === event.id);
-  return officialEvent ? <OfficialEventSaveButton event={officialEvent} className="w-full" /> : null;
-}
-
 function DemoEventDetails({ event }: { event: ParkEvent }) {
   return (
     <>
@@ -378,7 +363,13 @@ function DemoEventDetails({ event }: { event: ParkEvent }) {
         <DialogDescription>{event.category} · {event.venue}</DialogDescription>
       </DialogHeader>
       <div className="mt-4 space-y-4">
-        <img src={event.image} alt={`${event.title} 포스터`} className="max-h-72 w-full rounded-xl object-cover" />
+        <div className="flex max-h-[65dvh] items-center justify-center overflow-hidden rounded-xl bg-black/95">
+          <img
+            src={event.image}
+            alt={`${event.title} 포스터`}
+            className="max-h-[65dvh] max-w-full object-contain"
+          />
+        </div>
         <div className="space-y-3 break-words rounded-xl bg-muted/50 p-4 text-sm [overflow-wrap:anywhere]">
           <DetailLine icon={<CalendarDays className="h-4 w-4" />}>{formatRange(event)}</DetailLine>
           {event.startTime && (
@@ -394,6 +385,7 @@ function DemoEventDetails({ event }: { event: ParkEvent }) {
           )}
           {event.description && <p className="leading-relaxed text-muted-foreground">{event.description}</p>}
         </div>
+        <ParkEventSaveButton event={event} className="w-full" />
       </div>
     </>
   );
@@ -410,7 +402,11 @@ function OfficialEventDetails({ event }: { event: OfficialRecord }) {
         <DialogDescription>행사 상세 정보</DialogDescription>
       </DialogHeader>
       <div className="mt-4 space-y-4">
-        <OfficialPosterImage eventId={event.id} title={event.title} className="max-h-72 min-h-40 w-full rounded-xl" />
+        <OfficialPosterImage
+          eventId={event.id}
+          title={event.title}
+          className="max-h-[65dvh] min-h-40 w-full rounded-xl"
+        />
         <div className="space-y-3 break-words rounded-xl bg-muted/50 p-4 text-sm [overflow-wrap:anywhere]">
           <DetailLine icon={<CalendarDays className="h-4 w-4" />}>
             {schedule.raw || event.startDate || "날짜 확인 불가"}
@@ -420,6 +416,7 @@ function OfficialEventDetails({ event }: { event: OfficialRecord }) {
           </DetailLine>
           <p className="text-xs text-muted-foreground">출처: {officialRecordSource(event.id)}</p>
         </div>
+        <OfficialEventSaveButton event={event} className="w-full" />
       </div>
     </>
   );
