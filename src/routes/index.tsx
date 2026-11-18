@@ -356,10 +356,16 @@ function HomePage() {
 }
 
 function HomeEventDetails({ eventId, onClose }: { eventId: string | null; onClose: () => void }) {
+  const { setAnchor } = useAppStore();
   const demoEvent = eventId ? events.find((event) => event.id === eventId) : undefined;
   const officialEvent = eventId
     ? officialEvents.find((event) => event.id === eventId)
     : undefined;
+  const venue = demoEvent?.venue ?? officialEvent?.venue;
+
+  useEffect(() => {
+    if (venue && typeof setAnchor === "function") setAnchor(venue);
+  }, [setAnchor, venue]);
 
   return (
     <Dialog open={Boolean(eventId && (demoEvent || officialEvent))} onOpenChange={(open) => !open && onClose()}>

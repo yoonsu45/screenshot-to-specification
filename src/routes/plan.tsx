@@ -140,7 +140,7 @@ export function Plan() {
           내 방문 계획은 로그인 후 이용할 수 있어요
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
-          행사와 주변 정보는 로그인 없이 둘러볼 수 있고, 방문 일정을 담을 때만 로그인이 필요해요.
+          행사와 내부 시설 정보는 로그인 없이 둘러볼 수 있고, 방문 일정을 담을 때만 로그인이 필요해요.
         </p>
         <button
           type="button"

@@ -210,7 +210,7 @@ function ResultPage() {
                 to="/nearby"
                 className="flex items-center justify-center gap-2 rounded-xl bg-secondary py-3 text-sm font-bold text-secondary-foreground"
               >
-                <MapPin className="h-4 w-4" /> {saveVenue} 주변
+                <MapPin className="h-4 w-4" /> 내부 시설
               </Link>
               <Link
                 to="/directions"

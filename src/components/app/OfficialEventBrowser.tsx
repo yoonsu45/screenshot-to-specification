@@ -29,7 +29,7 @@ export function OfficialEventBrowser() {
     ReturnType<typeof searchOfficialEvents>[number] | null
   >(null);
   const [pending, setPending] = useState(false);
-  const { plan, addPlan, removePlan, requireAuth, eventSaveCounts } = useAppStore();
+  const { plan, addPlan, removePlan, requireAuth, eventSaveCounts, setAnchor } = useAppStore();
   async function toggleSave(event: ReturnType<typeof searchOfficialEvents>[number]) {
     if (pending || !requireAuth()) return;
     if (plan.some((item) => item.id === `event:${event.id}`)) {
@@ -54,6 +54,10 @@ export function OfficialEventBrowser() {
   useEffect(() => {
     setPageInput(String(currentPage + 1));
   }, [currentPage]);
+
+  useEffect(() => {
+    if (selected?.venue && typeof setAnchor === "function") setAnchor(selected.venue);
+  }, [selected?.venue, setAnchor]);
 
   function goToPage() {
     const requestedPage = Number.parseInt(pageInput, 10);
