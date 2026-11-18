@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getTsParking } from "@/lib/parking-api";
 
 export function TsParkingGuide() {
-  return <details className="rounded-xl border border-border bg-card">
+  return <details className="rounded-xl border border-border bg-secondary">
     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
       <span><span className="block font-extrabold">주변 주차장 실시간 조회</span><span className="mt-1 block text-xs text-muted-foreground">한국교통안전공단 연계</span></span>
       <span className="shrink-0 text-xs font-bold text-primary">펼치기 / 접기</span>
