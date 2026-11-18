@@ -5,6 +5,16 @@ import { getSeoulAvailability } from "@/lib/seoul-parking";
 import { openNaverMapPlace, openNaverMapSearch } from "@/lib/naver-map";
 
 export function SeoulParkingGuide() {
+  return <details className="rounded-xl border border-border bg-card">
+    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+      <span><span className="block font-extrabold">공원 밖 대체 주차장</span><span className="mt-1 block text-xs text-muted-foreground">서울시 연계 · 잔여 대수 순</span></span>
+      <span className="shrink-0 text-xs font-bold text-primary">펼치기 / 접기</span>
+    </summary>
+    <SeoulParkingDetails />
+  </details>;
+}
+
+function SeoulParkingDetails() {
   const [expanded, setExpanded] = useState(false);
   const query = useQuery({
     queryKey: ["seoul-parking"], queryFn: () => getSeoulParking(),
@@ -14,17 +24,17 @@ export function SeoulParkingGuide() {
   const lots = (query.data?.status === "ok" ? query.data.lots : [])
     .map((lot) => ({ lot, availability: getSeoulAvailability(lot, now) }))
     .sort((a, b) => (b.availability?.remaining ?? -1) - (a.availability?.remaining ?? -1));
-  return <div className="border-t border-border pt-4">
+  return <div className="border-t border-border p-4">
     <div className="flex items-center justify-between gap-2">
-      <h3 className="text-sm font-extrabold">공원 밖 대체 주차장 · 서울시 연계</h3>
+      <h3 className="text-sm font-extrabold">서울시 주차정보</h3>
       <button type="button" onClick={() => void query.refetch()} disabled={query.isFetching} className="text-xs font-bold disabled:opacity-50">새로고침</button>
     </div>
     <p className="my-2 text-xs leading-5 text-muted-foreground">송파·강동 지역의 대체 후보입니다. 가까운 순서가 아니며 공연장까지 추가 이동이 필요합니다. 잔여 대수는 총 주차면에서 현재 차량 수를 뺀 값으로, 도착 시점의 빈자리를 보장하지 않습니다.</p>
     <div className="space-y-2" aria-live="polite">
       {lots.length > 0 ? lots.slice(0, expanded ? undefined : 1).map(({ lot, availability }) => {
-        return <article key={lot.id} className="rounded-xl border border-border p-3">
+        return <article key={lot.id} className="rounded-xl border border-border p-4">
           <div className="flex items-start justify-between gap-3">
-            <div><h4 className="text-sm font-extrabold">{lot.name}</h4><p className="mt-1 text-xs text-muted-foreground">{lot.address}</p></div>
+            <div><h4 className="font-extrabold">{lot.name}</h4><p className="mt-1 text-xs text-muted-foreground">{lot.address}</p></div>
             <button
               type="button"
               onClick={() => {

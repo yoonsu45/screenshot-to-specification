@@ -56,10 +56,14 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
           <a className="text-xs underline" href={sources.live} target="_blank" rel="noopener noreferrer">실시간 데이터 출처</a>
         </div>
 
-        <ParkingCard name={parking.primary} label="가까운 주차장 · 공식 안내 기준" />
-        <p className="text-xs leading-5 text-muted-foreground">공원 내부 주차장별 실시간 대수와 동일 범위의 총 주차면 수가 제공되지 않아 내부 주차장의 혼잡도와 예상 주차 가능 대수를 산출할 수 없습니다.</p>
-        <a href={PARKING_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold underline">공식 주차장·요금·운영 안내 <ExternalLink className="h-3 w-3" /></a>
+        <section className="space-y-3 rounded-xl border border-border p-4" aria-label="공연장별 주차장">
+          <div><h3 className="font-extrabold">공연장별 주차장</h3><p className="mt-1 text-xs text-muted-foreground">선택한 공연장에 따라 안내되는 가까운 주차장입니다.</p></div>
+          <ParkingCard name={parking.primary} label="가까운 주차장 · 공식 안내 기준" />
+          <p className="text-xs leading-5 text-muted-foreground">공원 내부 주차장별 실시간 대수와 동일 범위의 총 주차면 수가 제공되지 않아 내부 주차장의 혼잡도와 예상 주차 가능 대수를 산출할 수 없습니다.</p>
+          <a href={PARKING_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold underline">공식 주차장·요금·운영 안내 <ExternalLink className="h-3 w-3" /></a>
+        </section>
 
+        <div><h3 className="font-extrabold">공통 주변 주차정보</h3><p className="mt-1 text-xs text-muted-foreground">공연장과 관계없이 동일하게 제공되는 주변 주차장입니다.</p></div>
         <SeoulParkingGuide />
         <TsParkingGuide />
       </div>

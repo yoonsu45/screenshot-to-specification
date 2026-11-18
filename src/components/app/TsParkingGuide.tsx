@@ -2,8 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { getTsParking } from "@/lib/parking-api";
 
 export function TsParkingGuide() {
-  return <details className="border-t border-border pt-3">
-    <summary className="cursor-pointer text-sm font-bold">주변 주차장 실시간 조회 · 자세히 보기</summary>
+  return <details className="rounded-xl border border-border bg-card">
+    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+      <span><span className="block font-extrabold">주변 주차장 실시간 조회</span><span className="mt-1 block text-xs text-muted-foreground">한국교통안전공단 연계</span></span>
+      <span className="shrink-0 text-xs font-bold text-primary">펼치기 / 접기</span>
+    </summary>
     <TsParkingDetails />
   </details>;
 }
@@ -12,7 +15,7 @@ function TsParkingDetails() {
   const query = useQuery({ queryKey: ["ts-parking"], queryFn: () => getTsParking(), staleTime: 60000, refetchInterval: 60000, retry: false });
   const source = query.data;
   const fresh = source?.status === "ok" && Date.now() - Date.parse(source.fetchedAt) < 120000;
-  return <div className="pt-3">
+  return <div className="border-t border-border p-4">
     <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-bold">추가 주차정보 · 한국교통안전공단</h3><button type="button" className="text-xs font-bold disabled:opacity-50" disabled={query.isFetching} onClick={() => void query.refetch()}>새로고침</button></div>
     <p className="my-2 text-xs leading-5 text-muted-foreground">일부 조회 자료 중 관리 ID와 총 주차면 수가 일치하는 인근 공영주차장만 표시합니다. 원자료 측정 시각이 없어 현장 확인이 필요하며, 서울시 자료와 값이 다를 수 있습니다.</p>
     <div className="space-y-2" aria-live="polite">{fresh && source.lots.length ? source.lots.map((lot) => <article key={lot.id} className="rounded-xl border border-border p-3">
