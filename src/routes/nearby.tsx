@@ -142,8 +142,9 @@ function InternalFacilities() {
 
           <div
             ref={mapViewportRef}
-            className="relative h-64 touch-pan-x touch-pan-y overflow-auto overscroll-contain bg-[#ececec] sm:h-80"
+            className="relative max-h-96 w-full touch-pan-x touch-pan-y overflow-auto overscroll-contain bg-[#ececec]"
             aria-label="올림픽공원 공식 안내도"
+            style={{ aspectRatio: `${OFFICIAL_MAP_WIDTH} / ${OFFICIAL_MAP_HEIGHT}` }}
           >
             <div
               ref={mapContentRef}
@@ -164,17 +165,19 @@ function InternalFacilities() {
                 <div
                   role="img"
                   aria-label={`${selectedFacility.name} 위치 핀`}
-                  className="pointer-events-none absolute z-10 flex -translate-x-1/2 -translate-y-full flex-col items-center"
+                  className="pointer-events-none absolute z-10"
                   style={{
                     left: `${(selectedFacility.mapX / OFFICIAL_MAP_WIDTH) * 100}%`,
                     top: `${(selectedFacility.mapY / OFFICIAL_MAP_HEIGHT) * 100}%`,
                   }}
                 >
-                  <span className="mb-1 max-w-40 truncate whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-[0.65rem] font-extrabold text-primary-foreground shadow-lg">
+                  <span
+                    className={`absolute left-1/2 max-w-40 -translate-x-1/2 truncate whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-[0.65rem] font-extrabold text-primary-foreground shadow-lg ${selectedFacility.mapY < 120 ? "top-2" : "bottom-10"}`}
+                  >
                     {selectedFacility.name}
                   </span>
                   <MapPin
-                    className="h-9 w-9 fill-brand-orange text-white drop-shadow-lg"
+                    className="absolute bottom-0 left-1/2 h-9 w-9 -translate-x-1/2 fill-brand-orange text-white drop-shadow-lg"
                     strokeWidth={2.5}
                   />
                 </div>
@@ -276,7 +279,7 @@ function InternalFacilities() {
                   type="button"
                   onClick={() => {
                     setSelectedFacilityId(facility.id);
-                    setMapZoom((zoom) => Math.max(zoom, 1.5));
+                    setMapZoom((zoom) => Math.max(zoom, 1.75));
                   }}
                   className="w-full p-4 text-left"
                   aria-label={`${facility.name} 지도 핀 선택`}
