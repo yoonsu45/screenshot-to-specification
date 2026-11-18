@@ -10,6 +10,8 @@ export type InternalFacility = {
   near: string[];
   latitude: number;
   longitude: number;
+  mapX: number;
+  mapY: number;
 };
 
 export const internalFacilityMapBounds = {
@@ -143,6 +145,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["올림픽홀", "뮤즈라이브"],
     latitude: 37.514747,
     longitude: 127.1275894,
+    mapX: 772,
+    mapY: 485,
   },
   {
     id: "cafe-woori",
@@ -153,6 +157,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["우리금융아트홀"],
     latitude: 37.5166404,
     longitude: 127.124542,
+    mapX: 570,
+    mapY: 395,
   },
   {
     id: "cafe-one-shot",
@@ -163,6 +169,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["KSPO DOME", "피크닉 광장", "수변무대"],
     latitude: 37.5209011,
     longitude: 127.1266415,
+    mapX: 540,
+    mapY: 145,
   },
   {
     id: "cafe-twosome-meeting",
@@ -173,6 +181,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["만남의 광장", "티켓링크 라이브 아레나", "한얼광장"],
     latitude: 37.5169907,
     longitude: 127.1302628,
+    mapX: 812,
+    mapY: 315,
   },
   {
     id: "cafe-pascucci",
@@ -183,6 +193,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["평화의 광장"],
     latitude: 37.5168386,
     longitude: 127.118065,
+    mapX: 284,
+    mapY: 523,
   },
   {
     id: "store-main",
@@ -193,6 +205,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["티켓링크 라이브 아레나", "한얼광장", "88마당"],
     latitude: 37.5173464,
     longitude: 127.1259922,
+    mapX: 645,
+    mapY: 322,
   },
   {
     id: "store-cu",
@@ -203,6 +217,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["만남의 광장", "올림픽홀", "뮤즈라이브"],
     latitude: 37.5169907,
     longitude: 127.1302628,
+    mapX: 837,
+    mapY: 322,
   },
   {
     id: "store-gs25",
@@ -213,6 +229,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["KSPO DOME", "피크닉 광장", "수변무대"],
     latitude: 37.5209011,
     longitude: 127.1266415,
+    mapX: 550,
+    mapY: 140,
   },
   {
     id: "store-dome",
@@ -223,31 +241,43 @@ export const internalFacilities: InternalFacility[] = [
     near: ["KSPO DOME"],
     latitude: 37.5192479,
     longitude: 127.1277213,
+    mapX: 643,
+    mapY: 185,
   },
   ...[
-    [1, "북2문으로 들어와 청룡교 근처", 37.5209552, 127.1234888],
-    [2, "세계평화의문을 지나 광장 왼편", 37.5181333, 127.1118394],
-    [3, "세계평화의문을 지나 광장 오른편", 37.5174425, 127.1137827],
-    [4, "조각공원 4경 대화 근처", 37.5169528, 127.1181326],
-    [5, "올림픽공원역 3번 출구 왼편", 37.5167816, 127.1304242],
-    [6, "올림픽홀과 뮤즈라이브 오른편", 37.5151942, 127.1299482],
-    [7, "올림픽홀과 뮤즈라이브 앞", 37.5149656, 127.1294853],
-    [8, "국민체육진흥공단 왼쪽", 37.5154784, 127.1263229],
-    [9, "벨로드롬 앞", 37.5158838, 127.1226586],
-    [10, "벨로드롬 왼쪽", 37.5169174, 127.1201881],
-    [11, "우리금융아트홀과 벨로드롬 사이 광장 · 자전거매표소 왼편", 37.5175904, 127.1219166],
-    [12, "올림픽수영장 왼편", 37.5190394, 127.1232583],
-    [13, "몽촌토성 산책로에서 나홀로나무로 가는 중간", 37.519654, 127.1166004],
-    [14, "북1문 무지개다리를 지나 서울백제어린이박물관 앞", 37.5217341, 127.1179298],
-  ].map(([number, location, latitude, longitude]) => ({
+    [1, "북2문으로 들어와 청룡교 근처", 37.5209552, 127.1234888, 492, 62],
+    [2, "세계평화의문을 지나 광장 왼편", 37.5181333, 127.1118394, 125, 485],
+    [3, "세계평화의문을 지나 광장 오른편", 37.5174425, 127.1137827, 202, 516],
+    [4, "조각공원 4경 대화 근처", 37.5169528, 127.1181326, 360, 493],
+    [5, "올림픽공원역 3번 출구 왼편", 37.5167816, 127.1304242, 790, 322],
+    [6, "올림픽홀과 뮤즈라이브 오른편", 37.5151942, 127.1299482, 795, 468],
+    [7, "올림픽홀과 뮤즈라이브 앞", 37.5149656, 127.1294853, 782, 495],
+    [8, "국민체육진흥공단 왼쪽", 37.5154784, 127.1263229, 665, 498],
+    [9, "벨로드롬 앞", 37.5158838, 127.1226586, 532, 518],
+    [10, "벨로드롬 왼쪽", 37.5169174, 127.1201881, 432, 465],
+    [
+      11,
+      "우리금융아트홀과 벨로드롬 사이 광장 · 자전거매표소 왼편",
+      37.5175904,
+      127.1219166,
+      483,
+      380,
+    ],
+    [12, "올림픽수영장 왼편", 37.5190394, 127.1232583, 510, 233],
+    [13, "몽촌토성 산책로에서 나홀로나무로 가는 중간", 37.519654, 127.1166004, 270, 280],
+    [14, "북1문 무지개다리를 지나 서울백제어린이박물관 앞", 37.5217341, 127.1179298, 288, 78],
+  ].map(([number, location, latitude, longitude, mapX, mapY]) => ({
     id: `restroom-${number}`,
     name: `공원 화장실 ${number}`,
     category: "화장실" as const,
     location: String(location),
-    detail: "올림픽공원 공식 안내도의 위치 설명을 기준으로 표시한 대략적인 위치예요.",
+    detail:
+      "올림픽공원 공식 안내도에 표시된 위치예요. 길찾기 좌표는 주변 기준으로 안내될 수 있어요.",
     near: [],
     latitude: Number(latitude),
     longitude: Number(longitude),
+    mapX: Number(mapX),
+    mapY: Number(mapY),
   })),
   {
     id: "info-peace",
@@ -258,6 +288,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["평화의 광장"],
     latitude: 37.5175329,
     longitude: 127.11267,
+    mapX: 136,
+    mapY: 483,
   },
   {
     id: "info-meeting",
@@ -268,6 +300,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["만남의 광장"],
     latitude: 37.5169907,
     longitude: 127.1302628,
+    mapX: 766,
+    mapY: 322,
   },
   {
     id: "ticket-box",
@@ -278,6 +312,8 @@ export const internalFacilities: InternalFacility[] = [
     near: ["우리금융아트홀", "KSPO DOME", "88마당"],
     latitude: 37.5168,
     longitude: 127.1248,
+    mapX: 590,
+    mapY: 420,
   },
 ];
 
