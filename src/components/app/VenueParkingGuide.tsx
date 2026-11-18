@@ -50,8 +50,6 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
             <div><dt className="text-muted-foreground">현재 주차 차량</dt><dd className="mt-1 font-bold">{reading ? `${reading.count.toLocaleString("ko-KR")}대` : "확인 불가"}</dd></div>
             <div><dt className="text-muted-foreground">혼잡도 · 서비스 산정</dt><dd className="mt-1 font-bold">{availability?.label ?? "확인 불가"}</dd></div>
           </dl>
-          <p className="mt-3 text-xs leading-5 text-muted-foreground">잔여 대수는 총 2,200대에서 현재 주차 차량 수를 뺀 계산값입니다. 이 제공 범위의 합계이며 P2·P5 등 개별 주차장의 빈자리가 아닙니다. 도착 시점의 주차를 보장하지 않습니다.</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">점유율 70% 미만 여유 · 70~90% 미만 보통 · 90% 이상 혼잡 · 잔여 0대 만차. 원자료 측정 시각은 제공되지 않습니다.</p>
           {reading && !availability && <p className="mt-2 text-xs font-bold text-brand-orange">현재 차량 수가 수용 대수 범위를 벗어나 잔여 대수를 계산할 수 없습니다.</p>}
           {reading && <p className="text-xs text-muted-foreground">조회 시각 {new Date(live!.fetchedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (한국시간)</p>}
           <a className="text-xs underline" href={sources.live} target="_blank" rel="noopener noreferrer">실시간 데이터 출처</a>
