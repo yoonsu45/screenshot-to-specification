@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Bath,
@@ -8,14 +8,15 @@ import {
   Info,
   MapPin,
   Navigation,
+  RotateCcw,
   Store,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import {
   getInternalFacilities,
-  internalFacilityMapBounds,
   internalFacilityCategories,
   OFFICIAL_PARK_MAP_PDF_URL,
-  type InternalFacility,
   type InternalFacilityCategory,
 } from "@/data/internal-facilities";
 import { openNaverMapRoute } from "@/lib/naver-map";
@@ -45,12 +46,37 @@ const categoryIcons = {
   기타: Info,
 } satisfies Record<InternalFacilityCategory, typeof Coffee>;
 
+const OFFICIAL_MAP_WIDTH = 953.04535;
+const OFFICIAL_MAP_HEIGHT = 676.87866;
+
 function InternalFacilities() {
   const [category, setCategory] = useState<InternalFacilityCategory>("카페");
   const facilities = getInternalFacilities(category);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const selectedFacility = facilities.find((facility) => facility.id === selectedFacilityId);
-  const mapUrl = createMapUrl(selectedFacility);
+  const [mapZoom, setMapZoom] = useState(1);
+  const mapViewportRef = useRef<HTMLDivElement>(null);
+  const mapContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selectedFacility) return;
+
+    const frame = requestAnimationFrame(() => {
+      const viewport = mapViewportRef.current;
+      const content = mapContentRef.current;
+      if (!viewport || !content) return;
+
+      const left = (selectedFacility.mapX / OFFICIAL_MAP_WIDTH) * content.scrollWidth;
+      const top = (selectedFacility.mapY / OFFICIAL_MAP_HEIGHT) * content.scrollHeight;
+      viewport.scrollTo({
+        left: Math.max(0, left - viewport.clientWidth / 2),
+        top: Math.max(0, top - viewport.clientHeight / 2),
+        behavior: "smooth",
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [mapZoom, selectedFacility]);
 
   return (
     <div className="space-y-6">
@@ -79,14 +105,82 @@ function InternalFacilities() {
           </p>
         </div>
 
-        <div className="relative h-64 overflow-hidden border-y border-border bg-secondary sm:h-80">
-          <iframe
-            key={selectedFacility?.id ?? "olympic-park"}
-            src={mapUrl}
-            title={selectedFacility ? `${selectedFacility.name} 위치 지도` : "올림픽공원 내부 지도"}
-            loading="lazy"
-            className="h-full w-full border-0"
-          />
+        <div className="border-y border-border bg-secondary">
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 px-3 py-2">
+            <p className="text-[0.7rem] font-semibold text-muted-foreground">
+              시설 선택 후 핀 확인 · 버튼으로 확대
+            </p>
+            <div className="flex shrink-0 items-center gap-1" aria-label="안내도 확대 및 축소">
+              <button
+                type="button"
+                onClick={() => setMapZoom((zoom) => Math.max(1, zoom - 0.5))}
+                disabled={mapZoom <= 1}
+                aria-label="안내도 축소"
+                className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary disabled:opacity-35"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapZoom(1)}
+                aria-label="안내도 크기 초기화"
+                className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapZoom((zoom) => Math.min(3, zoom + 0.5))}
+                disabled={mapZoom >= 3}
+                aria-label="안내도 확대"
+                className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary disabled:opacity-35"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          <div
+            ref={mapViewportRef}
+            className="relative h-64 touch-pan-x touch-pan-y overflow-auto overscroll-contain bg-[#ececec] sm:h-80"
+            aria-label="올림픽공원 공식 안내도"
+          >
+            <div
+              ref={mapContentRef}
+              className="relative origin-top-left"
+              style={{
+                width: `${mapZoom * 100}%`,
+                aspectRatio: `${OFFICIAL_MAP_WIDTH} / ${OFFICIAL_MAP_HEIGHT}`,
+              }}
+            >
+              <img
+                src="/olympic-park-guide.png"
+                alt="올림픽공원 공식 종합안내도"
+                draggable={false}
+                className="absolute inset-0 h-full w-full select-none"
+              />
+
+              {selectedFacility && (
+                <div
+                  role="img"
+                  aria-label={`${selectedFacility.name} 위치 핀`}
+                  className="pointer-events-none absolute z-10 flex -translate-x-1/2 -translate-y-full flex-col items-center"
+                  style={{
+                    left: `${(selectedFacility.mapX / OFFICIAL_MAP_WIDTH) * 100}%`,
+                    top: `${(selectedFacility.mapY / OFFICIAL_MAP_HEIGHT) * 100}%`,
+                  }}
+                >
+                  <span className="mb-1 max-w-40 truncate whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-[0.65rem] font-extrabold text-primary-foreground shadow-lg">
+                    {selectedFacility.name}
+                  </span>
+                  <MapPin
+                    className="h-9 w-9 fill-brand-orange text-white drop-shadow-lg"
+                    strokeWidth={2.5}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {selectedFacility && (
@@ -159,6 +253,7 @@ function InternalFacilities() {
                 onClick={() => {
                   setCategory(item);
                   setSelectedFacilityId(null);
+                  setMapZoom(1);
                 }}
                 aria-pressed={selected}
                 className={`flex min-w-0 flex-col items-center gap-1.5 rounded-2xl border px-1 py-3 text-xs font-extrabold transition sm:flex-row sm:justify-center sm:text-sm ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-primary"}`}
@@ -179,7 +274,10 @@ function InternalFacilities() {
               >
                 <button
                   type="button"
-                  onClick={() => setSelectedFacilityId(facility.id)}
+                  onClick={() => {
+                    setSelectedFacilityId(facility.id);
+                    setMapZoom((zoom) => Math.max(zoom, 1.5));
+                  }}
                   className="w-full p-4 text-left"
                   aria-label={`${facility.name} 지도 핀 선택`}
                 >
@@ -201,22 +299,4 @@ function InternalFacilities() {
       </section>
     </div>
   );
-}
-
-function createMapUrl(facility?: InternalFacility) {
-  const { north, south, east, west } = internalFacilityMapBounds;
-  const bbox = facility
-    ? [
-        facility.longitude - 0.0035,
-        facility.latitude - 0.0025,
-        facility.longitude + 0.0035,
-        facility.latitude + 0.0025,
-      ]
-    : [west, south, east, north];
-  const params = new URLSearchParams({
-    bbox: bbox.join(","),
-    layer: "mapnik",
-  });
-  if (facility) params.set("marker", `${facility.latitude},${facility.longitude}`);
-  return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
 }

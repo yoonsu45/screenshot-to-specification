@@ -37,4 +37,15 @@ describe("올림픽공원 내부 시설", () => {
       });
     });
   });
+
+  it("모든 편의시설에 공식 안내도 핀 좌표가 있다", () => {
+    internalFacilityCategories.forEach((category) => {
+      getInternalFacilities(category).forEach((facility) => {
+        expect(facility.mapX).toBeGreaterThanOrEqual(0);
+        expect(facility.mapX).toBeLessThanOrEqual(953.04535);
+        expect(facility.mapY).toBeGreaterThanOrEqual(0);
+        expect(facility.mapY).toBeLessThanOrEqual(676.87866);
+      });
+    });
+  });
 });
