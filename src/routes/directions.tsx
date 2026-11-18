@@ -7,6 +7,12 @@ import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
 import { useAppStore } from "@/lib/app-store";
 import { openNaverMapRoute } from "@/lib/naver-map";
 
+const parkBusStops = [
+  { name: "동1문 · 올림픽공원역", routes: "3214 · 3220 · 3319 · 3323 · 3412 · 3413 · 30-5 · 35 · 6300" },
+  { name: "남2문 · 한성백제박물관", routes: "3412 · 3413 · 3323 · 30 · 30-5 · 35" },
+  { name: "남4문 · 평화의문광장", routes: "3412 · 3413 · 3323 · 30 · 30-5 · 35 · 340" },
+];
+
 export {
   createNaverMapAndroidIntentUrl,
   createNaverMapAppUrl,
@@ -124,7 +130,7 @@ function Directions() {
                   return <button key={option} type="button" aria-pressed={transitMode === option} onClick={() => setTransitMode(option)} className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-bold ${transitMode === option ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary text-foreground"}`}><Icon className="h-5 w-5" />{option === "subway" ? "지하철" : "버스"}</button>;
                 })}
               </div>
-              {transitMode === "subway" ? <div><h3 className="mb-2 text-sm font-extrabold">{base} 지하철 안내</h3><ul className="space-y-2">{subwayItems.map((item) => <li key={item.title} className="rounded-xl bg-secondary p-4"><p className="font-extrabold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.detail}</p></li>)}</ul><p className="mt-3 text-xs leading-5 text-muted-foreground">출구에서 공연장까지의 이동 경로는 지도에서 확인해 주세요.</p></div> : <div><h3 className="text-sm font-extrabold">올림픽공원 버스 안내</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">공원 입구 기준 안내입니다. 공연장까지 이동이 필요하므로 하차 전 정류장과 경로를 확인해 주세요.</p><div className="mt-3 rounded-xl bg-secondary p-4"><p className="font-extrabold">동1문 · 올림픽공원역 방면</p><p className="mt-2 text-sm font-bold">3214 · 3220 · 3319 · 3323 · 3412 · 3413 · 30-5 · 35 · 6300</p></div><a href="https://www.ksponco.or.kr/olympicpark/menu.es?mid=a20109000000" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold underline">전체 정류장과 노선 확인 <ExternalLink className="h-3 w-3" /></a></div>}
+              {transitMode === "subway" ? <div><h3 className="mb-2 text-sm font-extrabold">{base} 지하철 안내</h3><ul className="space-y-2">{subwayItems.map((item) => <li key={item.title} className="rounded-xl bg-secondary p-4"><p className="font-extrabold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.detail}</p></li>)}</ul><p className="mt-3 text-xs leading-5 text-muted-foreground">출구에서 공연장까지의 이동 경로는 지도에서 확인해 주세요.</p></div> : <div><h3 className="text-sm font-extrabold">올림픽공원 입구별 버스 안내</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">공원 공통 안내입니다. {base}에 가까운 정류장과 하차 후 경로를 지도에서 확인해 주세요.</p><ul className="mt-3 space-y-2">{parkBusStops.map((stop) => <li key={stop.name} className="rounded-xl bg-secondary p-4"><p className="font-extrabold">{stop.name}</p><p className="mt-2 text-sm font-bold">{stop.routes}</p></li>)}</ul><button type="button" onClick={openNaverDirections} className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">{base} 대중교통 길찾기</button><a href="https://www.ksponco.or.kr/olympicpark/menu.es?mid=a20109000000" target="_blank" rel="noopener noreferrer" className="ml-3 inline-flex items-center gap-1 text-xs font-bold underline">전체 정류장과 노선 확인 <ExternalLink className="h-3 w-3" /></a></div>}
             </div>
           </section>}
           {mode === "car" && (
