@@ -55,8 +55,15 @@ function InternalFacilities() {
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const selectedFacility = facilities.find((facility) => facility.id === selectedFacilityId);
   const [mapZoom, setMapZoom] = useState(1);
+  const mapSectionRef = useRef<HTMLElement>(null);
   const mapViewportRef = useRef<HTMLDivElement>(null);
   const mapContentRef = useRef<HTMLDivElement>(null);
+
+  const selectFacility = (facilityId: string) => {
+    setSelectedFacilityId(facilityId);
+    setMapZoom((zoom) => Math.max(zoom, 1.75));
+    mapSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   useEffect(() => {
     if (!selectedFacility) return;
@@ -89,7 +96,8 @@ function InternalFacilities() {
       </header>
 
       <section
-        className="overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-card"
+        ref={mapSectionRef}
+        className="scroll-mt-4 overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-card"
         aria-labelledby="venue-map-title"
       >
         <div className="p-4 sm:p-5">
@@ -277,10 +285,7 @@ function InternalFacilities() {
               >
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedFacilityId(facility.id);
-                    setMapZoom((zoom) => Math.max(zoom, 1.75));
-                  }}
+                  onClick={() => selectFacility(facility.id)}
                   className="w-full p-4 text-left"
                   aria-label={`${facility.name} 지도 핀 선택`}
                 >
