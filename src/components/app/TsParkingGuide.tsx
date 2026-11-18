@@ -3,7 +3,7 @@ import { getTsParking } from "@/lib/parking-api";
 
 export function TsParkingGuide() {
   return <details className="border-t border-border pt-3">
-    <summary className="cursor-pointer text-sm font-bold">추가 주차정보 · 자세히 보기</summary>
+    <summary className="cursor-pointer text-sm font-bold">주변 주차장 실시간 조회 · 자세히 보기</summary>
     <TsParkingDetails />
   </details>;
 }

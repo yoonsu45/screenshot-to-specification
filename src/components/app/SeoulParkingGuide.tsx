@@ -53,7 +53,7 @@ export function SeoulParkingGuide() {
         </article>;
       }) : <p className="rounded-xl bg-secondary p-3 text-xs text-muted-foreground">{query.isFetching ? "서울시 주차정보 조회 중…" : query.data?.status === "missing_key" ? "서울시 주차정보 연결이 아직 설정되지 않았습니다." : query.isError ? "주차정보 서버에 연결하지 못했습니다. 다시 조회해 주세요." : query.data?.status === "ok" ? "현재 조회 결과에 대체 후보 주차장이 없습니다." : "서울시 제공기관의 응답을 확인할 수 없습니다. 잠시 후 다시 조회해 주세요."}</p>}
     </div>
-    {lots.length > 1 && <button type="button" onClick={() => setExpanded(!expanded)} aria-expanded={expanded} className="mt-3 text-xs font-bold underline">{expanded ? "접기" : `더보기 (${lots.length - 1})`}</button>}
+    {lots.length > 1 && <div className="mt-3 flex justify-center"><button type="button" onClick={() => setExpanded(!expanded)} aria-expanded={expanded} className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">{expanded ? "접기" : `더보기 (${lots.length - 1})`}</button></div>}
     <p className="mt-2 text-xs leading-5 text-muted-foreground">점유율 기준: 70% 미만 여유 · 70~90% 미만 보통 · 90% 이상 혼잡 · 잔여 0대 만차. 현장 운영·통제 및 정보 지연에 따라 실제와 다를 수 있습니다.</p>
     <a href="https://data.seoul.go.kr/dataList/OA-21709/A/1/datasetView.do" target="_blank" rel="noopener noreferrer" className="text-xs underline">출처: 서울특별시 · 시영주차장 실시간 주차대수 정보</a>
   </div>;
