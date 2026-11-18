@@ -19,6 +19,14 @@ describe("올림픽공원 내부 시설", () => {
     ).toBe(true);
   });
 
+  it("공식 안내도에 표시된 공원 화장실 14곳을 모두 제공한다", () => {
+    const restrooms = getInternalFacilities("화장실");
+    expect(restrooms).toHaveLength(14);
+    expect(restrooms.map((facility) => facility.name)).toEqual(
+      Array.from({ length: 14 }, (_, index) => `공원 화장실 ${index + 1}`),
+    );
+  });
+
   it("모든 편의시설 좌표가 공원 지도 영역 안에 있다", () => {
     internalFacilityCategories.forEach((category) => {
       getInternalFacilities(category).forEach((facility) => {
