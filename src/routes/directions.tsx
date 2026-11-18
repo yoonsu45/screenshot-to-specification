@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Car, ChevronDown, ExternalLink, MapPinned, Navigation, TrainFront } from "lucide-react";
+import { BusFront, Car, ChevronDown, ExternalLink, MapPinned, Navigation, TrainFront } from "lucide-react";
 import { FacilityPicker } from "@/components/app/FacilityPicker";
 import { VenueParkingGuide } from "@/components/app/VenueParkingGuide";
 import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
@@ -40,10 +40,10 @@ function Directions() {
   );
   const base = selectedDestination?.name ?? "올림픽홀";
   const [mode, setMode] = useState<"public" | "car">("public");
+  const [transitMode, setTransitMode] = useState<"subway" | "bus">("subway");
   const [pickerOpen, setPickerOpen] = useState(false);
   const guide = transitGuides.find((g) => g.anchor === base || g.aliases?.includes(base));
-  const items = guide ? (mode === "public" ? guide.publicTransit : guide.car) : [];
-  const Icon = mode === "public" ? TrainFront : Car;
+  const subwayItems = guide?.publicTransit.filter((item) => !`${item.title} ${item.detail}`.includes("버스")) ?? [];
   const mapUrl = guide ? createMapUrl(guide.latitude, guide.longitude) : null;
 
   function openNaverDirections() {
@@ -105,7 +105,7 @@ function Directions() {
             onClick={() => setMode(m)}
             className={`rounded-full py-2.5 text-sm font-bold ${mode === m ? "bg-primary text-primary-foreground" : "text-secondary-foreground"}`}
           >
-            {m === "public" ? "대중교통" : "자가용"}
+            {m === "public" ? "대중교통 이용" : "승용차 이용"}
           </button>
         ))}
       </div>
@@ -115,22 +115,18 @@ function Directions() {
         </p>
       ) : (
         <>
-          <ul className="space-y-3">
-            {(mode === "car" ? [] : items).map((i) => (
-              <li
-                key={i.title}
-                className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card"
-              >
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
-                  <Icon className="h-6 w-6" />
-                </span>
-                <div className="min-w-0">
-                  <p className="font-extrabold">{i.title}</p>
-                  <p className="text-sm text-muted-foreground">{i.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {mode === "public" && <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-card" aria-label="대중교통 안내">
+            <div className="border-b border-border p-4"><h2 className="font-extrabold">대중교통 안내</h2><p className="mt-1 text-xs text-muted-foreground">이용할 교통수단을 선택해 안내를 확인하세요.</p></div>
+            <div className="p-4">
+              <div className="mb-4 grid grid-cols-2 gap-2" role="group" aria-label="대중교통 수단 선택">
+                {(["subway", "bus"] as const).map((option) => {
+                  const Icon = option === "subway" ? TrainFront : BusFront;
+                  return <button key={option} type="button" aria-pressed={transitMode === option} onClick={() => setTransitMode(option)} className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-bold ${transitMode === option ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary text-foreground"}`}><Icon className="h-5 w-5" />{option === "subway" ? "지하철" : "버스"}</button>;
+                })}
+              </div>
+              {transitMode === "subway" ? <div><h3 className="mb-2 text-sm font-extrabold">{base} 지하철 안내</h3><ul className="space-y-2">{subwayItems.map((item) => <li key={item.title} className="rounded-xl bg-secondary p-4"><p className="font-extrabold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.detail}</p></li>)}</ul><p className="mt-3 text-xs leading-5 text-muted-foreground">출구에서 공연장까지의 이동 경로는 지도에서 확인해 주세요.</p></div> : <div><h3 className="text-sm font-extrabold">올림픽공원 버스 안내</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">공원 입구 기준 안내입니다. 공연장까지 이동이 필요하므로 하차 전 정류장과 경로를 확인해 주세요.</p><div className="mt-3 rounded-xl bg-secondary p-4"><p className="font-extrabold">동1문 · 올림픽공원역 방면</p><p className="mt-2 text-sm font-bold">3214 · 3220 · 3319 · 3323 · 3412 · 3413 · 30-5 · 35 · 6300</p></div><a href="https://www.ksponco.or.kr/olympicpark/menu.es?mid=a20109000000" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold underline">전체 정류장과 노선 확인 <ExternalLink className="h-3 w-3" /></a></div>}
+            </div>
+          </section>}
           {mode === "car" && (
             <VenueParkingGuide venue={base} />
           )}

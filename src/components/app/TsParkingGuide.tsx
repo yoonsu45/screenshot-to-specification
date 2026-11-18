@@ -18,7 +18,7 @@ function TsParkingDetails() {
   return <div className="border-t border-border p-4">
     <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-bold">추가 주차정보 · 한국교통안전공단</h3><button type="button" className="text-xs font-bold disabled:opacity-50" disabled={query.isFetching} onClick={() => void query.refetch()}>새로고침</button></div>
     <p className="my-2 text-xs leading-5 text-muted-foreground">일부 조회 자료 중 관리 ID와 총 주차면 수가 일치하는 인근 공영주차장만 표시합니다. 원자료 측정 시각이 없어 현장 확인이 필요하며, 서울시 자료와 값이 다를 수 있습니다.</p>
-    <div className="space-y-2" aria-live="polite">{fresh && source.lots.length ? source.lots.map((lot) => <article key={lot.id} className="rounded-xl border border-border p-3">
+    <div className="space-y-2" aria-live="polite">{fresh && source.lots.length ? source.lots.map((lot) => <article key={lot.id} className="rounded-xl border border-border bg-card p-3">
       <div className="flex items-center justify-between gap-3"><h4 className="text-sm font-extrabold">{lot.name}</h4><a className="shrink-0 text-xs font-bold underline" href={`https://map.naver.com/p/search/${encodeURIComponent(lot.name + " " + lot.address)}`} target="_blank" rel="noopener noreferrer">지도 보기</a></div>
       <p className="mt-1 text-xs text-muted-foreground">{lot.address}</p>
       <p className="mt-2 text-sm font-bold">조회된 잔여 {lot.remaining.toLocaleString("ko-KR")}대 / 총 {lot.capacity.toLocaleString("ko-KR")}대</p>

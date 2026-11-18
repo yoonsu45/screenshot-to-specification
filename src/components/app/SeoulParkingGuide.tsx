@@ -29,7 +29,7 @@ function SeoulParkingDetails() {
     </div>
     <div className="mt-3 space-y-2" aria-live="polite">
       {lots.length > 0 ? lots.map(({ lot, availability }) => {
-        return <article key={lot.id} className="rounded-xl border border-border p-4">
+        return <article key={lot.id} className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-start justify-between gap-3">
             <div><h4 className="font-extrabold">{lot.name}</h4><p className="mt-1 text-xs text-muted-foreground">{lot.address}</p></div>
             <button
