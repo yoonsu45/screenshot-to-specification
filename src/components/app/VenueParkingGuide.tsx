@@ -33,6 +33,7 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
   const availability = reading ? getParkAvailability(reading.count) : null;
 
   return (
+    <>
     <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-card" aria-label={`${venue} 주차 안내`}>
       <div className="flex items-center justify-between gap-3 border-b border-border p-4">
         <h2 className="flex items-center gap-2 font-extrabold"><Car className="h-5 w-5" /> {venue} 주차 안내</h2>
@@ -63,13 +64,13 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
           <a href={PARKING_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold underline">공식 주차장·요금·운영 안내 <ExternalLink className="h-3 w-3" /></a>
         </section>
 
-        <section className="space-y-3 rounded-xl border border-border p-4" aria-label="공통 주변 주차정보">
-          <div><h3 className="font-extrabold">공통 주변 주차정보</h3><p className="mt-1 text-xs text-muted-foreground">공연장과 관계없이 동일하게 제공되는 주변 주차장입니다.</p></div>
-          <SeoulParkingGuide />
-          <TsParkingGuide />
-        </section>
       </div>
     </section>
+    <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-card" aria-label="공통 주변 주차정보">
+      <div className="border-b border-border p-4"><h2 className="flex items-center gap-2 font-extrabold"><Car className="h-5 w-5" /> 공통 주변 주차정보</h2><p className="mt-1 text-xs text-muted-foreground">공연장과 관계없이 동일하게 제공되는 주변 주차장입니다.</p></div>
+      <div className="space-y-3 p-4"><SeoulParkingGuide /><TsParkingGuide /></div>
+    </section>
+    </>
   );
 }
 

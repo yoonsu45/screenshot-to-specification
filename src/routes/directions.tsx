@@ -135,7 +135,7 @@ function Directions() {
             <VenueParkingGuide venue={base} />
           )}
           <a
-            href={guide.officialUrl}
+            href="https://www.ksponco.or.kr/olympicpark/menu.es?mid=a20109000000"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-fab"
