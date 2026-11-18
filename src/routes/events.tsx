@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, Camera, List, PlugZap, ScanLine, SearchX } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  Camera,
+  ChevronDown,
+  PlugZap,
+  ScanLine,
+  SearchX,
+} from "lucide-react";
 import { categories, type CategoryFilter } from "@/data/events";
 import { ALL_FACILITIES_ID } from "@/data/facilities";
 import { listEvents } from "@/lib/event-service";
@@ -30,7 +38,7 @@ export const Route = createFileRoute("/events")({
 function EventsPage() {
   const { facilityId, setCheckOpen } = useAppStore();
   const [category, setCategory] = useState<CategoryFilter>("전체");
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calendarOpen, setCalendarOpen] = useState(true);
   const [dataSource, setDataSource] = useState<"official" | "demo">("official");
   useEffect(() => setCategory("전체"), [facilityId]);
 
@@ -92,28 +100,19 @@ function EventsPage() {
               </h1>
               <span className="mt-2.5 block h-1.5 w-10 rounded-full bg-brand-orange sm:mt-3" />
             </div>
-            <div
-              className="mt-0.5 flex shrink-0 rounded-full border border-border bg-card p-0.5 shadow-sm sm:p-1"
-              role="group"
-              aria-label="행사 보기 방식"
+            <button
+              type="button"
+              aria-expanded={calendarOpen}
+              aria-controls="demo-event-calendar"
+              onClick={() => setCalendarOpen((open) => !open)}
+              className="mt-0.5 flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-extrabold text-primary shadow-sm transition hover:bg-secondary sm:text-sm"
             >
-              <button
-                type="button"
-                onClick={() => setViewMode("calendar")}
-                aria-pressed={viewMode === "calendar"}
-                className={`flex items-center gap-1 rounded-full px-2 py-1.5 text-xs font-extrabold transition sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm ${viewMode === "calendar" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-primary"}`}
-              >
-                <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> 달력 보기
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                aria-pressed={viewMode === "list"}
-                className={`flex items-center gap-1 rounded-full px-2 py-1.5 text-xs font-extrabold transition sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm ${viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-primary"}`}
-              >
-                <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> 목록 보기
-              </button>
-            </div>
+              <CalendarDays className="h-4 w-4" />
+              {calendarOpen ? "달력 접기" : "달력 펼치기"}
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${calendarOpen ? "rotate-180" : ""}`}
+              />
+            </button>
           </div>
 
           <p className="mb-4 text-sm text-muted-foreground">
@@ -146,26 +145,40 @@ function EventsPage() {
               desc="다른 분류나 시설을 선택해 보세요."
             />
           )}
-          {result.kind === "ok" &&
-            (viewMode === "calendar" ? (
-              <EventCalendar events={result.events} showFacility={isAll} />
-            ) : (
-              <ul className="grid gap-4 lg:grid-cols-2">
-                {result.events.map((e) => (
-                  <li key={e.id} className="min-w-0">
-                    <EventCard
-                      event={e}
-                      showFacility={isAll}
-                      onClick={
-                        e.officialUrl
-                          ? () => window.open(e.officialUrl, "_blank", "noopener")
-                          : undefined
-                      }
-                    />
-                  </li>
-                ))}
-              </ul>
-            ))}
+          {result.kind === "ok" && (
+            <div className="space-y-6">
+              {calendarOpen && (
+                <div id="demo-event-calendar">
+                  <EventCalendar events={result.events} showFacility={isAll} />
+                </div>
+              )}
+              <section aria-labelledby="demo-event-list-title">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h2 id="demo-event-list-title" className="text-xl font-black text-primary">
+                    행사 목록
+                  </h2>
+                  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-extrabold text-primary">
+                    {result.events.length}개
+                  </span>
+                </div>
+                <ul className="grid gap-4 lg:grid-cols-2">
+                  {result.events.map((e) => (
+                    <li key={e.id} className="min-w-0">
+                      <EventCard
+                        event={e}
+                        showFacility={isAll}
+                        onClick={
+                          e.officialUrl
+                            ? () => window.open(e.officialUrl, "_blank", "noopener")
+                            : undefined
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </div>
+          )}
         </>
       )}
     </>
