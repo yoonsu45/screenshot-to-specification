@@ -12,14 +12,12 @@ import {
 } from "lucide-react";
 import {
   getInternalFacilities,
-  getInternalVenueProfile,
   internalFacilityMapBounds,
   internalFacilityCategories,
   OFFICIAL_PARK_MAP_PDF_URL,
   type InternalFacility,
   type InternalFacilityCategory,
 } from "@/data/internal-facilities";
-import { useAppStore } from "@/lib/app-store";
 import { openNaverMapRoute } from "@/lib/naver-map";
 
 export const Route = createFileRoute("/nearby")({
@@ -48,10 +46,8 @@ const categoryIcons = {
 } satisfies Record<InternalFacilityCategory, typeof Coffee>;
 
 function InternalFacilities() {
-  const { anchor } = useAppStore();
-  const venue = getInternalVenueProfile(anchor);
   const [category, setCategory] = useState<InternalFacilityCategory>("카페");
-  const facilities = getInternalFacilities(category, venue.name);
+  const facilities = getInternalFacilities(category);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const selectedFacility = facilities.find((facility) => facility.id === selectedFacilityId);
   const mapUrl = createMapUrl(selectedFacility);
@@ -79,8 +75,7 @@ function InternalFacilities() {
             <span>올림픽공원 내부 편의시설</span>
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            지도를 직접 확대하거나 이동할 수 있어요. {venue.name}과 가까운 시설은 목록 위에
-            표시됩니다.
+            지도를 직접 확대하거나 이동할 수 있어요. 아래에서 시설을 선택하면 위치가 표시됩니다.
           </p>
         </div>
 
@@ -177,7 +172,6 @@ function InternalFacilities() {
 
         <ul className="mt-3 grid gap-3 lg:grid-cols-2">
           {facilities.map((facility) => {
-            const nearby = facility.near.includes(venue.name);
             return (
               <li
                 key={facility.id}
@@ -197,11 +191,6 @@ function InternalFacilities() {
                         <span>{facility.location}</span>
                       </p>
                     </div>
-                    {nearby && (
-                      <span className="shrink-0 rounded-full bg-lime/70 px-2 py-1 text-[10px] font-extrabold text-primary">
-                        공연장 인근
-                      </span>
-                    )}
                   </div>
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">{facility.detail}</p>
                 </button>

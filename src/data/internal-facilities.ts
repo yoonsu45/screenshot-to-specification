@@ -286,8 +286,6 @@ export const internalFacilities: InternalFacility[] = [
   },
 ];
 
-export function getInternalFacilities(category: InternalFacilityCategory, venueName: string) {
-  return internalFacilities
-    .filter((facility) => facility.category === category)
-    .sort((a, b) => Number(b.near.includes(venueName)) - Number(a.near.includes(venueName)));
+export function getInternalFacilities(category: InternalFacilityCategory) {
+  return internalFacilities.filter((facility) => facility.category === category);
 }
