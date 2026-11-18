@@ -4,14 +4,18 @@ import { BusFront, Car, ChevronDown, ExternalLink, MapPinned, Navigation, TrainF
 import { FacilityPicker } from "@/components/app/FacilityPicker";
 import { VenueParkingGuide } from "@/components/app/VenueParkingGuide";
 import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
+import { internalVenueProfiles } from "@/data/internal-facilities";
+import busStops from "@/data/seoul-bus-stops.json";
 import { useAppStore } from "@/lib/app-store";
-import { openNaverMapRoute } from "@/lib/naver-map";
+import { openNaverMapPlace, openNaverMapRoute } from "@/lib/naver-map";
 
-const parkBusStops = [
-  { name: "동1문 · 올림픽공원역", routes: "3214 · 3220 · 3319 · 3323 · 3412 · 3413 · 30-5 · 35 · 6300" },
-  { name: "남2문 · 한성백제박물관", routes: "3412 · 3413 · 3323 · 30 · 30-5 · 35" },
-  { name: "남4문 · 평화의문광장", routes: "3412 · 3413 · 3323 · 30 · 30-5 · 35 · 340" },
-];
+function straightLineMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const radians = Math.PI / 180;
+  const dLat = (lat2 - lat1) * radians;
+  const dLon = (lon2 - lon1) * radians;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * radians) * Math.cos(lat2 * radians) * Math.sin(dLon / 2) ** 2;
+  return 12742000 * Math.asin(Math.min(1, Math.sqrt(a)));
+}
 
 export {
   createNaverMapAndroidIntentUrl,
@@ -50,13 +54,15 @@ function Directions() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const guide = transitGuides.find((g) => g.anchor === base || g.aliases?.includes(base));
   const subwayItems = guide?.publicTransit.filter((item) => !`${item.title} ${item.detail}`.includes("버스")) ?? [];
+  const venueProfile = internalVenueProfiles.find((profile) => [profile.name, ...profile.aliases].includes(base));
+  const nearbyBusStops = venueProfile ? busStops.map((stop) => ({ ...stop, distance: straightLineMeters(venueProfile.latitude, venueProfile.longitude, stop.latitude, stop.longitude) })).sort((a, b) => a.distance - b.distance).slice(0, 4) : [];
   const mapUrl = guide ? createMapUrl(guide.latitude, guide.longitude) : null;
 
   function openNaverDirections() {
     if (!guide) return;
     openNaverMapRoute({
-      latitude: guide.latitude,
-      longitude: guide.longitude,
+      latitude: venueProfile?.latitude ?? guide.latitude,
+      longitude: venueProfile?.longitude ?? guide.longitude,
       name: `올림픽공원 ${base}`,
     }, mode);
   }
@@ -130,7 +136,7 @@ function Directions() {
                   return <button key={option} type="button" aria-pressed={transitMode === option} onClick={() => setTransitMode(option)} className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-bold ${transitMode === option ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary text-foreground"}`}><Icon className="h-5 w-5" />{option === "subway" ? "지하철" : "버스"}</button>;
                 })}
               </div>
-              {transitMode === "subway" ? <div><h3 className="mb-2 text-sm font-extrabold">{base} 지하철 안내</h3><ul className="space-y-2">{subwayItems.map((item) => <li key={item.title} className="rounded-xl bg-secondary p-4"><p className="font-extrabold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.detail}</p></li>)}</ul><p className="mt-3 text-xs leading-5 text-muted-foreground">출구에서 공연장까지의 이동 경로는 지도에서 확인해 주세요.</p></div> : <div><h3 className="text-sm font-extrabold">올림픽공원 입구별 버스 안내</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">공원 공통 안내입니다. {base}에 가까운 정류장과 하차 후 경로를 지도에서 확인해 주세요.</p><ul className="mt-3 space-y-2">{parkBusStops.map((stop) => <li key={stop.name} className="rounded-xl bg-secondary p-4"><p className="font-extrabold">{stop.name}</p><p className="mt-2 text-sm font-bold">{stop.routes}</p></li>)}</ul><button type="button" onClick={openNaverDirections} className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">{base} 대중교통 길찾기</button><a href="https://www.ksponco.or.kr/olympicpark/menu.es?mid=a20109000000" target="_blank" rel="noopener noreferrer" className="ml-3 inline-flex items-center gap-1 text-xs font-bold underline">전체 정류장과 노선 확인 <ExternalLink className="h-3 w-3" /></a></div>}
+              {transitMode === "subway" ? <div><h3 className="mb-2 text-sm font-extrabold">{base} 지하철 안내</h3><ul className="space-y-2">{subwayItems.map((item) => <li key={item.title} className="rounded-xl bg-secondary p-4"><p className="font-extrabold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.detail}</p></li>)}</ul><p className="mt-3 text-xs leading-5 text-muted-foreground">출구에서 공연장까지의 이동 경로는 지도에서 확인해 주세요.</p></div> : <div><h3 className="text-sm font-extrabold">{base} 주변 버스 정류장</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">정류장은 공연장 좌표와의 직선거리 순입니다. 실제 도보 거리와 출입 가능 경로는 다를 수 있으니 지도에서 확인해 주세요.</p>{nearbyBusStops.length ? <ul className="mt-3 space-y-2">{nearbyBusStops.map((stop) => <li key={stop.id} className="rounded-xl bg-secondary p-4"><div className="flex items-start justify-between gap-2"><div><p className="font-extrabold">{stop.name}</p><p className="mt-1 text-xs text-muted-foreground">정류소 번호 {stop.number} · 직선 약 {Math.round(stop.distance / 10) * 10}m</p></div><button type="button" onClick={() => openNaverMapPlace({ latitude: stop.latitude, longitude: stop.longitude, name: stop.name })} className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">지도 보기</button></div><p className="mt-2 text-sm font-bold">{stop.routes.join(" · ")}</p></li>)}</ul> : <p className="mt-3 rounded-xl bg-secondary p-4 text-sm">이 장소의 정류장 위치 정보는 아직 확인할 수 없습니다.</p>}<p className="mt-3 text-xs leading-5 text-muted-foreground">서울시 버스 자료 2026.09.02 기준 · 서울시 제공 범위의 노선이며 실시간 정보가 아닙니다. 같은 이름의 정류장은 방향이 다를 수 있습니다.</p><button type="button" onClick={openNaverDirections} className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">{base} 대중교통 길찾기</button><a href="https://data.seoul.go.kr/dataList/OA-1095/A/1/datasetView.do" target="_blank" rel="noopener noreferrer" className="ml-3 inline-flex items-center gap-1 text-xs font-bold underline">노선 자료 출처 <ExternalLink className="h-3 w-3" /></a></div>}
             </div>
           </section>}
           {mode === "car" && (
