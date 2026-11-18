@@ -20,6 +20,13 @@ const event: ParkEvent = {
 };
 
 describe("행사 달력", () => {
+  it("현재 달의 마지막 날짜가 포함된 주까지만 표시한다", () => {
+    render(<EventCalendar events={[event]} />);
+
+    expect(screen.getByRole("button", { name: "12월 5일" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "12월 6일" })).not.toBeInTheDocument();
+  });
+
   it("행사가 있는 날짜를 누르면 해당 날짜의 행사 창을 연다", () => {
     render(<EventCalendar events={[event]} />);
 

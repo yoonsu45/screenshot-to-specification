@@ -237,8 +237,10 @@ function monthFromDateKey(dateKey: string) {
 function buildCalendarDays(month: Date) {
   const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
   const start = new Date(month.getFullYear(), month.getMonth(), 1 - firstDay.getDay());
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const visibleDayCount = Math.ceil((firstDay.getDay() + daysInMonth) / 7) * 7;
   return Array.from(
-    { length: 42 },
+    { length: visibleDayCount },
     (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index),
   );
 }
