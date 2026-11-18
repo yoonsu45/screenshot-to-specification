@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { ChevronDown, RefreshCw } from "lucide-react";
 import { getTsParking } from "@/lib/parking-api";
 
 export function TsParkingGuide() {
-  return <details className="rounded-xl border border-border bg-secondary">
+  return <details className="group rounded-xl border border-border bg-secondary">
     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
       <span><span className="block font-extrabold">주변 주차장 실시간 조회</span><span className="mt-1 block text-xs text-muted-foreground">한국교통안전공단 연계</span></span>
-      <span className="shrink-0 text-xs font-bold text-primary">펼치기 / 접기</span>
+      <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"><span className="group-open:hidden">펼치기</span><span className="hidden group-open:inline">접기</span><ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" /></span>
     </summary>
     <TsParkingDetails />
   </details>;
