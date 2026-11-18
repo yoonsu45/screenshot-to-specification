@@ -48,4 +48,13 @@ describe("올림픽공원 내부 시설", () => {
       });
     });
   });
+
+  it("화장실 핀이 지도 가장자리 밖으로 잘리지 않는다", () => {
+    getInternalFacilities("화장실").forEach((facility) => {
+      expect(facility.mapX).toBeGreaterThanOrEqual(20);
+      expect(facility.mapX).toBeLessThanOrEqual(953.04535 - 20);
+      expect(facility.mapY).toBeGreaterThanOrEqual(20);
+      expect(facility.mapY).toBeLessThanOrEqual(676.87866 - 20);
+    });
+  });
 });
