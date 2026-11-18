@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { getSeoulParking } from "@/lib/parking-api";
 import { getSeoulAvailability } from "@/lib/seoul-parking";
 import { openNaverMapPlace, openNaverMapSearch } from "@/lib/naver-map";
@@ -15,7 +14,6 @@ export function SeoulParkingGuide() {
 }
 
 function SeoulParkingDetails() {
-  const [expanded, setExpanded] = useState(false);
   const query = useQuery({
     queryKey: ["seoul-parking"], queryFn: () => getSeoulParking(),
     staleTime: 60000, refetchInterval: 60000, retry: false,
@@ -29,9 +27,8 @@ function SeoulParkingDetails() {
       <h3 className="text-sm font-extrabold">서울시 주차정보</h3>
       <button type="button" onClick={() => void query.refetch()} disabled={query.isFetching} className="text-xs font-bold disabled:opacity-50">새로고침</button>
     </div>
-    <p className="my-2 text-xs leading-5 text-muted-foreground">송파·강동 지역의 대체 후보입니다. 가까운 순서가 아니며 공연장까지 추가 이동이 필요합니다. 잔여 대수는 총 주차면에서 현재 차량 수를 뺀 값으로, 도착 시점의 빈자리를 보장하지 않습니다.</p>
-    <div className="space-y-2" aria-live="polite">
-      {lots.length > 0 ? lots.slice(0, expanded ? undefined : 1).map(({ lot, availability }) => {
+    <div className="mt-3 space-y-2" aria-live="polite">
+      {lots.length > 0 ? lots.map(({ lot, availability }) => {
         return <article key={lot.id} className="rounded-xl border border-border p-4">
           <div className="flex items-start justify-between gap-3">
             <div><h4 className="font-extrabold">{lot.name}</h4><p className="mt-1 text-xs text-muted-foreground">{lot.address}</p></div>
@@ -63,8 +60,7 @@ function SeoulParkingDetails() {
         </article>;
       }) : <p className="rounded-xl bg-secondary p-3 text-xs text-muted-foreground">{query.isFetching ? "서울시 주차정보 조회 중…" : query.data?.status === "missing_key" ? "서울시 주차정보 연결이 아직 설정되지 않았습니다." : query.isError ? "주차정보 서버에 연결하지 못했습니다. 다시 조회해 주세요." : query.data?.status === "ok" ? "현재 조회 결과에 대체 후보 주차장이 없습니다." : "서울시 제공기관의 응답을 확인할 수 없습니다. 잠시 후 다시 조회해 주세요."}</p>}
     </div>
-    {lots.length > 1 && <div className="mt-3 flex justify-center"><button type="button" onClick={() => setExpanded(!expanded)} aria-expanded={expanded} className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">{expanded ? "접기" : `더보기 (${lots.length - 1})`}</button></div>}
-    <p className="mt-2 text-xs leading-5 text-muted-foreground">점유율 기준: 70% 미만 여유 · 70~90% 미만 보통 · 90% 이상 혼잡 · 잔여 0대 만차. 현장 운영·통제 및 정보 지연에 따라 실제와 다를 수 있습니다.</p>
+    <p className="mt-2 text-xs leading-5">잔여 대수는 계산값이며 도착 시 빈자리를 보장하지 않습니다. 공연장까지 추가 이동이 필요합니다.</p>
     <a href="https://data.seoul.go.kr/dataList/OA-21709/A/1/datasetView.do" target="_blank" rel="noopener noreferrer" className="text-xs underline">출처: 서울특별시 · 시영주차장 실시간 주차대수 정보</a>
   </div>;
 }
