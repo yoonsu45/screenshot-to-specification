@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   getInternalFacilities,
-  getInternalFacilityMapPosition,
   getInternalVenueProfile,
+  internalFacilityMapBounds,
   internalFacilityCategories,
 } from "@/data/internal-facilities";
 
@@ -29,14 +29,13 @@ describe("올림픽공원 내부 시설", () => {
     expect(stores[0]?.near).toContain("KSPO DOME");
   });
 
-  it("모든 편의시설 핀을 공원 지도 영역 안에 배치한다", () => {
+  it("모든 편의시설 좌표가 공원 지도 영역 안에 있다", () => {
     internalFacilityCategories.forEach((category) => {
       getInternalFacilities(category, "KSPO DOME").forEach((facility) => {
-        const position = getInternalFacilityMapPosition(facility);
-        expect(position.left).toBeGreaterThanOrEqual(0);
-        expect(position.left).toBeLessThanOrEqual(100);
-        expect(position.top).toBeGreaterThanOrEqual(0);
-        expect(position.top).toBeLessThanOrEqual(100);
+        expect(facility.longitude).toBeGreaterThanOrEqual(internalFacilityMapBounds.west);
+        expect(facility.longitude).toBeLessThanOrEqual(internalFacilityMapBounds.east);
+        expect(facility.latitude).toBeGreaterThanOrEqual(internalFacilityMapBounds.south);
+        expect(facility.latitude).toBeLessThanOrEqual(internalFacilityMapBounds.north);
       });
     });
   });

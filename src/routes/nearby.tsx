@@ -12,11 +12,11 @@ import {
 } from "lucide-react";
 import {
   getInternalFacilities,
-  getInternalFacilityMapPosition,
   getInternalVenueProfile,
   internalFacilityMapBounds,
   internalFacilityCategories,
   OFFICIAL_PARK_MAP_PDF_URL,
+  type InternalFacility,
   type InternalFacilityCategory,
 } from "@/data/internal-facilities";
 import { useAppStore } from "@/lib/app-store";
@@ -52,10 +52,9 @@ function InternalFacilities() {
   const venue = getInternalVenueProfile(anchor);
   const [category, setCategory] = useState<InternalFacilityCategory>("카페");
   const facilities = getInternalFacilities(category, venue.name);
-  const [selectedFacilityId, setSelectedFacilityId] = useState("cafe-olympic-hall");
-  const selectedFacility =
-    facilities.find((facility) => facility.id === selectedFacilityId) ?? facilities[0]!;
-  const mapUrl = createMapUrl();
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
+  const selectedFacility = facilities.find((facility) => facility.id === selectedFacilityId);
+  const mapUrl = createMapUrl(selectedFacility);
 
   return (
     <div className="space-y-6">
@@ -63,7 +62,7 @@ function InternalFacilities() {
         <p className="text-sm font-extrabold text-brand-orange">올림픽공원 안내</p>
         <h1 className="mt-1 text-3xl font-black text-primary sm:text-4xl">내부 시설</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          카테고리를 선택하고 지도 위 핀을 눌러 편의시설 위치를 확인해 보세요.
+          아래 편의시설을 누르면 지도에 해당 위치가 핀으로 표시돼요.
         </p>
       </header>
 
@@ -80,48 +79,37 @@ function InternalFacilities() {
             <span>올림픽공원 내부 편의시설</span>
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {venue.name}과 가까운 시설을 목록 위에 먼저 보여드려요.
+            지도를 직접 확대하거나 이동할 수 있어요. {venue.name}과 가까운 시설은 목록 위에
+            표시됩니다.
           </p>
         </div>
 
         <div className="relative h-64 overflow-hidden border-y border-border bg-secondary sm:h-80">
           <iframe
+            key={selectedFacility?.id ?? "olympic-park"}
             src={mapUrl}
-            title={`올림픽공원 ${category} 위치 지도`}
+            title={selectedFacility ? `${selectedFacility.name} 위치 지도` : "올림픽공원 내부 지도"}
             loading="lazy"
-            className="pointer-events-none h-full w-full border-0"
+            className="h-full w-full border-0"
           />
-          {facilities.map((facility, index) => {
-            const position = getInternalFacilityMapPosition(facility);
-            const selected = facility.id === selectedFacility.id;
-            return (
-              <button
-                key={facility.id}
-                type="button"
-                onClick={() => setSelectedFacilityId(facility.id)}
-                aria-label={`${facility.name} 위치 보기`}
-                aria-pressed={selected}
-                style={{ left: `${position.left}%`, top: `${position.top}%` }}
-                className={`absolute grid h-10 w-10 -translate-x-1/2 -translate-y-full place-items-center rounded-full border-[3px] border-white text-white shadow-lg transition ${selected ? "z-20 scale-110 bg-brand-orange" : "z-10 bg-primary"}`}
-              >
-                <MapPin className="h-5 w-5" />
-                <span className="sr-only">{index + 1}번 핀</span>
-              </button>
-            );
-          })}
-          <div className="absolute inset-x-3 bottom-3 z-30 rounded-2xl border border-border bg-card/95 p-3 shadow-card backdrop-blur sm:left-1/2 sm:right-auto sm:w-[24rem] sm:-translate-x-1/2">
+        </div>
+
+        {selectedFacility && (
+          <div className="border-b border-border bg-secondary/50 px-4 py-3 sm:px-5">
             <p className="font-extrabold text-primary">{selectedFacility.name}</p>
             <p className="mt-1 text-xs font-semibold leading-5">{selectedFacility.location}</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {selectedFacility.detail}
             </p>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-2 p-4 sm:p-5">
           <button
             type="button"
-            onClick={() =>
+            disabled={!selectedFacility}
+            onClick={() => {
+              if (!selectedFacility) return;
               openNaverMapRoute(
                 {
                   latitude: selectedFacility.latitude,
@@ -129,11 +117,12 @@ function InternalFacilities() {
                   name: `올림픽공원 ${selectedFacility.name}`,
                 },
                 "car",
-              )
-            }
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-3 text-sm font-extrabold text-primary-foreground"
+              );
+            }}
+            className="flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-3 text-sm font-extrabold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <Navigation className="h-4 w-4" /> 선택 시설 길찾기
+            <Navigation className="h-4 w-4" />
+            {selectedFacility ? "선택 시설 길찾기" : "시설을 선택해 주세요"}
           </button>
           <a
             href={OFFICIAL_PARK_MAP_PDF_URL}
@@ -174,8 +163,7 @@ function InternalFacilities() {
                 type="button"
                 onClick={() => {
                   setCategory(item);
-                  const nextFacility = getInternalFacilities(item, venue.name)[0];
-                  if (nextFacility) setSelectedFacilityId(nextFacility.id);
+                  setSelectedFacilityId(null);
                 }}
                 aria-pressed={selected}
                 className={`flex min-w-0 flex-col items-center gap-1.5 rounded-2xl border px-1 py-3 text-xs font-extrabold transition sm:flex-row sm:justify-center sm:text-sm ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-primary"}`}
@@ -193,7 +181,7 @@ function InternalFacilities() {
             return (
               <li
                 key={facility.id}
-                className={`rounded-2xl border bg-card shadow-card ${facility.id === selectedFacility.id ? "border-brand-orange ring-2 ring-brand-orange/20" : "border-border"}`}
+                className={`rounded-2xl border bg-card shadow-card ${facility.id === selectedFacility?.id ? "border-brand-orange ring-2 ring-brand-orange/20" : "border-border"}`}
               >
                 <button
                   type="button"
@@ -226,11 +214,20 @@ function InternalFacilities() {
   );
 }
 
-function createMapUrl() {
+function createMapUrl(facility?: InternalFacility) {
   const { north, south, east, west } = internalFacilityMapBounds;
+  const bbox = facility
+    ? [
+        facility.longitude - 0.0035,
+        facility.latitude - 0.0025,
+        facility.longitude + 0.0035,
+        facility.latitude + 0.0025,
+      ]
+    : [west, south, east, north];
   const params = new URLSearchParams({
-    bbox: [west, south, east, north].join(","),
+    bbox: bbox.join(","),
     layer: "mapnik",
   });
+  if (facility) params.set("marker", `${facility.latitude},${facility.longitude}`);
   return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
 }

@@ -291,11 +291,3 @@ export function getInternalFacilities(category: InternalFacilityCategory, venueN
     .filter((facility) => facility.category === category)
     .sort((a, b) => Number(b.near.includes(venueName)) - Number(a.near.includes(venueName)));
 }
-
-export function getInternalFacilityMapPosition(facility: InternalFacility) {
-  const { north, south, east, west } = internalFacilityMapBounds;
-  return {
-    left: ((facility.longitude - west) / (east - west)) * 100,
-    top: ((north - facility.latitude) / (north - south)) * 100,
-  };
-}
