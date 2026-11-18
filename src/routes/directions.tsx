@@ -3,11 +3,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BusFront, Car, ChevronDown, ExternalLink, MapPinned, Navigation, TrainFront } from "lucide-react";
 import { FacilityPicker } from "@/components/app/FacilityPicker";
 import { VenueParkingGuide } from "@/components/app/VenueParkingGuide";
+import { KakaoLocationMap } from "@/components/app/KakaoLocationMap";
 import { olympicParkVenueDestinations, transitGuides } from "@/data/transit";
 import { internalVenueProfiles } from "@/data/internal-facilities";
 import busStops from "@/data/seoul-bus-stops.json";
 import { useAppStore } from "@/lib/app-store";
 import { openNaverMapRoute } from "@/lib/naver-map";
+
+const subwayStations = [
+  { name: "올림픽공원역", latitude: 37.5160647, longitude: 127.1304996 },
+  { name: "몽촌토성역", latitude: 37.5175, longitude: 127.11278 },
+];
 
 function straightLineMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const radians = Math.PI / 180;
@@ -52,6 +58,7 @@ function Directions() {
   const [mode, setMode] = useState<"public" | "car">("public");
   const [transitMode, setTransitMode] = useState<"subway" | "bus">("subway");
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const [selectedStation, setSelectedStation] = useState<{ name: string; latitude: number; longitude: number } | null>(null);
   const mapRef = useRef<HTMLElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const guide = transitGuides.find((g) => g.anchor === base || g.aliases?.includes(base));
@@ -59,7 +66,8 @@ function Directions() {
   const venueProfile = internalVenueProfiles.find((profile) => [profile.name, ...profile.aliases].includes(base));
   const nearbyBusStops = venueProfile ? busStops.map((stop) => ({ ...stop, distance: straightLineMeters(venueProfile.latitude, venueProfile.longitude, stop.latitude, stop.longitude) })).sort((a, b) => a.distance - b.distance).slice(0, 4) : [];
   const selectedStop = nearbyBusStops.find((stop) => stop.id === selectedStopId);
-  const mapUrl = guide ? createMapUrl(selectedStop?.latitude ?? guide.latitude, selectedStop?.longitude ?? guide.longitude) : null;
+  const mapLocation = selectedStation ?? selectedStop;
+  const mapUrl = guide ? createMapUrl(mapLocation?.latitude ?? venueProfile?.latitude ?? guide.latitude, mapLocation?.longitude ?? venueProfile?.longitude ?? guide.longitude) : null;
 
   function openNaverDirections() {
     if (!guide) return;
@@ -94,8 +102,8 @@ function Directions() {
                 <MapPinned className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="truncate font-extrabold">{selectedStop ? selectedStop.name : base}</p>
-                <p className="truncate text-xs text-muted-foreground">{selectedStop ? `버스 정류소 ${selectedStop.number}` : guide.address}</p>
+                <p className="truncate font-extrabold">{mapLocation?.name ?? base}</p>
+                <p className="truncate text-xs text-muted-foreground">{selectedStation ? "지하철역 위치 · 출구 위치와 다를 수 있음" : selectedStop ? `버스 정류소 ${selectedStop.number}` : guide.address}</p>
               </div>
             </div>
             <button
@@ -106,13 +114,10 @@ function Directions() {
               <Navigation className="h-3.5 w-3.5" /> 길찾기
             </button>
           </div>
-          <iframe
-            src={mapUrl}
-            title={`${selectedStop?.name ?? base} 위치 지도`}
-            loading="lazy"
-            className="h-64 w-full border-0 sm:h-80"
-          />
-          {selectedStop && <button type="button" onClick={() => setSelectedStopId(null)} className="w-full border-t border-border py-2 text-xs font-bold text-primary">공연장 위치로 돌아가기</button>}
+          <div className="bg-secondary p-2 sm:p-3">
+            <KakaoLocationMap latitude={mapLocation?.latitude ?? venueProfile?.latitude ?? guide.latitude} longitude={mapLocation?.longitude ?? venueProfile?.longitude ?? guide.longitude} name={mapLocation?.name ?? base} fallbackUrl={mapUrl} />
+          </div>
+          {mapLocation && <button type="button" onClick={() => { setSelectedStopId(null); setSelectedStation(null); }} className="w-full border-t border-border py-2 text-xs font-bold text-primary">공연장 위치로 돌아가기</button>}
         </section>
       )}
       <div className="mb-4 grid grid-cols-2 rounded-full bg-secondary p-1">
@@ -141,7 +146,7 @@ function Directions() {
                   return <button key={option} type="button" aria-pressed={transitMode === option} onClick={() => setTransitMode(option)} className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-bold ${transitMode === option ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary text-foreground"}`}><Icon className="h-5 w-5" />{option === "subway" ? "지하철" : "버스"}</button>;
                 })}
               </div>
-              {transitMode === "subway" ? <div><h3 className="mb-2 text-sm font-extrabold">{base} 지하철 안내</h3><ul className="space-y-2">{subwayItems.map((item) => <li key={item.title} className="rounded-xl bg-secondary p-4"><p className="font-extrabold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.detail}</p></li>)}</ul><p className="mt-3 text-xs leading-5 text-muted-foreground">출구에서 공연장까지의 이동 경로는 지도에서 확인해 주세요.</p></div> : <div><h3 className="text-sm font-extrabold">{base} 주변 버스 정류장</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">정류장은 공연장 좌표와의 직선거리 순입니다. 실제 도보 거리와 출입 가능 경로는 다를 수 있으니 지도에서 확인해 주세요.</p>{nearbyBusStops.length ? <ul className="mt-3 space-y-2">{nearbyBusStops.map((stop) => <li key={stop.id} className="rounded-xl bg-secondary p-4"><div className="flex items-start justify-between gap-2"><div><button type="button" onClick={() => { setSelectedStopId(stop.id); mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="text-left font-extrabold underline underline-offset-2">{stop.name}</button><p className="mt-1 text-xs text-muted-foreground">정류소 번호 {stop.number} · 직선 약 {Math.round(stop.distance / 10) * 10}m</p></div><button type="button" onClick={() => { setSelectedStopId(stop.id); mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">지도 보기</button></div><p className="mt-2 text-sm font-bold">{stop.routes.join(" · ")}</p></li>)}</ul> : <p className="mt-3 rounded-xl bg-secondary p-4 text-sm">이 장소의 정류장 위치 정보는 아직 확인할 수 없습니다.</p>}<p className="mt-3 text-xs leading-5 text-muted-foreground">서울시 버스 자료 2026.09.02 기준 · 서울시 제공 범위의 노선이며 실시간 정보가 아닙니다. 같은 이름의 정류장은 방향이 다를 수 있습니다.</p><button type="button" onClick={openNaverDirections} className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">{base} 대중교통 길찾기</button><a href="https://data.seoul.go.kr/dataList/OA-1095/A/1/datasetView.do" target="_blank" rel="noopener noreferrer" className="ml-3 inline-flex items-center gap-1 text-xs font-bold underline">노선 자료 출처 <ExternalLink className="h-3 w-3" /></a></div>}
+              {transitMode === "subway" ? <div><h3 className="mb-2 text-sm font-extrabold">{base} 지하철 안내</h3><ul className="space-y-2">{subwayItems.map((item) => <li key={item.title} className="rounded-xl bg-secondary p-4">{(() => { const station = subwayStations.find((entry) => item.title.includes(entry.name)); return station ? <button type="button" className="text-left font-extrabold underline underline-offset-2" onClick={() => { setSelectedStopId(null); setSelectedStation(station); mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{item.title}</button> : <p className="font-extrabold">{item.title}</p>; })()}<p className="mt-1 text-sm text-muted-foreground">{item.detail}</p></li>)}</ul><p className="mt-3 text-xs leading-5 text-muted-foreground">출구에서 공연장까지의 이동 경로는 지도에서 확인해 주세요.</p></div> : <div><h3 className="text-sm font-extrabold">{base} 주변 버스 정류장</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">정류장은 공연장 좌표와의 직선거리 순입니다. 실제 도보 거리와 출입 가능 경로는 다를 수 있으니 지도에서 확인해 주세요.</p>{nearbyBusStops.length ? <ul className="mt-3 space-y-2">{nearbyBusStops.map((stop) => <li key={stop.id} className="rounded-xl bg-secondary p-4"><div className="flex items-start justify-between gap-2"><div><button type="button" onClick={() => { setSelectedStation(null); setSelectedStopId(stop.id); mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="text-left font-extrabold underline underline-offset-2">{stop.name}</button><p className="mt-1 text-xs text-muted-foreground">정류소 번호 {stop.number} · 직선 약 {Math.round(stop.distance / 10) * 10}m</p></div><button type="button" onClick={() => { setSelectedStation(null); setSelectedStopId(stop.id); mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">지도 보기</button></div><p className="mt-2 text-sm font-bold">{stop.routes.join(" · ")}</p></li>)}</ul> : <p className="mt-3 rounded-xl bg-secondary p-4 text-sm">이 장소의 정류장 위치 정보는 아직 확인할 수 없습니다.</p>}<p className="mt-3 text-xs leading-5 text-muted-foreground">서울시 버스 자료 2026.09.02 기준 · 서울시 제공 범위의 노선이며 실시간 정보가 아닙니다. 같은 이름의 정류장은 방향이 다를 수 있습니다.</p><button type="button" onClick={openNaverDirections} className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">{base} 대중교통 길찾기</button><a href="https://data.seoul.go.kr/dataList/OA-1095/A/1/datasetView.do" target="_blank" rel="noopener noreferrer" className="ml-3 inline-flex items-center gap-1 text-xs font-bold underline">노선 자료 출처 <ExternalLink className="h-3 w-3" /></a></div>}
             </div>
           </section>}
           {mode === "car" && (
@@ -171,6 +176,7 @@ function Directions() {
           setFacilityId("olympic-park");
           setAnchor(destination.name);
           setSelectedStopId(null);
+          setSelectedStation(null);
           setMode("public");
           setPickerOpen(false);
         }}
@@ -179,8 +185,8 @@ function Directions() {
   );
 }
 function createMapUrl(latitude: number, longitude: number) {
-  const horizontalRange = 0.009;
-  const verticalRange = 0.006;
+  const horizontalRange = 0.0045;
+  const verticalRange = 0.003;
   const bbox = [
     longitude - horizontalRange,
     latitude - verticalRange,
