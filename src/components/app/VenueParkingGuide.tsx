@@ -78,16 +78,16 @@ function ParkingCard({ name, label, onShowParking }: { name: string; label: stri
     <p className="text-xs font-semibold text-muted-foreground">{label}</p>
     <div className="mt-1 flex items-center justify-between gap-3">
       <h3 className="font-extrabold">{name}</h3>
-      <button
+      {destination ? <button
         type="button"
-        onClick={() => destination && onShowParking(destination)}
-        disabled={!destination}
-        className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => onShowParking(destination)}
+        className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
         aria-label={`${name} 지도에서 보기`}
       >
         지도 보기
-      </button>
+      </button> : <a href={name === "P6" ? "https://www.ksponco.or.kr/olympicpark/map?mid=a20102000000&placeId=parking_6" : "https://www.ksponco.or.kr/olympicpark/map?mid=a20102000000"} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground" aria-label={`${name} 공식 안내도에서 확인`}>공식 안내도</a>}
     </div>
+    {!destination && <p className="mt-2 text-xs text-muted-foreground">정확한 좌표를 확인하지 못해 공식 공원 안내도로 연결합니다.</p>}
     <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
       <div><dt className="text-muted-foreground">현재 혼잡도</dt><dd className="mt-1 font-bold">확인 불가</dd></div>
       <div><dt className="text-muted-foreground">예상 주차 가능 차량</dt><dd className="mt-1 font-bold">확인 불가</dd></div>

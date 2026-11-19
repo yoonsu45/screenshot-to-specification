@@ -45,7 +45,7 @@ function SeoulParkingDetails({ onShowParking }: { onShowParking: (destination: P
                   });
                   return;
                 }
-                openNaverMapSearch(`${lot.name} ${lot.address}`);
+                openNaverMapSearch(lot.name.replace(/\s*\((?:시|구)\)\s*$/, "").trim());
               }}
               className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
               aria-label={`${lot.name} 지도에서 보기`}

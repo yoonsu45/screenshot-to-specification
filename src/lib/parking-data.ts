@@ -60,22 +60,15 @@ export type ParkingMapDestination = {
   longitude: number;
 };
 
-// Coordinates point to the parking areas shown on the official Olympic Park map.
-// Fixed coordinates prevent NAVER Map from resolving short labels such as "P5"
-// to an unrelated place.
+// Verified map-place coordinates for individual parking areas. The official
+// park diagram is schematic and is not itself a source of GPS coordinates.
 const parkingMapDestinations: Record<string, ParkingMapDestination> = {
-  "P1A": { name: "올림픽공원 주차장 P1A", latitude: 37.5147, longitude: 127.1244 },
-  "P1B": { name: "올림픽공원 주차장 P1B", latitude: 37.5152, longitude: 127.126 },
-  "P2": { name: "올림픽공원 주차장 P2", latitude: 37.51555, longitude: 127.12796 },
-  "P2 · 올림픽홀 지하주차장": { name: "올림픽공원 P2 · 올림픽홀 지하주차장", latitude: 37.51555, longitude: 127.12796 },
-  "P4": { name: "올림픽공원 주차장 P4", latitude: 37.52167, longitude: 127.12492 },
-  "P5": { name: "올림픽공원 주차장 P5", latitude: 37.51833, longitude: 127.12789 },
-  "P6": { name: "올림픽공원 주차장 P6", latitude: 37.51642, longitude: 127.12628 },
-  "P7": { name: "올림픽공원 주차장 P7", latitude: 37.51589, longitude: 127.12371 },
-  "그래피티의 벽 주차장": { name: "올림픽공원 그래피티의 벽 주차장", latitude: 37.51762, longitude: 127.12921 },
-  "서1문 주차장": { name: "올림픽공원 서1문 주차장", latitude: 37.51978, longitude: 127.11067 },
-  "남3문 주차장": { name: "올림픽공원 남3문 주차장", latitude: 37.51539, longitude: 127.11767 },
-  "남4문 주차장": { name: "올림픽공원 남4문 주차장", latitude: 37.51654, longitude: 127.11434 },
+  "P1A": { name: "올림픽공원 주차장 P1A", latitude: 37.5149732, longitude: 127.1245447 },
+  "P1B": { name: "올림픽공원 주차장 P1B", latitude: 37.515255, longitude: 127.1258109 },
+  "P2": { name: "올림픽공원 주차장 P2", latitude: 37.5157016, longitude: 127.127093 },
+  "P4": { name: "올림픽공원 주차장 P4", latitude: 37.5218785, longitude: 127.1268102 },
+  "P5": { name: "올림픽공원 주차장 P5", latitude: 37.5186922, longitude: 127.1280834 },
+  "P7": { name: "올림픽공원 주차장 P7", latitude: 37.5166367, longitude: 127.1257753 },
 };
 
 export function getParkingMapDestination(name: string) {
@@ -90,7 +83,7 @@ export function getVenueParking(venue: string) {
     "KSPO-DOME": { primary: "P5", alternatives: ["P4", "P2"] },
     "티켓링크 라이브 아레나": { primary: "P6", alternatives: ["P7", "P2"] },
     "우리금융아트홀": { primary: "P7", alternatives: ["P6", "P1A"] },
-    "올림픽홀": { primary: "P2 · 올림픽홀 지하주차장", alternatives: ["P1B", "P6"] },
+    "올림픽홀": { primary: "P2", alternatives: ["P1B", "P6"] },
     "뮤즈라이브": { primary: "P2", alternatives: ["P6", "P7"] },
     "만남의 광장": { primary: "그래피티의 벽 주차장", alternatives: ["P2", "P1B"] },
     "88마당": { primary: "P2", alternatives: ["P6", "P7"] },

@@ -34,27 +34,10 @@ describe("official parking data", () => {
     expect(getVenueParking("티켓링크 라이브 아레나")?.primary).toBe("P6");
     expect(getVenueParking("unknown")).toBeNull();
   });
-  it("provides a fixed map coordinate for every internal parking candidate", () => {
-    const venues = [
-      "KSPO-DOME",
-      "티켓링크 라이브 아레나",
-      "우리금융아트홀",
-      "올림픽홀",
-      "뮤즈라이브",
-      "만남의 광장",
-      "88마당",
-      "한얼광장",
-      "피크닉 광장",
-      "수변무대",
-      "평화의 광장",
-    ];
-
-    for (const venue of venues) {
-      const parking = getVenueParking(venue);
-      expect(parking).not.toBeNull();
-      for (const name of [parking!.primary, ...parking!.alternatives]) {
-        expect(getParkingMapDestination(name), `${venue}: ${name}`).not.toBeNull();
-      }
-    }
+  it("uses a verified P2 position without treating it as the separate underground lot", () => {
+    expect(getVenueParking("올림픽홀")?.primary).toBe("P2");
+    expect(getParkingMapDestination("P2")).toMatchObject({ latitude: 37.5157016, longitude: 127.127093 });
+    expect(getParkingMapDestination("P2 · 올림픽홀 지하주차장")).toBeNull();
+    expect(getParkingMapDestination("P6")).toBeNull();
   });
 });
