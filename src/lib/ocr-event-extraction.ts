@@ -46,7 +46,8 @@ export type OcrLineObservation = {
 };
 
 const bookingPattern = /예매|티켓|ticket|open|오픈|판매|예약/i;
-const datePattern = /(?:(20\d{2})\s*[.\-/년]\s*)?(\d{1,2})\s*[.\-/월]\s*(\d{1,2})\s*일?/g;
+const datePattern = /(?<!\d)(?:(20\d{2})(?:\s*[.\-/년]\s*|\s+))?(\d{1,2})\s*[.\-/월]\s*(\d{1,2})\s*일?(?!\d)/g;
+const compactDatePattern = /(?<!\d)(20\d{2})(\d{2})(\d{2})(?!\d)/g;
 const eventTitlePattern =
   /콘서트|공연|페스티벌|축제|전시|뮤지컬|리사이틀|팬미팅|쇼케이스|라이브|투어|concert|festival|exhibition|musical|recital|fan\s*meeting|showcase|live|tour/i;
 const venuePattern =
@@ -343,7 +344,7 @@ export function parseOcrText(
     lines.some((line) => hasDate(line)),
   );
   const title = isClearTitle && first ? first.title : (inferredTitles[0] ?? "");
-  const date = detectedDates[0] ?? "";
+  const date = detectedDates.length === 1 ? detectedDates[0]! : "";
   const foundFieldCount = [title, date, venue].filter(Boolean).length;
   const confidence: OcrConfidence =
     first && first.score >= 0.78 && foundFieldCount >= 2
@@ -365,25 +366,23 @@ export function parseOcrText(
   };
 }
 
-function extractDates(lines: string[], referenceYear: number) {
+function extractDates(lines: string[], _referenceYear: number) {
   const matches: Array<{ value: string; booking: boolean }> = [];
 
   lines.forEach((line, index) => {
     datePattern.lastIndex = 0;
-    const ownMatches = [...line.matchAll(datePattern)];
+    const ownMatches = [...line.matchAll(datePattern), ...line.matchAll(compactDatePattern)];
     if (!ownMatches.length) return;
 
     const previous = lines[index - 1] ?? "";
-    const next = lines[index + 1] ?? "";
-    const adjacentBookingLabel = [previous, next].some(
-      (candidate) => bookingPattern.test(candidate) && !hasDate(candidate),
-    );
+    const adjacentBookingLabel = bookingPattern.test(previous) && !hasDate(previous);
     const booking = bookingPattern.test(line) || adjacentBookingLabel;
 
     ownMatches.forEach((match) => {
       // Missing years must be confirmed by the user, never inferred from today.
-      if (!match[1]) return;
-      const year = Number(match[1]);
+      const standaloneYear = previous.match(/^\s*(20\d{2})\s*[.년]?\s*$/)?.[1];
+      if (!match[1] && !standaloneYear) return;
+      const year = Number(match[1] ?? standaloneYear);
       const month = Number(match[2]);
       const day = Number(match[3]);
       if (!isValidDate(year, month, day)) return;
@@ -399,7 +398,8 @@ function extractDates(lines: string[], referenceYear: number) {
 
 function hasDate(value: string) {
   datePattern.lastIndex = 0;
-  return datePattern.test(value);
+  compactDatePattern.lastIndex = 0;
+  return datePattern.test(value) || compactDatePattern.test(value);
 }
 
 function isValidDate(year: number, month: number, day: number) {

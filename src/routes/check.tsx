@@ -388,6 +388,18 @@ function CheckPage() {
             onChange={(event) => setForm({ ...form, date: event.target.value })}
           />
         </label>
+        {ocrResult && ocrResult.detectedDates.length > 1 && (
+          <div>
+            <p className="mb-2 text-xs text-muted-foreground">여러 날짜가 인식됐어요. 확인할 공연 날짜를 선택해 주세요.</p>
+            <div className="flex flex-wrap gap-2">
+              {ocrResult.detectedDates.map((date) => (
+                <button key={date} type="button" aria-pressed={form.date === date} onClick={() => setForm({ ...form, date })} className={`rounded-full border px-3 py-2 text-sm font-bold ${form.date === date ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-primary"}`}>
+                  {date}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="block">
           <label htmlFor="event-venue" className="mb-1.5 block text-sm font-bold">
             장소 <span className="font-normal text-muted-foreground">(선택)</span>

@@ -2,6 +2,30 @@ import { describe, expect, it } from "vitest";
 import { parseOcrText } from "@/lib/ocr-event-extraction";
 
 describe("parseOcrText", () => {
+  it.each([
+    ["20261121", "2026-11-21"],
+    ["2026 11.21", "2026-11-21"],
+    ["2026.\n11.21", "2026-11-21"],
+  ])("OCR 날짜 표기 %s를 읽는다", (text, expected) => {
+    expect(parseOcrText(text, 2026).date).toBe(expected);
+  });
+
+  it("여러 공연 날짜는 임의로 고르지 않고 선택 후보로 남긴다", () => {
+    const result = parseOcrText("콘서트\n2026.11.21\n2026.11.22", 2026);
+    expect(result.date).toBe("");
+    expect(result.detectedDates).toEqual(["2026-11-21", "2026-11-22"]);
+  });
+
+  it("공연 날짜 다음 줄의 예매 안내를 공연 날짜에 적용하지 않는다", () => {
+    const result = parseOcrText("2026.11.21\n티켓 오픈\n2026.10.20", 2026);
+    expect(result.date).toBe("2026-11-21");
+    expect(result.bookingDates).toEqual(["2026-10-20"]);
+  });
+
+  it("날짜가 아닌 긴 숫자와 존재하지 않는 날짜는 무시한다", () => {
+    expect(parseOcrText("문의 1202611210\n2026.02.30", 2026).date).toBe("");
+  });
+
   it("행사 날짜와 예매 오픈 날짜를 분리한다", () => {
     const result = parseOcrText(
       `
