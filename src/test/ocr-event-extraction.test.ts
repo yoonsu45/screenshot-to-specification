@@ -166,4 +166,35 @@ describe("parseOcrText", () => {
     expect(result.title).toBe("브라보 마이 라이프 10주년 콘서트");
     expect(result.venue).toBe("올림픽홀");
   });
+
+  it("SNS 계정명과 UI 문구를 버리고 본문의 행사명을 우선한다", () => {
+    const result = parseOcrText(
+      [
+        "릴스",
+        "= the.check_demo",
+        "팔로우",
+        "2011 인순이 콘서트 (The Fantasia)✨",
+        "2011년 10월 30일 (일)",
+        "올림픽공원 체조경기장",
+        "2011년 공연 기록",
+        "#인순이 #인순이콘서트 #TheFantasia #공연기록",
+      ].join("\n"),
+      2026,
+    );
+
+    expect(result.title).toContain("인순이 콘서트");
+    expect(result.venue).toBe("올림픽공원 체조경기장");
+    expect(result.titleSuggestions).not.toContain("the.check_demo");
+    expect(result.titleSuggestions).not.toContain("2011년 공연 기록");
+  });
+
+  it("기호와 한 글자 토큰이 뒤섞인 OCR 오인식은 행사명 후보에서 제외한다", () => {
+    const result = parseOcrText(
+      "ht Aid) es A Pa | Sho} Cx 4 Po)\n2026.11.14\n올림픽홀",
+      2026,
+    );
+
+    expect(result.title).toBe("");
+    expect(result.titleSuggestions).toEqual([]);
+  });
 });

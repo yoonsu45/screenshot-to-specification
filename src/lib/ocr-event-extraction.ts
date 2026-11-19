@@ -48,12 +48,23 @@ const datePattern = /(?:(20\d{2})\s*[.\-/년]\s*)?(\d{1,2})\s*[.\-/월]\s*(\d{1,
 const eventTitlePattern =
   /콘서트|공연|페스티벌|축제|전시|뮤지컬|리사이틀|팬미팅|쇼케이스|라이브|투어|concert|festival|exhibition|musical|recital|fan\s*meeting|showcase|live|tour/i;
 const venuePattern =
-  /홀|돔|센터|공원|미술관|박물관|극장|아레나|스타디움|체육관|공연장|전시장|광장|마당|대학교|클럽|카페|(?:hall|dome|center|centre|park|museum|theater|theatre|arena|stadium|gallery)\b/i;
+  /홀|돔|센터|공원|미술관|박물관|극장|아레나|스타디움|체육관|경기장|공연장|전시장|광장|마당|대학교|클럽|카페|(?:hall|dome|center|centre|park|museum|theater|theatre|arena|stadium|gallery)\b/i;
 const nonTitlePattern =
   /예매|티켓|ticket|open|오픈|문의|주최|주관|후원|가격|입장|관람|시간|일시|장소|venue|place|www\.|https?:|@/i;
 const hashtagPattern = /[#＃]\s*[\p{L}\p{N}_-]+/gu;
 const narrativePattern =
   /두\s*사람|사람이|사진\s*(?:보고|속|에는)|글씨로|적힌|기대어|웃고|있자니|듣고\s*싶|생각이\s*난|보인다|보여요|입니다|합니다|했어요|있습니다/i;
+const socialUiPattern =
+  /^(?:글쓰기|설명|팔로우|팔로잉|좋아요|댓글|공유|저장|조회|프로필|게시물|릴스|홈|검색|더보기|번역 보기|원문 보기)$/i;
+const socialMetadataPattern =
+  /^(?:20\d{2}년?\s*)?(?:공연|행사|콘서트)\s*(?:기록|사진|포스터)$/i;
+
+type OcrImageSource = HTMLImageElement | HTMLCanvasElement;
+
+type OcrVariant = {
+  image: OcrImageSource;
+  pageSegMode: string;
+};
 
 export async function extractEventFromImage(
   imageDataUrl: string,
@@ -61,13 +72,16 @@ export async function extractEventFromImage(
 ): Promise<BrowserOcrResult> {
   const { createWorker, PSM } = await import("tesseract.js");
   let recognitionPass = 0;
+  let totalRecognitionPasses = 2;
   let lastProgress = 0;
   const worker = await createWorker(["kor", "eng"], undefined, {
     logger(message) {
       if (typeof message.progress !== "number") return;
       const weightedProgress =
         message.status === "recognizing text"
-          ? 15 + recognitionPass * 42.5 + message.progress * 42.5
+          ? 15 +
+            recognitionPass * (85 / totalRecognitionPasses) +
+            message.progress * (85 / totalRecognitionPasses)
           : message.progress * 15;
       lastProgress = Math.max(lastProgress, Math.min(99, Math.round(weightedProgress)));
       onProgress?.({
@@ -84,12 +98,19 @@ export async function extractEventFromImage(
     });
 
     const sourceImage = await loadOcrImage(imageDataUrl);
-    const variants: Array<HTMLImageElement | HTMLCanvasElement> = [sourceImage];
+    const variants: OcrVariant[] = [
+      { image: sourceImage, pageSegMode: PSM.SPARSE_TEXT },
+    ];
     try {
-      variants.push(createHighContrastVariant(sourceImage));
+      variants.push({
+        image: createHighContrastVariant(sourceImage),
+        pageSegMode: PSM.SPARSE_TEXT,
+      });
+      variants.push(...createOverlappingRegionVariants(sourceImage, PSM));
     } catch {
       // The original image is still usable if a browser cannot create the enhanced canvas.
     }
+    totalRecognitionPasses = variants.length;
 
     const recognizedTexts: string[] = [];
     const observedLines: OcrLineObservation[] = [];
@@ -97,11 +118,10 @@ export async function extractEventFromImage(
       recognitionPass = index;
       const variant = variants[index]!;
       await worker.setParameters({
-        // Social posts work best as one text block; decorated posters need sparse-text detection.
-        tessedit_pageseg_mode: index === 0 ? PSM.SINGLE_BLOCK : PSM.SPARSE_TEXT,
+        tessedit_pageseg_mode: variant.pageSegMode,
       });
       const result = await worker.recognize(
-        variant,
+        variant.image,
         { rotateAuto: true },
         { text: true, blocks: true },
       );
@@ -109,7 +129,9 @@ export async function extractEventFromImage(
       observedLines.push(
         ...collectLineObservations(
           result.data.blocks,
-          variant instanceof HTMLCanvasElement ? variant.height : variant.naturalHeight,
+          variant.image instanceof HTMLCanvasElement
+            ? variant.image.height
+            : variant.image.naturalHeight,
         ),
       );
     }
@@ -120,11 +142,12 @@ export async function extractEventFromImage(
   }
 }
 
-function createHighContrastVariant(image: HTMLImageElement) {
+function createHighContrastVariant(image: OcrImageSource) {
+  const { width, height } = getImageDimensions(image);
   const border = 16;
   const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth + border * 2;
-  canvas.height = image.naturalHeight + border * 2;
+  canvas.width = width + border * 2;
+  canvas.height = height + border * 2;
   const context = canvas.getContext("2d", { willReadFrequently: true });
   if (!context) throw new Error("canvas unavailable");
 
@@ -132,7 +155,7 @@ function createHighContrastVariant(image: HTMLImageElement) {
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(image, border, border);
 
-  const pixels = context.getImageData(border, border, image.naturalWidth, image.naturalHeight);
+  const pixels = context.getImageData(border, border, width, height);
   let luminanceTotal = 0;
   for (let index = 0; index < pixels.data.length; index += 4) {
     luminanceTotal +=
@@ -157,6 +180,69 @@ function createHighContrastVariant(image: HTMLImageElement) {
   }
   context.putImageData(pixels, border, border);
   return canvas;
+}
+
+function createOverlappingRegionVariants(
+  image: HTMLImageElement,
+  pageSegModes: { SPARSE_TEXT: string; SINGLE_BLOCK: string },
+): OcrVariant[] {
+  const width = image.naturalWidth;
+  const height = image.naturalHeight;
+  const isTall = height > width * 1.15;
+  const isWide = width > height * 1.15;
+  const regions = isWide
+    ? [
+        { x: 0, y: 0, width: width * 0.68, height },
+        { x: width * 0.32, y: 0, width: width * 0.68, height },
+      ]
+    : [
+        { x: 0, y: 0, width, height: height * 0.68 },
+        { x: 0, y: height * 0.32, width, height: height * 0.68 },
+      ];
+
+  return regions.map((region, index) => ({
+    image: createEnhancedCrop(image, region),
+    // The lower part of a tall SNS screenshot is usually a regular caption block.
+    pageSegMode: isTall && index === 1 ? pageSegModes.SINGLE_BLOCK : pageSegModes.SPARSE_TEXT,
+  }));
+}
+
+function createEnhancedCrop(
+  image: HTMLImageElement,
+  region: { x: number; y: number; width: number; height: number },
+) {
+  const maxPixels = 4_500_000;
+  const preferredShortSide = 1_700;
+  const shortSide = Math.min(region.width, region.height);
+  const requestedScale = Math.max(1, preferredShortSide / Math.max(1, shortSide));
+  const pixelLimitedScale = Math.sqrt(maxPixels / (region.width * region.height));
+  const scale = Math.max(1, Math.min(2.25, requestedScale, pixelLimitedScale));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(region.width * scale));
+  canvas.height = Math.max(1, Math.round(region.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("canvas unavailable");
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(
+    image,
+    Math.round(region.x),
+    Math.round(region.y),
+    Math.round(region.width),
+    Math.round(region.height),
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  );
+  return createHighContrastVariant(canvas);
+}
+
+function getImageDimensions(image: OcrImageSource) {
+  return image instanceof HTMLCanvasElement
+    ? { width: image.width, height: image.height }
+    : { width: image.naturalWidth, height: image.naturalHeight };
 }
 
 function collectLineObservations(
@@ -323,7 +409,22 @@ function findVenue(rawText: string) {
     .filter(({ alias }) => normalize(alias).length >= 2)
     .sort((left, right) => normalize(right.alias).length - normalize(left.alias).length);
   const exact = usableAliases.find(({ alias }) => normalizedText.includes(normalize(alias)));
-  if (exact) return exact.venue;
+  if (exact) {
+    const exactKey = normalize(exact.alias);
+    const detailedVenue = rawText
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^(?:장소|venue|place)\s*[:：-]?\s*/i, "").trim())
+      .find(
+        (line) =>
+          normalize(line).includes(exactKey) &&
+          normalize(line).length > exactKey.length + 2 &&
+          /홀|돔|센터|미술관|박물관|극장|아레나|스타디움|체육관|경기장|공연장|전시장|광장|마당|(?:hall|dome|center|centre|museum|theater|theatre|arena|stadium|gallery)\b/i.test(
+            line,
+          ) &&
+          !hasDate(line),
+      );
+    return detailedVenue ?? exact.venue;
+  }
 
   const lines = rawText.split(/\r?\n/).map(normalize).filter(Boolean);
   const fuzzy = usableAliases
@@ -373,6 +474,7 @@ function inferTitleCandidates(
   if (!hasEventContext) return [];
 
   const structuredTitles = extractBracketedTitles(lines);
+  const captionTitles = extractCaptionTitles(lines);
 
   const observations = mergeLineObservations(lines, observedLines);
   const maxHeight = Math.max(1, ...observations.map((line) => line.height));
@@ -392,7 +494,11 @@ function inferTitleCandidates(
         digitRatio > 0.55 ||
         isVenue ||
         nonTitlePattern.test(text) ||
+        socialUiPattern.test(text) ||
+        socialMetadataPattern.test(text) ||
         narrativePattern.test(text) ||
+        looksLikeSocialAccount(text) ||
+        looksGarbled(text) ||
         isDateLike(text);
       if (invalid) return null;
 
@@ -418,8 +524,33 @@ function inferTitleCandidates(
   const minimumScore = observedLines.length ? 0.48 : 0.38;
   return uniqueTitleSuggestions([
     ...structuredTitles,
+    ...captionTitles,
     ...candidates.filter((candidate) => candidate.score >= minimumScore).map(({ text }) => text),
   ]);
+}
+
+function extractCaptionTitles(lines: string[]) {
+  return uniqueTitleSuggestions(
+    lines
+      .map(removeHashtags)
+      .map((line) => line.replace(/^\s*20\d{2}년?\s+(?=\S)/, ""))
+      .map(cleanTitleLine)
+      .filter((line) => {
+        const normalized = normalize(line);
+        return (
+          normalized.length >= 3 &&
+          normalized.length <= 60 &&
+          eventTitlePattern.test(line) &&
+          !hasDate(line) &&
+          !nonTitlePattern.test(line) &&
+          !socialUiPattern.test(line) &&
+          !socialMetadataPattern.test(line) &&
+          !narrativePattern.test(line) &&
+          !looksLikeSocialAccount(line) &&
+          !looksGarbled(line)
+        );
+      }),
+  );
 }
 
 function extractBracketedTitles(lines: string[]) {
@@ -435,7 +566,9 @@ function extractBracketedTitles(lines: string[]) {
         if (
           normalize(title).length >= 2 &&
           !nonTitlePattern.test(title) &&
+          !socialUiPattern.test(title) &&
           !narrativePattern.test(title) &&
+          !looksGarbled(title) &&
           !isDateLike(title)
         ) {
           const suffix = cleanTitleLine(
@@ -494,9 +627,45 @@ function mergeLineObservations(lines: string[], observations: OcrLineObservation
 
 function cleanTitleLine(value: string) {
   return removeHashtags(value)
-    .replace(/^[\s|·•:：\-–—]+|[\s|·•:：\-–—]+$/g, "")
+    .replace(/^[\s|=+_*~·•:：\-–—]+|[\s|=+_*~·•:：\-–—]+$/g, "")
+    .replace(/[✨🎧🎤🎵🎶]+$/gu, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+function looksLikeSocialAccount(value: string) {
+  const compact = value.replace(/^[@=+\s]+/, "").replace(/\s+/g, "");
+  if (value.trim().startsWith("@")) return true;
+  if (!/^[a-z0-9._-]+$/i.test(compact)) return false;
+  if (!/[._]/.test(compact)) return false;
+
+  // Usernames are commonly all-lowercase and contain a dot or underscore.
+  // Uppercase dotted titles such as H.O.T. are intentionally retained.
+  return compact === compact.toLowerCase() && compact.length >= 4;
+}
+
+function looksGarbled(value: string) {
+  const compact = value.replace(/\s+/g, "");
+  if (!compact) return true;
+  const meaningful = (compact.match(/[\p{L}\p{N}]/gu) ?? []).length;
+  const symbolRatio = 1 - meaningful / compact.length;
+  if (symbolRatio > 0.28) return true;
+
+  const tokens = value.trim().split(/\s+/).filter(Boolean);
+  const singleLatinTokens = tokens.filter((token) => /^[a-z]$/i.test(token)).length;
+  if (tokens.length >= 4 && singleLatinTokens / tokens.length >= 0.45) return true;
+  if (tokens.length >= 4 && /[|{}]/.test(value)) return true;
+
+  const latinTokens = tokens
+    .map((token) => token.replace(/[^a-z0-9]/gi, ""))
+    .filter(Boolean);
+  const averageLatinTokenLength =
+    latinTokens.reduce((sum, token) => sum + token.length, 0) / Math.max(1, latinTokens.length);
+  return (
+    latinTokens.length >= 5 &&
+    averageLatinTokenLength < 3.2 &&
+    !eventTitlePattern.test(value)
+  );
 }
 
 function removeHashtags(value: string) {
