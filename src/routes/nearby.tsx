@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Bath,
@@ -48,6 +48,26 @@ const categoryIcons = {
 
 const OFFICIAL_MAP_WIDTH = 953.04535;
 const OFFICIAL_MAP_HEIGHT = 676.87866;
+const MIN_MAP_ZOOM = 1;
+const MAX_MAP_ZOOM = 3;
+
+type MapPointer = { x: number; y: number };
+type MapGesture =
+  | {
+      kind: "pan";
+      pointerId: number;
+      startX: number;
+      startY: number;
+      scrollLeft: number;
+      scrollTop: number;
+    }
+  | {
+      kind: "pinch";
+      startDistance: number;
+      startZoom: number;
+      baseX: number;
+      baseY: number;
+    };
 
 function InternalFacilities() {
   const [category, setCategory] = useState<InternalFacilityCategory>("카페");
@@ -58,6 +78,119 @@ function InternalFacilities() {
   const mapSectionRef = useRef<HTMLElement>(null);
   const mapViewportRef = useRef<HTMLDivElement>(null);
   const mapContentRef = useRef<HTMLDivElement>(null);
+  const mapZoomRef = useRef(1);
+  const mapPointersRef = useRef(new Map<number, MapPointer>());
+  const mapGestureRef = useRef<MapGesture | null>(null);
+
+  const updateMapZoom = (zoom: number) => {
+    const nextZoom = Math.min(MAX_MAP_ZOOM, Math.max(MIN_MAP_ZOOM, zoom));
+    mapZoomRef.current = nextZoom;
+    setMapZoom(nextZoom);
+  };
+
+  const startPinchGesture = () => {
+    const viewport = mapViewportRef.current;
+    const pointers = [...mapPointersRef.current.values()];
+    if (!viewport || pointers.length < 2) return;
+    const [first, second] = pointers;
+    if (!first || !second) return;
+    const rect = viewport.getBoundingClientRect();
+    const centerX = (first.x + second.x) / 2 - rect.left;
+    const centerY = (first.y + second.y) / 2 - rect.top;
+    mapGestureRef.current = {
+      kind: "pinch",
+      startDistance: Math.hypot(second.x - first.x, second.y - first.y),
+      startZoom: mapZoomRef.current,
+      baseX: (viewport.scrollLeft + centerX) / mapZoomRef.current,
+      baseY: (viewport.scrollTop + centerY) / mapZoomRef.current,
+    };
+  };
+
+  const handleMapPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const viewport = mapViewportRef.current;
+    if (!viewport) return;
+    viewport.setPointerCapture(event.pointerId);
+    mapPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    if (mapPointersRef.current.size >= 2) {
+      startPinchGesture();
+      return;
+    }
+
+    mapGestureRef.current = {
+      kind: "pan",
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: viewport.scrollLeft,
+      scrollTop: viewport.scrollTop,
+    };
+  };
+
+  const handleMapPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const viewport = mapViewportRef.current;
+    if (!viewport || !mapPointersRef.current.has(event.pointerId)) return;
+    mapPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    const pointers = [...mapPointersRef.current.values()];
+    if (pointers.length >= 2) {
+      event.preventDefault();
+      const [first, second] = pointers;
+      if (!first || !second) return;
+      if (mapGestureRef.current?.kind !== "pinch") startPinchGesture();
+      const gesture = mapGestureRef.current;
+      if (!gesture || gesture.kind !== "pinch" || gesture.startDistance === 0) return;
+
+      const distance = Math.hypot(second.x - first.x, second.y - first.y);
+      const nextZoom = Math.min(
+        MAX_MAP_ZOOM,
+        Math.max(MIN_MAP_ZOOM, gesture.startZoom * (distance / gesture.startDistance)),
+      );
+      const rect = viewport.getBoundingClientRect();
+      const centerX = (first.x + second.x) / 2 - rect.left;
+      const centerY = (first.y + second.y) / 2 - rect.top;
+      updateMapZoom(nextZoom);
+      requestAnimationFrame(() => {
+        viewport.scrollLeft = gesture.baseX * nextZoom - centerX;
+        viewport.scrollTop = gesture.baseY * nextZoom - centerY;
+      });
+      return;
+    }
+
+    const gesture = mapGestureRef.current;
+    if (gesture?.kind === "pan" && gesture.pointerId === event.pointerId) {
+      event.preventDefault();
+      viewport.scrollLeft = gesture.scrollLeft + gesture.startX - event.clientX;
+      viewport.scrollTop = gesture.scrollTop + gesture.startY - event.clientY;
+    }
+  };
+
+  const finishMapPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const viewport = mapViewportRef.current;
+    mapPointersRef.current.delete(event.pointerId);
+    if (viewport?.hasPointerCapture(event.pointerId))
+      viewport.releasePointerCapture(event.pointerId);
+
+    const remaining = [...mapPointersRef.current.entries()];
+    if (viewport && remaining.length === 1) {
+      const [pointerId, pointer] = remaining[0]!;
+      mapGestureRef.current = {
+        kind: "pan",
+        pointerId,
+        startX: pointer.x,
+        startY: pointer.y,
+        scrollLeft: viewport.scrollLeft,
+        scrollTop: viewport.scrollTop,
+      };
+    } else if (remaining.length === 0) {
+      mapGestureRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    mapZoomRef.current = mapZoom;
+  }, [mapZoom]);
 
   const selectFacility = (facilityId: string) => {
     setSelectedFacilityId(facilityId);
@@ -83,7 +216,7 @@ function InternalFacilities() {
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [mapZoom, selectedFacility]);
+  }, [selectedFacility]);
 
   return (
     <div className="space-y-6">
@@ -109,14 +242,15 @@ function InternalFacilities() {
             <span>올림픽공원 내부 편의시설</span>
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            지도를 직접 확대하거나 이동할 수 있어요. 아래에서 시설을 선택하면 위치가 표시됩니다.
+            지도를 손가락으로 이동하거나 두 손가락으로 확대할 수 있어요. 아래에서 시설을 선택하면
+            위치가 표시됩니다.
           </p>
         </div>
 
         <div className="border-y border-border bg-secondary">
           <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 px-3 py-2">
             <p className="text-[0.7rem] font-semibold text-muted-foreground">
-              시설 선택 후 핀 확인 · 버튼으로 확대
+              한 손가락으로 이동 · 두 손가락으로 확대
             </p>
             <div className="flex shrink-0 items-center gap-1" aria-label="안내도 확대 및 축소">
               <button
@@ -150,8 +284,12 @@ function InternalFacilities() {
 
           <div
             ref={mapViewportRef}
-            className="relative max-h-96 w-full touch-pan-x touch-pan-y overflow-auto overscroll-contain bg-[#ececec]"
+            className="relative max-h-96 w-full touch-none overflow-auto overscroll-contain bg-[#ececec]"
             aria-label="올림픽공원 공식 안내도"
+            onPointerDown={handleMapPointerDown}
+            onPointerMove={handleMapPointerMove}
+            onPointerUp={finishMapPointer}
+            onPointerCancel={finishMapPointer}
             style={{ aspectRatio: `${OFFICIAL_MAP_WIDTH} / ${OFFICIAL_MAP_HEIGHT}` }}
           >
             <div
@@ -166,7 +304,7 @@ function InternalFacilities() {
                 src="/olympic-park-guide.png"
                 alt="올림픽공원 공식 종합안내도"
                 draggable={false}
-                className="absolute inset-0 h-full w-full select-none"
+                className="pointer-events-none absolute inset-0 h-full w-full select-none"
               />
 
               {selectedFacility && (

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
 import { OfficialEventSaveButton } from "@/components/app/OfficialEventSaveButton";
+import { FacilityPicker, type PickerItem } from "@/components/app/FacilityPicker";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +28,7 @@ import {
 } from "@/lib/ocr-event-extraction";
 import { formatRange, matchesEventSearch, searchOfficialEvents } from "@/lib/event-service";
 import { optimizeImage } from "@/lib/image-optimization";
-import { officialRecordSource, type OfficialRecord } from "@/lib/official-data";
+import { officialEvents, officialRecordSource, type OfficialRecord } from "@/lib/official-data";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 
 export const Route = createFileRoute("/check")({
@@ -55,18 +56,34 @@ type AnalysisState =
   | { status: "success"; result: BrowserOcrResult }
   | { status: "error"; message: string };
 
+const venueOptions: readonly PickerItem[] = [
+  { id: "", name: "선택하지 않음" },
+  ...Array.from(
+    new Set(
+      [...events.map((event) => event.venue), ...officialEvents.map((event) => event.venue)].filter(
+        (venue): venue is string => Boolean(venue?.trim()),
+      ),
+    ),
+  )
+    .sort((left, right) => left.localeCompare(right, "ko-KR"))
+    .map((venue) => ({ id: venue, name: venue })),
+];
+
 function CheckPage() {
   const { draft, setDraft } = useAppStore();
   const [form, setForm] = useState(draft);
   const [error, setError] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisState>({ status: "idle" });
   const [searchOpen, setSearchOpen] = useState(false);
+  const [manualSearchQuery, setManualSearchQuery] = useState("");
+  const [venuePickerOpen, setVenuePickerOpen] = useState(false);
   const [replacingImage, setReplacingImage] = useState(false);
   const [selectedOfficialEvent, setSelectedOfficialEvent] = useState<OfficialRecord | null>(null);
   const replacementFileRef = useRef<HTMLInputElement>(null);
   const analyzedImage = useRef<string | null>(null);
   const analysisRequestId = useRef(0);
   const isCaptureMode = Boolean(form.image);
+  const officialSearchQuery = isCaptureMode ? form.title.trim() : manualSearchQuery;
 
   const suggestions = useMemo(() => {
     const query = form.title.trim();
@@ -77,8 +94,8 @@ function CheckPage() {
   }, [form.title]);
 
   const officialSearchResults = useMemo(() => {
-    if (!form.title.trim()) return [];
-    const matches = searchOfficialEvents(form.title);
+    if (!officialSearchQuery) return [];
+    const matches = searchOfficialEvents(officialSearchQuery);
     const preferredByTitle = new Map<string, OfficialRecord>();
     matches.forEach((event) => {
       const previous = preferredByTitle.get(event.title);
@@ -93,12 +110,13 @@ function CheckPage() {
           Number(Boolean(getOfficialPoster(left.id))),
       )
       .slice(0, 10);
-  }, [form.title]);
+  }, [officialSearchQuery]);
 
   useEffect(() => {
     setForm(draft);
     setError(false);
     setSearchOpen(false);
+    setManualSearchQuery("");
 
     if (!draft.image) {
       analysisRequestId.current += 1;
@@ -163,6 +181,18 @@ function CheckPage() {
       date: event.startDate,
       venue: event.venue,
     }));
+    setSearchOpen(false);
+    setManualSearchQuery(event.title);
+    setError(false);
+  }
+
+  function runManualSearch() {
+    const query = form.title.trim();
+    if (!query) {
+      setError(true);
+      return;
+    }
+    setManualSearchQuery(query);
     setSearchOpen(false);
     setError(false);
   }
@@ -328,30 +358,50 @@ function CheckPage() {
       )}
 
       <div className="space-y-4 rounded-2xl bg-card p-4 shadow-card">
-        <label className="relative block">
-          <span className="mb-1.5 block text-sm font-bold">
+        <div className="relative block">
+          <label htmlFor="event-title-search" className="mb-1.5 block text-sm font-bold">
             {isCaptureMode ? "행사명" : "공연명 검색"} <span className="text-destructive">*</span>
-          </span>
-          <span className="relative block">
+          </label>
+          <div className="flex gap-2">
+            <span className="relative min-w-0 flex-1">
+              {!isCaptureMode && (
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              )}
+              <input
+                id="event-title-search"
+                className={`${field} ${!isCaptureMode ? "pl-11" : ""}`}
+                value={form.title}
+                onFocus={() => !isCaptureMode && setSearchOpen(true)}
+                onBlur={() => !isCaptureMode && window.setTimeout(() => setSearchOpen(false), 100)}
+                onChange={(event) => {
+                  setForm({ ...form, title: event.target.value, officialRecordId: undefined });
+                  setManualSearchQuery("");
+                  setError(false);
+                  setSearchOpen(true);
+                }}
+                onKeyDown={(event) => {
+                  if (!isCaptureMode && event.key === "Enter") {
+                    event.preventDefault();
+                    runManualSearch();
+                  }
+                }}
+                placeholder={
+                  isCaptureMode ? "읽지 못한 경우 직접 입력해 주세요" : "공식 행사명 또는 장소 검색"
+                }
+                autoComplete="off"
+              />
+            </span>
             {!isCaptureMode && (
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={runManualSearch}
+                className="flex h-12 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-extrabold text-primary-foreground"
+              >
+                <Search className="h-4 w-4" /> 검색
+              </button>
             )}
-            <input
-              className={`${field} ${!isCaptureMode ? "pl-11" : ""}`}
-              value={form.title}
-              onFocus={() => !isCaptureMode && setSearchOpen(true)}
-              onBlur={() => !isCaptureMode && window.setTimeout(() => setSearchOpen(false), 100)}
-              onChange={(event) => {
-                setForm({ ...form, title: event.target.value, officialRecordId: undefined });
-                setError(false);
-                setSearchOpen(true);
-              }}
-              placeholder={
-                isCaptureMode ? "읽지 못한 경우 직접 입력해 주세요" : "공식 행사명 또는 장소 검색"
-              }
-              autoComplete="off"
-            />
-          </span>
+          </div>
           {error && (
             <span className="mt-1 block text-sm text-destructive">행사명을 입력해 주세요.</span>
           )}
@@ -383,7 +433,7 @@ function CheckPage() {
               )}
             </div>
           )}
-        </label>
+        </div>
 
         <label className="block">
           <span className="mb-1.5 block text-sm font-bold">
@@ -396,20 +446,24 @@ function CheckPage() {
             onChange={(event) => setForm({ ...form, date: event.target.value })}
           />
         </label>
-        <label className="block">
+        <div className="block">
           <span className="mb-1.5 block text-sm font-bold">
             장소 <span className="font-normal text-muted-foreground">(선택)</span>
           </span>
-          <input
-            className={field}
-            value={form.venue}
-            onChange={(event) => setForm({ ...form, venue: event.target.value })}
-            placeholder="예: KSPO DOME"
-          />
-        </label>
+          <button
+            type="button"
+            onClick={() => setVenuePickerOpen(true)}
+            className={`${field} flex items-center justify-between gap-3 text-left`}
+          >
+            <span className={form.venue ? "truncate" : "text-muted-foreground"}>
+              {form.venue || "장소를 선택해 주세요"}
+            </span>
+            <MapPin className="h-5 w-5 shrink-0 text-primary" />
+          </button>
+        </div>
       </div>
 
-      {form.title.trim() && (
+      {officialSearchQuery && (
         <section className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-card">
           <h2 className="font-extrabold text-primary">
             {isCaptureMode ? "찾으시는 행사가 맞으신가요?" : "관련 공식 행사"}
@@ -505,6 +559,21 @@ function CheckPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <FacilityPicker
+        open={venuePickerOpen}
+        onOpenChange={setVenuePickerOpen}
+        selectedId={form.venue}
+        onSelect={(venue) => {
+          setForm((current) => ({ ...current, venue }));
+          setVenuePickerOpen(false);
+        }}
+        includeAll={false}
+        title="행사 장소 선택"
+        description="행사가 열리는 올림픽공원 장소를 선택하세요"
+        items={venueOptions}
+        searchPlaceholder="장소 이름 검색"
+      />
     </div>
   );
 }
