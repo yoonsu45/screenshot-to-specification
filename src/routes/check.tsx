@@ -78,6 +78,7 @@ function CheckPage() {
   const [replacingImage, setReplacingImage] = useState(false);
   const [selectedOfficialEvent, setSelectedOfficialEvent] = useState<OfficialRecord | null>(null);
   const replacementFileRef = useRef<HTMLInputElement>(null);
+  const searchResultsRef = useRef<HTMLElement>(null);
   const analyzedImage = useRef<string | null>(null);
   const analysisRequestId = useRef(0);
   const isCaptureMode = Boolean(form.image);
@@ -200,6 +201,9 @@ function CheckPage() {
     setManualSearchQuery(query);
     setSearchOpen(false);
     setError(false);
+    window.requestAnimationFrame(() => {
+      searchResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function selectOcrCandidate(candidate: BrowserOcrResult["candidates"][number]) {
@@ -466,10 +470,22 @@ function CheckPage() {
             <MapPin className="h-5 w-5 shrink-0 text-primary" />
           </button>
         </div>
+        {isCaptureMode && (
+          <button
+            type="button"
+            onClick={runManualSearch}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-extrabold text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Search className="h-4 w-4" /> 입력한 행사 검색
+          </button>
+        )}
       </div>
 
       {officialSearchQuery && (
-        <section className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-card">
+        <section
+          ref={searchResultsRef}
+          className="mt-5 scroll-mt-4 rounded-2xl border border-border bg-card p-4 shadow-card"
+        >
           <h2 className="font-extrabold text-primary">
             {isCaptureMode ? "찾으시는 행사가 맞으신가요?" : "검색 결과"}
           </h2>
