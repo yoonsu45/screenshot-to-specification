@@ -8,7 +8,7 @@ import {
   PARK_AGGREGATE_CAPACITY,
   PARKING_GUIDE_URL,
 } from "@/lib/parking-data";
-import { openNaverMapPlace } from "@/lib/naver-map";
+import type { ParkingMapDestination } from "@/lib/parking-data";
 import { SeoulParkingGuide } from "./SeoulParkingGuide";
 import { TsParkingGuide } from "./TsParkingGuide";
 
@@ -16,7 +16,7 @@ const sources = {
   live: "https://www.ksponco.or.kr/pubData/64?mid=a10106020000",
 };
 
-export function VenueParkingGuide({ venue }: { venue: string }) {
+export function VenueParkingGuide({ venue, onShowParking }: { venue: string; onShowParking: (destination: ParkingMapDestination) => void }) {
   const parking = getVenueParking(venue);
   const query = useQuery({
     queryKey: ["parking-overview"],
@@ -57,7 +57,7 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
 
         <section className="space-y-3 rounded-xl border border-border p-4" aria-label="가까운 주차장">
           <div><h3 className="font-extrabold">가까운 주차장</h3><p className="mt-1 text-xs text-muted-foreground">선택한 공연장에 따라 안내되는 가까운 주차장입니다.</p></div>
-          <ParkingCard name={parking.primary} label="가까운 주차장 · 공식 안내 기준" />
+          <ParkingCard name={parking.primary} label="가까운 주차장 · 공식 안내 기준" onShowParking={onShowParking} />
           <p className="text-xs leading-5 text-muted-foreground">공원 내부 주차장별 실시간 대수와 동일 범위의 총 주차면 수가 제공되지 않아 내부 주차장의 혼잡도와 예상 주차 가능 대수를 산출할 수 없습니다.</p>
           <a href={PARKING_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold underline">공식 주차장·요금·운영 안내 <ExternalLink className="h-3 w-3" /></a>
         </section>
@@ -66,13 +66,13 @@ export function VenueParkingGuide({ venue }: { venue: string }) {
     </section>
     <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-card" aria-label="공통 주변 주차정보">
       <div className="border-b border-border p-4"><h2 className="flex items-center gap-2 font-extrabold"><Car className="h-5 w-5" /> 공통 주변 주차정보</h2><p className="mt-1 text-xs text-muted-foreground">공연장과 관계없이 동일하게 제공되는 주변 주차장입니다.</p></div>
-      <div className="space-y-3 p-4"><SeoulParkingGuide /><TsParkingGuide /></div>
+      <div className="space-y-3 p-4"><SeoulParkingGuide onShowParking={onShowParking} /><TsParkingGuide onShowParking={onShowParking} /></div>
     </section>
     </>
   );
 }
 
-function ParkingCard({ name, label }: { name: string; label: string }) {
+function ParkingCard({ name, label, onShowParking }: { name: string; label: string; onShowParking: (destination: ParkingMapDestination) => void }) {
   const destination = getParkingMapDestination(name);
   return <article className="rounded-xl border border-border p-3">
     <p className="text-xs font-semibold text-muted-foreground">{label}</p>
@@ -80,10 +80,10 @@ function ParkingCard({ name, label }: { name: string; label: string }) {
       <h3 className="font-extrabold">{name}</h3>
       <button
         type="button"
-        onClick={() => destination && openNaverMapPlace(destination)}
+        onClick={() => destination && onShowParking(destination)}
         disabled={!destination}
         className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        aria-label={`${name} 네이버지도 앱에서 찾기`}
+        aria-label={`${name} 지도에서 보기`}
       >
         지도 보기
       </button>

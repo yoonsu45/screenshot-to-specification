@@ -2,19 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, RefreshCw } from "lucide-react";
 import { getSeoulParking } from "@/lib/parking-api";
 import { getSeoulAvailability } from "@/lib/seoul-parking";
-import { openNaverMapPlace, openNaverMapSearch } from "@/lib/naver-map";
+import { openNaverMapSearch } from "@/lib/naver-map";
+import type { ParkingMapDestination } from "@/lib/parking-data";
 
-export function SeoulParkingGuide() {
+export function SeoulParkingGuide({ onShowParking }: { onShowParking: (destination: ParkingMapDestination) => void }) {
   return <details className="group rounded-xl border border-border bg-secondary">
     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
       <span><span className="block font-extrabold">공원 밖 대체 주차장</span><span className="mt-1 block text-xs text-muted-foreground">서울시 연계 · 잔여 대수 순</span></span>
       <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"><span className="group-open:hidden">펼치기</span><span className="hidden group-open:inline">접기</span><ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" /></span>
     </summary>
-    <SeoulParkingDetails />
+    <SeoulParkingDetails onShowParking={onShowParking} />
   </details>;
 }
 
-function SeoulParkingDetails() {
+function SeoulParkingDetails({ onShowParking }: { onShowParking: (destination: ParkingMapDestination) => void }) {
   const query = useQuery({
     queryKey: ["seoul-parking"], queryFn: () => getSeoulParking(),
     staleTime: 60000, refetchInterval: 60000, retry: false,
@@ -37,7 +38,7 @@ function SeoulParkingDetails() {
               type="button"
               onClick={() => {
                 if (lot.latitude !== null && lot.longitude !== null) {
-                  openNaverMapPlace({
+                  onShowParking({
                     latitude: lot.latitude,
                     longitude: lot.longitude,
                     name: `${lot.name} 주차장`,
@@ -47,9 +48,9 @@ function SeoulParkingDetails() {
                 openNaverMapSearch(`${lot.name} ${lot.address}`);
               }}
               className="shrink-0 rounded-full bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
-              aria-label={`${lot.name} 네이버지도 앱에서 찾기`}
+              aria-label={`${lot.name} 지도에서 보기`}
             >
-              지도 보기
+              {lot.latitude !== null && lot.longitude !== null ? "지도 보기" : "네이버에서 찾기"}
             </button>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
