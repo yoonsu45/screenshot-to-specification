@@ -12,6 +12,7 @@ import {
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
 import { OfficialEventSaveButton } from "@/components/app/OfficialEventSaveButton";
 import { FacilityPicker, type PickerItem } from "@/components/app/FacilityPicker";
+import { EventCard } from "@/components/app/EventCard";
 import {
   Dialog,
   DialogContent,
@@ -108,6 +109,13 @@ function CheckPage() {
       )
       .slice(0, 10);
   }, [officialSearchQuery]);
+
+  const demoSearchResults = useMemo(() => {
+    if (isCaptureMode || !manualSearchQuery) return [];
+    return events
+      .filter((event) => matchesEventSearch(event.title, event.venue, manualSearchQuery))
+      .slice(0, 10);
+  }, [isCaptureMode, manualSearchQuery]);
 
   useEffect(() => {
     setForm(draft);
@@ -463,46 +471,65 @@ function CheckPage() {
       {officialSearchQuery && (
         <section className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-card">
           <h2 className="font-extrabold text-primary">
-            {isCaptureMode ? "찾으시는 행사가 맞으신가요?" : "관련 공식 행사"}
+            {isCaptureMode ? "찾으시는 행사가 맞으신가요?" : "검색 결과"}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             행사 정보를 확인하고 맞는 행사를 바로 방문 계획에 담아 보세요.
           </p>
-          {officialSearchResults.length > 0 ? (
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-              {officialSearchResults.map((event) => (
-                <li key={event.id}>
-                  <article className="flex h-full flex-col rounded-xl bg-secondary p-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedOfficialEvent(event)}
-                      className="flex flex-1 items-center gap-3 text-left transition hover:opacity-80"
-                    >
-                      <OfficialPosterImage
-                        eventId={event.id}
-                        title={event.title}
-                        className="h-24 w-20 shrink-0 rounded-lg"
-                      />
-                      <span className="min-w-0">
-                        <span className="line-clamp-2 block font-extrabold text-primary">
-                          {event.title}
+          {!isCaptureMode && demoSearchResults.length > 0 && (
+            <div className="mt-4">
+              <h3 className="mb-2 text-sm font-extrabold text-primary">등록된 행사</h3>
+              <ul className="grid gap-3">
+                {demoSearchResults.map((event) => (
+                  <li key={event.id} className="min-w-0">
+                    <EventCard event={event} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {officialSearchResults.length > 0 && (
+            <div className="mt-4">
+              {!isCaptureMode && (
+                <h3 className="mb-2 text-sm font-extrabold text-primary">공식 행사</h3>
+              )}
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {officialSearchResults.map((event) => (
+                  <li key={event.id}>
+                    <article className="flex h-full flex-col rounded-xl bg-secondary p-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOfficialEvent(event)}
+                        className="flex flex-1 items-center gap-3 text-left transition hover:opacity-80"
+                      >
+                        <OfficialPosterImage
+                          eventId={event.id}
+                          title={event.title}
+                          className="h-24 w-20 shrink-0 rounded-lg"
+                        />
+                        <span className="min-w-0">
+                          <span className="line-clamp-2 block font-extrabold text-primary">
+                            {event.title}
+                          </span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {event.venue || "장소 확인 불가"}
+                          </span>
+                          <span className="mt-2 block text-xs font-bold text-brand-orange">
+                            {getOfficialPoster(event.id) ? "포스터 보기" : "행사 정보 보기"}
+                          </span>
                         </span>
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          {event.venue || "장소 확인 불가"}
-                        </span>
-                        <span className="mt-2 block text-xs font-bold text-brand-orange">
-                          {getOfficialPoster(event.id) ? "포스터 보기" : "행사 정보 보기"}
-                        </span>
-                      </span>
-                    </button>
-                    <OfficialEventSaveButton event={event} className="mt-3 w-full" />
-                  </article>
-                </li>
-              ))}
-            </ul>
-          ) : (
+                      </button>
+                      <OfficialEventSaveButton event={event} className="mt-3 w-full" />
+                    </article>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {demoSearchResults.length === 0 && officialSearchResults.length === 0 && (
             <p className="mt-3 rounded-xl bg-secondary p-4 text-sm text-muted-foreground">
-              일치하는 공식 포스터 자료가 없어요. 행사명은 그대로 직접 입력할 수 있습니다.
+              일치하는 등록 행사나 공식 포스터 자료가 없어요. 행사명은 그대로 직접 입력할 수
+              있습니다.
             </p>
           )}
         </section>

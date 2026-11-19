@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Bookmark, CalendarDays, Clock3, ExternalLink, MapPin, Plus, Ticket, UsersRound } from "lucide-react";
+import {
+  Bookmark,
+  CalendarDays,
+  Clock3,
+  ExternalLink,
+  MapPin,
+  Plus,
+  Ticket,
+  UsersRound,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { ParkEvent } from "@/data/events";
 import { getFacility } from "@/data/facilities";
@@ -153,6 +162,11 @@ export function EventCard({
               시연용 예시 데이터 · 실제 행사 아님 · {event.category} · {event.venue}
             </DialogDescription>
           </DialogHeader>
+          <img
+            src={event.image}
+            alt={`${event.title} 포스터`}
+            className="max-h-[50dvh] min-h-48 w-full rounded-xl bg-muted object-contain"
+          />
           <div className="space-y-3 break-words rounded-xl bg-muted/50 p-4 text-sm [overflow-wrap:anywhere]">
             <p className="flex min-w-0 items-start gap-2">
               <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -162,7 +176,8 @@ export function EventCard({
               <p className="flex min-w-0 items-start gap-2">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span className="min-w-0">
-                  {event.startTime}{event.endTime ? ` – ${event.endTime}` : ""}
+                  {event.startTime}
+                  {event.endTime ? ` – ${event.endTime}` : ""}
                 </span>
               </p>
             )}
