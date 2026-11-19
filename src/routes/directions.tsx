@@ -10,6 +10,7 @@ import busStops from "@/data/seoul-bus-stops.json";
 import { useAppStore } from "@/lib/app-store";
 import type { ParkingMapDestination } from "@/lib/parking-data";
 import { getKakaoRoute, type RouteResult } from "@/lib/kakao-route";
+import { findTransitDestination } from "@/lib/transit-destination";
 
 const subwayStations = [
   { name: "올림픽공원역", latitude: 37.5160647, longitude: 127.1304996 },
@@ -52,9 +53,7 @@ export const Route = createFileRoute("/directions")({
 
 function Directions() {
   const { anchor, setAnchor, setFacilityId } = useAppStore();
-  const selectedDestination = olympicParkVenueDestinations.find(
-    (destination) => destination.name === anchor,
-  );
+  const selectedDestination = findTransitDestination(anchor);
   const base = selectedDestination?.name ?? "올림픽홀";
   const destinationLabel = base === "수변무대" ? "88호수 수변무대" : base;
   const [mode, setMode] = useState<"public" | "car">("public");

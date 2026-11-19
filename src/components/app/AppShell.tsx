@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Camera } from "lucide-react";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
+import { ArrowLeft, Camera } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 import { BottomTabBar } from "./BottomTabBar";
 import { CheckSheet } from "./CheckSheet";
@@ -12,6 +12,7 @@ import { HeaderEventSearch } from "./HeaderEventSearch";
 export function AppShell({ children }: { children: ReactNode }) {
   const { setCheckOpen } = useAppStore();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const router = useRouter();
 
   return (
     <div className="min-h-dvh bg-background lg:flex">
@@ -49,6 +50,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <BottomTabBar onCheck={() => setCheckOpen(true)} />
+      {router.history.canGoBack() && (
+        <button
+          type="button"
+          onClick={() => router.history.back()}
+          aria-label="이전 화면으로 돌아가기"
+          className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-4 z-30 flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-3 text-sm font-bold text-primary shadow-lg lg:bottom-6 lg:left-[19rem]"
+        >
+          <ArrowLeft className="h-4 w-4" /> 이전 화면
+        </button>
+      )}
       <CheckSheet />
     </div>
   );

@@ -16,6 +16,7 @@ import { ComparisonCard, ComparisonTable } from "@/components/app/ComparisonCard
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
 import { officialEvents } from "@/lib/official-data";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
+import { findTransitDestination } from "@/lib/transit-destination";
 
 export const Route = createFileRoute("/result")({
   head: () => ({
@@ -86,7 +87,9 @@ function ResultPage() {
   const ev = result.event;
   const saveTarget = ev ?? officialEvent;
   const officialSchedule = officialEvent ? getOfficialSchedule(officialEvent.id) : null;
+  const officialPoster = officialEvent ? getOfficialPoster(officialEvent.id) : undefined;
   const saveVenue = saveTarget?.venue || "장소 확인 불가";
+  const transitDestination = findTransitDestination(saveTarget?.venue);
   const saveStartDate = officialEvent
     ? (officialSchedule?.dates[0] ?? officialEvent.startDate)
     : (ev?.startDate ?? null);
@@ -95,8 +98,8 @@ function ResultPage() {
     : (ev?.endDate ?? ev?.startDate ?? null);
 
   useEffect(() => {
-    if (saveTarget?.venue) setAnchor(saveTarget.venue);
-  }, [saveTarget?.venue, setAnchor]);
+    if (transitDestination) setAnchor(transitDestination.name);
+  }, [transitDestination, setAnchor]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
@@ -158,7 +161,7 @@ function ResultPage() {
               <p>출처 자료 CSV 행: {result.sourceRows?.join(", ")}</p>
             )}
             <div className="mt-2 flex flex-wrap gap-3 font-bold">
-              {officialEvent && getOfficialPoster(officialEvent.id) && <a className="underline" href={getOfficialPoster(officialEvent.id)!.imageUrl} target="_blank" rel="noopener noreferrer">비교한 공식 포스터 보기</a>}
+              {officialPoster && <a className="underline" href={officialPoster.imageUrl} target="_blank" rel="noopener noreferrer">비교한 공식 포스터 보기</a>}
               {result.sourceName === "한국체육산업개발 공연정보 Open API" && <a className="underline" href="https://www.data.go.kr/data/3037877/openapi.do" target="_blank" rel="noopener noreferrer">공식 공연정보 API 안내</a>}
             </div>
           </div>
@@ -210,20 +213,50 @@ function ResultPage() {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Link
-                to="/nearby"
-                className="flex items-center justify-center gap-2 rounded-xl bg-secondary py-3 text-sm font-bold text-secondary-foreground"
-              >
-                <MapPin className="h-4 w-4" /> 내부 시설
-              </Link>
-              <Link
+              {officialPoster ? (
+                <a
+                  href={officialPoster.imageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-3 py-3 text-center text-sm font-bold text-secondary-foreground"
+                >
+                  공식 공연 포스터 보기
+                </a>
+              ) : (
+                <a
+                  href="https://www.ksponco.or.kr/olympicpark/menu.es?mid=a20301010000"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center rounded-xl bg-secondary px-3 py-3 text-center text-sm font-bold text-secondary-foreground"
+                >
+                  공식 공연 일정 전체 보기
+                  <span className="mt-1 text-xs font-normal text-muted-foreground">
+                    {result.sourceType === "demo" ? "시연용 행사 · 공식 원문 없음" : "공연별 원문 링크 없음"}
+                  </span>
+                </a>
+              )}
+              {transitDestination ? <Link
                 to="/directions"
+                onClick={() => setAnchor(transitDestination.name)}
                 className="flex items-center justify-center gap-2 rounded-xl bg-secondary py-3 text-sm font-bold text-secondary-foreground"
               >
-                <RouteIcon className="h-4 w-4" /> {saveVenue} 가는 길
-              </Link>
+                <RouteIcon className="h-4 w-4" /> {transitDestination.name} 가는 길
+              </Link> : <p className="flex items-center justify-center rounded-xl bg-secondary px-3 py-3 text-center text-sm text-muted-foreground">이 장소의 가는 길은 아직 제공하지 않아요</p>}
             </div>
           </>
+        )}
+        {!saveTarget && (
+          <a
+            href="https://www.ksponco.or.kr/olympicpark/menu.es?mid=a20301010000"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center justify-center rounded-xl bg-secondary px-3 py-3 text-center text-sm font-bold text-secondary-foreground"
+          >
+            공식 공연 일정 전체 보기
+            <span className="mt-1 text-xs font-normal text-muted-foreground">
+              해당 공연을 확인하지 못했어요 · 직접 검색해 주세요
+            </span>
+          </a>
         )}
       </section>
       {saveTarget && (
