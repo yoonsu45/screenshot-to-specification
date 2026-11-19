@@ -300,25 +300,32 @@ function CheckPage() {
           </p>
           <div className="mt-3 space-y-2">
             {ocrResult.candidates.map((candidate) => {
+              const selected = form.officialRecordId === candidate.eventId;
               return (
                 <button
                   key={candidate.eventId}
                   type="button"
                   onClick={() => selectOcrCandidate(candidate)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl bg-secondary px-3 py-3 text-left transition hover:ring-2 hover:ring-ring"
+                  aria-pressed={selected}
+                  className={`w-full rounded-xl border-2 px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    selected ? "border-primary bg-primary/5" : "border-transparent bg-secondary hover:border-primary/40"
+                  }`}
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate font-extrabold text-primary">
-                      {candidate.title}
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="rounded-full bg-background px-2 py-1 text-xs font-bold text-primary">
+                      {candidate.sourceType === "official_public_data" ? "공식 자료" : "시연용"}
                     </span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {candidate.sourceType === "official_public_data" ? "공식 행사" : "시연용"}
-                      {candidate.venue ? ` · ${candidate.venue}` : ""}
-                      {candidate.date ? ` · ${candidate.date}` : ""}
-                    </span>
+                    {selected && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-primary">
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> 선택됨
+                      </span>
+                    )}
                   </span>
-                  <span className="shrink-0 text-xs font-bold text-primary">
-                    {form.officialRecordId === candidate.eventId ? "선택됨" : "비교 대상으로 선택"}
+                  <span className="mt-2 block break-words font-extrabold leading-6 text-primary">
+                    {candidate.title}
+                  </span>
+                  <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">
+                    {candidate.date || "날짜 확인 불가"} · {candidate.venue || "장소 확인 불가"}
                   </span>
                 </button>
               );
