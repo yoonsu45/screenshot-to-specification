@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { events, type ParkEvent } from "@/data/events";
+import { internalVenueProfiles } from "@/data/internal-facilities";
 import { useAppStore } from "@/lib/app-store";
 import {
   extractEventFromImage,
@@ -28,7 +29,7 @@ import {
 } from "@/lib/ocr-event-extraction";
 import { formatRange, matchesEventSearch, searchOfficialEvents } from "@/lib/event-service";
 import { optimizeImage } from "@/lib/image-optimization";
-import { officialEvents, officialRecordSource, type OfficialRecord } from "@/lib/official-data";
+import { officialRecordSource, type OfficialRecord } from "@/lib/official-data";
 import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 
 export const Route = createFileRoute("/check")({
@@ -58,15 +59,11 @@ type AnalysisState =
 
 const venueOptions: readonly PickerItem[] = [
   { id: "", name: "선택하지 않음" },
-  ...Array.from(
-    new Set(
-      [...events.map((event) => event.venue), ...officialEvents.map((event) => event.venue)].filter(
-        (venue): venue is string => Boolean(venue?.trim()),
-      ),
-    ),
-  )
-    .sort((left, right) => left.localeCompare(right, "ko-KR"))
-    .map((venue) => ({ id: venue, name: venue })),
+  ...internalVenueProfiles.map((venue) => ({
+    id: venue.name,
+    name: venue.name,
+    keywords: venue.aliases,
+  })),
 ];
 
 function CheckPage() {
