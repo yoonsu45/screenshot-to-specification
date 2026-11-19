@@ -5,7 +5,7 @@ type Field = VerifyResult["fields"][number];
 const badge = (s: Field["status"]) =>
   s === "same" ? (
     <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-success">
-      같음
+      일치
     </span>
   ) : s === "different" ? (
     <span className="rounded-full bg-warn px-2.5 py-0.5 text-xs font-bold text-warn-foreground">
@@ -13,7 +13,7 @@ const badge = (s: Field["status"]) =>
     </span>
   ) : (
     <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-bold text-muted-foreground">
-      확인 필요
+      확인 불가
     </span>
   );
 
@@ -33,12 +33,12 @@ export function ComparisonCard({ field }: { field: Field }) {
       <dl className="grid grid-cols-2 gap-3 text-sm">
         <div className="min-w-0">
           <dt className="text-xs text-muted-foreground">입력 정보</dt>
-          <dd className="break-words font-semibold">{field.input || "—"}</dd>
+          <dd className="break-words font-semibold">{field.input || "입력된 정보 없음"}</dd>
         </div>
         <div className="min-w-0">
           <dt className="text-xs text-muted-foreground">비교 자료</dt>
           <dd className="break-words">
-            <span className={officialCls(field)}>{field.official || "—"}</span>
+            <span className={officialCls(field)}>{field.official || "자료에서 확인 불가"}</span>
           </dd>
         </div>
       </dl>
@@ -62,9 +62,9 @@ export function ComparisonTable({ fields }: { fields: Field[] }) {
         {fields.map((f) => (
           <tr key={f.label} className="border-t border-border">
             <td className="px-4 py-4 text-sm font-bold text-muted-foreground">{f.label}</td>
-            <td className="break-words px-4 py-4 font-semibold">{f.input || "—"}</td>
+            <td className="break-words px-4 py-4 font-semibold">{f.input || "입력된 정보 없음"}</td>
             <td className="break-words px-4 py-4">
-              <span className={officialCls(f)}>{f.official || "—"}</span>
+              <span className={officialCls(f)}>{f.official || "자료에서 확인 불가"}</span>
             </td>
             <td className="px-4 py-4">{badge(f.status)}</td>
           </tr>

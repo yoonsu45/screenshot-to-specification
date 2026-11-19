@@ -51,7 +51,7 @@ describe("event data provenance", () => {
     expect(result.ambiguous).toBe(false);
     expect(result.sourceRows).toEqual(event.sourceRows);
     expect(result.fields.find((field) => field.label === "날짜")?.status).toBe("missing");
-    expect(verifyEvent({ ...EXAMPLE_CASE, officialRecordId: event.id }).sourceType).toBe("demo");
+    expect(verifyEvent({ ...EXAMPLE_CASE, officialRecordId: event.id })).toMatchObject({ sourceType: "official_public_data", status: "partial" });
   });
   it("labels fictional examples and keeps official links out of them", () => {
     expect(

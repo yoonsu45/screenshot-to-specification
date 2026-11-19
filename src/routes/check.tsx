@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
   CheckCircle2,
@@ -69,6 +69,7 @@ const venueOptions: readonly PickerItem[] = [
 
 function CheckPage() {
   const { draft, setDraft } = useAppStore();
+  const navigate = useNavigate();
   const [form, setForm] = useState(draft);
   const [error, setError] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisState>({ status: "idle" });
@@ -95,14 +96,7 @@ function CheckPage() {
   const officialSearchResults = useMemo(() => {
     if (!officialSearchQuery) return [];
     const matches = searchOfficialEvents(officialSearchQuery);
-    const preferredByTitle = new Map<string, OfficialRecord>();
-    matches.forEach((event) => {
-      const previous = preferredByTitle.get(event.title);
-      if (!previous || (!getOfficialPoster(previous.id) && getOfficialPoster(event.id))) {
-        preferredByTitle.set(event.title, event);
-      }
-    });
-    return [...preferredByTitle.values()]
+    return [...matches]
       .sort(
         (left, right) =>
           Number(Boolean(getOfficialPoster(right.id))) -
@@ -207,18 +201,9 @@ function CheckPage() {
   }
 
   function selectOcrCandidate(candidate: BrowserOcrResult["candidates"][number]) {
-    if (candidate.sourceType === "demo") {
-      const event = events.find((item) => item.id === candidate.eventId);
-      if (event) selectEvent(event);
-      return;
-    }
-
     setForm((current) => ({
       ...current,
       officialRecordId: candidate.eventId,
-      title: candidate.title,
-      date: candidate.date || current.date,
-      venue: candidate.venue || current.venue,
     }));
     setSearchOpen(false);
     setError(false);
@@ -229,9 +214,11 @@ function CheckPage() {
     setForm((current) => ({
       ...current,
       officialRecordId: event.id,
-      title: event.title,
-      date: event.startDate || (schedule.dates.length === 1 ? schedule.dates[0]! : current.date),
-      venue: event.venue || current.venue,
+      ...(isCaptureMode ? {} : {
+        title: event.title,
+        date: event.startDate || (schedule.dates.length === 1 ? schedule.dates[0]! : current.date),
+        venue: event.venue || current.venue,
+      }),
     }));
     setSelectedOfficialEvent(null);
     setSearchOpen(false);
@@ -241,6 +228,15 @@ function CheckPage() {
   const field =
     "h-12 w-full rounded-xl border border-input bg-card px-4 text-base outline-none focus:ring-2 focus:ring-ring";
   const ocrResult = analysis.status === "success" ? analysis.result : null;
+  const selectedComparison = form.officialRecordId
+    ? [...searchOfficialEvents(""), ...events].find((event) => event.id === form.officialRecordId)
+    : undefined;
+
+  function compare() {
+    if (!form.title.trim()) { setError(true); return; }
+    setDraft(form);
+    void navigate({ to: "/result" });
+  }
 
   return (
     <div className="mx-auto max-w-xl">
@@ -253,10 +249,10 @@ function CheckPage() {
           : "공연명을 검색해 등록된 행사를 선택하거나 정보를 직접 입력해 주세요."}
       </p>
       {form.officialRecordId && (
-        <p className="mb-5 rounded-xl bg-secondary p-4 text-sm">
-          목록에서 선택한 공식 자료와 비교합니다. 날짜·장소는 포스터에 적힌 내용을 직접 입력해
-          주세요. 원본 자료에 없는 항목은 확인 불가로 처리합니다.
-        </p>
+        <div className="mb-5 rounded-xl bg-secondary p-4 text-sm">
+          비교할 행사: <b>{selectedComparison?.title ?? "선택한 자료"}</b>. 입력한 캡처 내용은 그대로 유지됩니다.
+          <button type="button" onClick={() => setForm((current) => ({ ...current, officialRecordId: undefined }))} className="ml-2 font-bold text-primary underline">선택 해제</button>
+        </div>
       )}
 
       {form.image && (
@@ -322,7 +318,7 @@ function CheckPage() {
                     </span>
                   </span>
                   <span className="shrink-0 text-xs font-bold text-primary">
-                    {Math.round(candidate.score * 100)}%
+                    {form.officialRecordId === candidate.eventId ? "선택됨" : "비교 대상으로 선택"}
                   </span>
                 </button>
               );
@@ -383,7 +379,7 @@ function CheckPage() {
                 onFocus={() => !isCaptureMode && setSearchOpen(true)}
                 onBlur={() => !isCaptureMode && window.setTimeout(() => setSearchOpen(false), 100)}
                 onChange={(event) => {
-                  setForm({ ...form, title: event.target.value, officialRecordId: undefined });
+                  setForm({ ...form, title: event.target.value });
                   setManualSearchQuery("");
                   setError(false);
                   setSearchOpen(true);
@@ -456,18 +452,16 @@ function CheckPage() {
           />
         </label>
         <div className="block">
-          <span className="mb-1.5 block text-sm font-bold">
+          <label htmlFor="event-venue" className="mb-1.5 block text-sm font-bold">
             장소 <span className="font-normal text-muted-foreground">(선택)</span>
-          </span>
+          </label>
+          <input id="event-venue" className={field} value={form.venue} onChange={(event) => setForm({ ...form, venue: event.target.value })} placeholder="캡처에 적힌 장소를 입력해 주세요" />
           <button
             type="button"
             onClick={() => setVenuePickerOpen(true)}
-            className={`${field} flex items-center justify-between gap-3 text-left`}
+            className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary underline"
           >
-            <span className={form.venue ? "truncate" : "text-muted-foreground"}>
-              {form.venue || "장소를 선택해 주세요"}
-            </span>
-            <MapPin className="h-5 w-5 shrink-0 text-primary" />
+            <MapPin className="h-4 w-4" /> 올림픽공원 장소에서 선택
           </button>
         </div>
         {isCaptureMode && (
@@ -530,6 +524,7 @@ function CheckPage() {
                           <span className="mt-1 block text-xs text-muted-foreground">
                             {event.venue || "장소 확인 불가"}
                           </span>
+                          <span className="mt-1 block text-xs text-muted-foreground">{getOfficialSchedule(event.id).raw || event.startDate || "날짜 확인 불가"}</span>
                           <span className="mt-2 block text-xs font-bold text-brand-orange">
                             {getOfficialPoster(event.id) ? "포스터 보기" : "행사 정보 보기"}
                           </span>
@@ -550,6 +545,10 @@ function CheckPage() {
           )}
         </section>
       )}
+
+      <button type="button" onClick={compare} disabled={analysis.status === "analyzing"} className="mt-5 flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3.5 font-extrabold text-primary-foreground disabled:opacity-50">
+        입력 내용과 행사 자료 비교하기
+      </button>
 
       <Dialog
         open={Boolean(selectedOfficialEvent)}

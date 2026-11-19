@@ -15,7 +15,7 @@ import { verifyEvent, formatDate, formatRange, type VerifyStatus } from "@/lib/e
 import { ComparisonCard, ComparisonTable } from "@/components/app/ComparisonCard";
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
 import { officialEvents } from "@/lib/official-data";
-import { getOfficialSchedule } from "@/lib/official-posters";
+import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
 
 export const Route = createFileRoute("/result")({
   head: () => ({
@@ -157,6 +157,10 @@ function ResultPage() {
             ) : (
               <p>출처 자료 CSV 행: {result.sourceRows?.join(", ")}</p>
             )}
+            <div className="mt-2 flex flex-wrap gap-3 font-bold">
+              {officialEvent && getOfficialPoster(officialEvent.id) && <a className="underline" href={getOfficialPoster(officialEvent.id)!.imageUrl} target="_blank" rel="noopener noreferrer">비교한 공식 포스터 보기</a>}
+              {result.sourceName === "한국체육산업개발 공연정보 Open API" && <a className="underline" href="https://www.data.go.kr/data/3037877/openapi.do" target="_blank" rel="noopener noreferrer">공식 공연정보 API 안내</a>}
+            </div>
           </div>
         )}
         <div className="flex flex-wrap items-center gap-2">

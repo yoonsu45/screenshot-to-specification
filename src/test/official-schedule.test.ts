@@ -40,4 +40,20 @@ describe("공식 포스터 개최일", () => {
     expect(check("2019-10-27").status).toBe("match");
     expect(check("2019-10-28").status).toBe("partial");
   });
+  it("keeps captured values separate from the explicitly selected official record", () => {
+    const poster = posters.matches.find((item) => item.posterId === "5836")!;
+    const event = searchOfficialEvents("").find((item) => item.id === poster.eventId)!;
+    const result = verifyEvent({ title: "캡처에 적힌 다른 공연명", date: "2019-10-28", venue: "다른 공연장", officialRecordId: event.id });
+    expect(result.status).toBe("partial");
+    expect(result.fields).toEqual([
+      expect.objectContaining({ label: "행사명", input: "캡처에 적힌 다른 공연명", official: event.title, status: "different" }),
+      expect.objectContaining({ label: "날짜", input: "2019-10-28", status: "different" }),
+      expect.objectContaining({ label: "장소", input: "다른 공연장", official: event.venue, status: "different" }),
+    ]);
+  });
+  it("recognizes verified aliases for the same venue", () => {
+    const event = searchOfficialEvents("").find((item) => item.venue === "KSPO DOME")!;
+    const result = verifyEvent({ title: event.title, venue: "올림픽체조경기장", date: "", officialRecordId: event.id });
+    expect(result.fields.find((field) => field.label === "장소")?.status).toBe("same");
+  });
 });

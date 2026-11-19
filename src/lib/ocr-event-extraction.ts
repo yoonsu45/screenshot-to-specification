@@ -1,6 +1,7 @@
 import { events } from "@/data/events";
 import { ALL_FACILITIES_ID, facilities } from "@/data/facilities";
 import { officialEvents } from "@/lib/official-data";
+import type { PSM } from "tesseract.js";
 
 export type OcrConfidence = "high" | "medium" | "low";
 
@@ -66,7 +67,7 @@ type OcrImageSource = HTMLImageElement | HTMLCanvasElement;
 
 type OcrVariant = {
   image: OcrImageSource;
-  pageSegMode: string;
+  pageSegMode: PSM;
 };
 
 export async function extractEventFromImage(
@@ -141,7 +142,7 @@ export async function extractEventFromImage(
 
 function createOverlappingRegionVariants(
   image: HTMLImageElement,
-  pageSegModes: { SPARSE_TEXT: string },
+  pageSegModes: { SPARSE_TEXT: PSM },
 ): OcrVariant[] {
   const width = image.naturalWidth;
   const height = image.naturalHeight;

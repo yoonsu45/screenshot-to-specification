@@ -4,6 +4,7 @@ import { events, type CategoryFilter, type ParkEvent } from "@/data/events";
 import { ALL_FACILITIES_ID, getFacility } from "@/data/facilities";
 import { officialEvents, officialRecordSource } from "@/lib/official-data";
 import { getOfficialSchedule } from "@/lib/official-posters";
+import { internalVenueProfiles } from "@/data/internal-facilities";
 
 export type ListResult =
   { kind: "not-connected" } | { kind: "empty" } | { kind: "ok"; events: ParkEvent[] };
@@ -76,6 +77,16 @@ export type VerifyResult = {
 };
 
 const norm = (s: string) => s.toLocaleLowerCase("ko-KR").replace(/[^0-9a-z가-힣]/g, "");
+
+function sameVenue(left: string, right: string) {
+  const first = norm(left);
+  const second = norm(right);
+  if (first === second) return true;
+  return internalVenueProfiles.some((venue) => {
+    const aliases = [venue.name, ...venue.aliases].map(norm);
+    return aliases.includes(first) && aliases.includes(second);
+  });
+}
 
 const INITIAL_SOUNDS = [
   "k", "k", "n", "t", "t", "r", "m", "b", "b", "s", "s", "", "j", "j", "j", "k", "t", "b", "h",
@@ -153,9 +164,10 @@ export function verifyEvent(input: CheckInput): VerifyResult {
   // Do not select an arbitrary performance when several official records share a title.
   const byTitle = t ? officialEvents.filter((e) => norm(e.title) === t) : [];
   const selected = input.officialRecordId
-    ? byTitle.find((event) => event.id === input.officialRecordId)
+    ? officialEvents.find((event) => event.id === input.officialRecordId)
     : undefined;
-  const official = selected ? [selected] : byTitle;
+  const selectedDemo = input.officialRecordId ? events.find((event) => event.id === input.officialRecordId) : undefined;
+  const official = selected ? [selected] : selectedDemo ? [] : byTitle;
   if (official.length) {
     const record = official.length === 1 ? official[0] : undefined;
     const venue = record?.venue ?? "";
@@ -167,7 +179,7 @@ export function verifyEvent(input: CheckInput): VerifyResult {
         label: "행사명",
         input: input.title,
         official: record?.title ?? input.title,
-        status: "same",
+        status: record ? (norm(record.title) === t ? "same" : "different") : "same",
       },
       {
         label: "날짜",
@@ -187,7 +199,7 @@ export function verifyEvent(input: CheckInput): VerifyResult {
         status:
           !venue || !input.venue.trim()
             ? "missing"
-            : norm(venue) === norm(input.venue)
+            : sameVenue(venue, input.venue)
               ? "same"
               : "different",
       },
@@ -208,7 +220,7 @@ export function verifyEvent(input: CheckInput): VerifyResult {
           : "match",
     };
   }
-  const event = t ? events.find((e) => norm(e.title) === t) : undefined;
+  const event = selectedDemo ?? (t ? events.find((e) => norm(e.title) === t) : undefined);
 
   if (!event) {
     return {
@@ -233,12 +245,12 @@ export function verifyEvent(input: CheckInput): VerifyResult {
       : "different";
   const venueStatus: FieldStatus = !input.venue.trim()
     ? "missing"
-    : norm(event.venue).includes(norm(input.venue)) || norm(input.venue).includes(norm(event.venue))
+    : sameVenue(event.venue, input.venue)
       ? "same"
       : "different";
 
   const fields: VerifyResult["fields"] = [
-    { label: "행사명", input: input.title, official: event.title, status: "same" },
+    { label: "행사명", input: input.title, official: event.title, status: norm(input.title) === norm(event.title) ? "same" : "different" },
     {
       label: "날짜",
       input: input.date ? formatDate(input.date) : "",
