@@ -3,7 +3,7 @@
 import { events, type CategoryFilter, type ParkEvent } from "@/data/events";
 import { ALL_FACILITIES_ID, getFacility } from "@/data/facilities";
 import { officialEvents, officialRecordSource } from "@/lib/official-data";
-import { getOfficialSchedule } from "@/lib/official-posters";
+import { getOfficialSchedule, isOfficialScheduleRange } from "@/lib/official-posters";
 import { internalVenueProfiles } from "@/data/internal-facilities";
 
 export type ListResult =
@@ -27,6 +27,7 @@ export function getEvent(id: string) {
 export type CheckInput = {
   title: string;
   date: string;
+  endDate?: string | undefined;
   venue: string;
   image?: string | undefined;
   officialRecordId?: string | undefined;
@@ -158,6 +159,10 @@ export function formatRange(e: ParkEvent) {
     : formatDate(e.startDate);
 }
 
+function inputDateText(input: CheckInput) {
+  return input.endDate ? `${input.date || "시작일 미입력"} ~ ${input.endDate}` : input.date;
+}
+
 /** 홈 시설 필터와 무관하게 전체 샘플 데이터에서 대조합니다. */
 export function verifyEvent(input: CheckInput): VerifyResult {
   const t = norm(input.title);
@@ -174,6 +179,16 @@ export function verifyEvent(input: CheckInput): VerifyResult {
     const date = record?.startDate ?? "";
     const schedule = getOfficialSchedule(record?.id ?? "");
     const dates = schedule.dates.length ? schedule.dates : date ? [date] : [];
+    const officialRange = schedule.dates.length > 1 && isOfficialScheduleRange(schedule.raw);
+    const dateStatus: FieldStatus = !dates.length || !input.date || (input.endDate && input.endDate < input.date)
+      ? "missing"
+      : input.endDate
+        ? officialRange
+          ? input.date === dates[0] && input.endDate === dates[dates.length - 1] ? "same" : "different"
+          : schedule.dates.length === 1
+            ? input.date === dates[0] && input.endDate === dates[0] ? "same" : "different"
+            : "missing"
+        : officialRange ? "missing" : dates.includes(input.date) ? "same" : "different";
     const fields: VerifyResult["fields"] = [
       {
         label: "행사명",
@@ -183,14 +198,9 @@ export function verifyEvent(input: CheckInput): VerifyResult {
       },
       {
         label: "날짜",
-        input: input.date,
+        input: inputDateText(input),
         official: schedule.raw || date,
-        status:
-          !dates.length || !input.date
-            ? "missing"
-            : dates.includes(input.date)
-              ? "same"
-              : "different",
+        status: dateStatus,
       },
       {
         label: "장소",
@@ -229,7 +239,7 @@ export function verifyEvent(input: CheckInput): VerifyResult {
         { label: "행사명", input: input.title, official: "", status: "missing" },
         {
           label: "날짜",
-          input: input.date ? formatDate(input.date) : "",
+          input: inputDateText(input),
           official: "",
           status: "missing",
         },
@@ -238,11 +248,12 @@ export function verifyEvent(input: CheckInput): VerifyResult {
     };
   }
 
-  const dateStatus: FieldStatus = !input.date
+  const eventEnd = event.endDate ?? event.startDate;
+  const dateStatus: FieldStatus = !input.date || (input.endDate && input.endDate < input.date)
     ? "missing"
-    : input.date >= event.startDate && input.date <= (event.endDate ?? event.startDate)
-      ? "same"
-      : "different";
+    : input.endDate
+      ? input.date === event.startDate && input.endDate === eventEnd ? "same" : "different"
+      : eventEnd !== event.startDate ? "missing" : input.date === event.startDate ? "same" : "different";
   const venueStatus: FieldStatus = !input.venue.trim()
     ? "missing"
     : sameVenue(event.venue, input.venue)
@@ -253,7 +264,7 @@ export function verifyEvent(input: CheckInput): VerifyResult {
     { label: "행사명", input: input.title, official: event.title, status: norm(input.title) === norm(event.title) ? "same" : "different" },
     {
       label: "날짜",
-      input: input.date ? formatDate(input.date) : "",
+      input: inputDateText(input),
       official: formatRange(event),
       status: dateStatus,
     },
@@ -271,5 +282,6 @@ export function verifyEvent(input: CheckInput): VerifyResult {
 export const EXAMPLE_CASE: CheckInput = {
   title: "서울 윈터 사운드 페스타",
   date: "2026-11-21",
+  endDate: "2026-11-22",
   venue: "KSPO DOME",
 };

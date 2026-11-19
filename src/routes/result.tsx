@@ -15,7 +15,7 @@ import { verifyEvent, formatDate, formatRange, type VerifyStatus } from "@/lib/e
 import { ComparisonCard, ComparisonTable } from "@/components/app/ComparisonCard";
 import { VisitDateDialog } from "@/components/app/VisitDateDialog";
 import { officialEvents } from "@/lib/official-data";
-import { getOfficialPoster, getOfficialSchedule } from "@/lib/official-posters";
+import { getOfficialPoster, getOfficialSchedule, isOfficialScheduleRange } from "@/lib/official-posters";
 import { findTransitDestination } from "@/lib/transit-destination";
 
 export const Route = createFileRoute("/result")({
@@ -118,7 +118,7 @@ function ResultPage() {
             <b>행사명</b> {draft.title}
           </p>
           <p>
-            <b>날짜</b> {draft.date || "—"}
+            <b>날짜</b> {draft.date || "—"}{draft.endDate ? ` ~ ${draft.endDate}` : ""}
           </p>
           <p>
             <b>장소</b> {draft.venue || "—"}
@@ -269,7 +269,7 @@ function ResultPage() {
           }}
           open={visitDateOpen}
           onOpenChange={setVisitDateOpen}
-          availableDates={officialSchedule?.dates.length ? officialSchedule.dates : undefined}
+          availableDates={officialSchedule?.dates.length && !isOfficialScheduleRange(officialSchedule.raw) ? officialSchedule.dates : undefined}
           initialDate={plan.find((item) => item.id === `event:${saveTarget.id}`)?.startDate}
           onConfirm={async (visitDate) => {
             const added = await addPlan({

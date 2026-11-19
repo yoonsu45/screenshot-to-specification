@@ -144,6 +144,7 @@ function CheckPage() {
         officialRecordId: undefined,
         title: result.title,
         date: result.date,
+        endDate: result.detectedRanges.length === 1 && result.detectedDates.length === 2 ? result.detectedRanges[0]!.end : "",
         venue: result.venue,
       }));
       setAnalysis({ status: "success", result });
@@ -179,6 +180,7 @@ function CheckPage() {
       officialRecordId: undefined,
       title: event.title,
       date: event.startDate,
+      endDate: event.endDate ?? "",
       venue: event.venue,
     }));
     setSearchOpen(false);
@@ -217,6 +219,7 @@ function CheckPage() {
       ...(isCaptureMode ? {} : {
         title: event.title,
         date: event.startDate || (schedule.dates.length === 1 ? schedule.dates[0]! : current.date),
+        endDate: "",
         venue: event.venue || current.venue,
       }),
     }));
@@ -234,6 +237,7 @@ function CheckPage() {
 
   function compare() {
     if (!form.title.trim()) { setError(true); return; }
+    if (form.endDate && (!form.date || form.endDate < form.date)) { setError(true); return; }
     setDraft(form);
     void navigate({ to: "/result" });
   }
@@ -379,7 +383,7 @@ function CheckPage() {
 
         <label className="block">
           <span className="mb-1.5 block text-sm font-bold">
-            행사 날짜 <span className="font-normal text-muted-foreground">(선택)</span>
+            행사 시작일 <span className="font-normal text-muted-foreground">(선택)</span>
           </span>
           <input
             type="date"
@@ -388,6 +392,11 @@ function CheckPage() {
             onChange={(event) => setForm({ ...form, date: event.target.value })}
           />
         </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-bold">행사 종료일 <span className="font-normal text-muted-foreground">(기간 행사일 때 입력)</span></span>
+          <input type="date" className={field} value={form.endDate ?? ""} onChange={(event) => setForm({ ...form, endDate: event.target.value })} />
+        </label>
+        {form.endDate && (!form.date || form.endDate < form.date) && <p role="alert" className="text-sm font-bold text-destructive">종료일은 시작일 이후로 입력해 주세요.</p>}
         {ocrResult && ocrResult.detectedDates.length > 1 && (
           <div>
             {ocrResult.detectedRanges.map((range) => (
@@ -395,7 +404,7 @@ function CheckPage() {
                 인식된 행사 기간: {range.start} ~ {range.end}
               </p>
             ))}
-            <p className="mb-2 text-xs text-muted-foreground">비교에는 날짜 하나가 사용됩니다. 시작일이나 종료일을 선택하거나 직접 입력해 주세요. 두 자리 연도는 20xx년으로 읽었으니 확인해 주세요.</p>
+            <p className="mb-2 text-xs text-muted-foreground">날짜를 확인하고 시작일과 종료일을 수정해 주세요. 아래 날짜를 누르면 시작일에 입력됩니다.</p>
             <div className="flex flex-wrap gap-2">
               {ocrResult.detectedDates.map((date) => (
                 <button key={date} type="button" aria-pressed={form.date === date} onClick={() => setForm({ ...form, date })} className={`rounded-full border px-3 py-2 text-sm font-bold ${form.date === date ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-primary"}`}>

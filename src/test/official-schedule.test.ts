@@ -56,4 +56,23 @@ describe("공식 포스터 개최일", () => {
     const result = verifyEvent({ title: event.title, venue: "올림픽체조경기장", date: "", officialRecordId: event.id });
     expect(result.fields.find((field) => field.label === "장소")?.status).toBe("same");
   });
+  it("compares both endpoints of an explicitly continuous official period", () => {
+    const event = searchOfficialEvents("").find((item) => {
+      const schedule = getOfficialSchedule(item.id);
+      return schedule.dates.length > 2 && /^\d{4}-/.test(schedule.raw) && /\s-\s/.test(schedule.raw);
+    })!;
+    const dates = getOfficialSchedule(event.id).dates;
+    const check = (endDate: string) => verifyEvent({ title: event.title, venue: event.venue ?? "", date: dates[0]!, endDate, officialRecordId: event.id }).fields.find((field) => field.label === "날짜")!;
+    expect(check(dates[dates.length - 1]!).status).toBe("same");
+    expect(check("2099-12-03").status).toBe("different");
+    expect(verifyEvent({ title: event.title, venue: event.venue ?? "", date: dates[0]!, officialRecordId: event.id }).fields.find((field) => field.label === "날짜")?.status).toBe("missing");
+  });
+  it("does not treat separated sessions as a continuous period", () => {
+    const event = searchOfficialEvents("").find((item) => {
+      const schedule = getOfficialSchedule(item.id);
+      return schedule.dates.length === 2 && /\//.test(schedule.raw);
+    })!;
+    const dates = getOfficialSchedule(event.id).dates;
+    expect(verifyEvent({ title: event.title, venue: event.venue ?? "", date: dates[0]!, endDate: dates[1]!, officialRecordId: event.id }).fields.find((field) => field.label === "날짜")?.status).toBe("missing");
+  });
 });

@@ -63,7 +63,7 @@ describe("event data provenance", () => {
       ),
     ).toBe(true);
     expect(verifyEvent(EXAMPLE_CASE)).toMatchObject({ sourceType: "demo", status: "match" });
-    expect(verifyEvent({ ...EXAMPLE_CASE, date: "2026-12-31" }).status).toBe("partial");
+    expect(verifyEvent({ ...EXAMPLE_CASE, endDate: "2026-12-03" }).status).toBe("partial");
   });
 
   it("does not turn absent official dates into a match or mismatch", () => {
