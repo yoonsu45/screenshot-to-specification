@@ -16,6 +16,7 @@ export type OcrEventCandidate = {
 type RankedOcrEventCandidate = OcrEventCandidate & {
   exactTitle: boolean;
   corroborated: boolean;
+  strongTitleFragment: boolean;
 };
 
 export type BrowserOcrResult = {
@@ -58,6 +59,8 @@ const socialUiPattern =
   /^(?:글쓰기|설명|팔로우|팔로잉|좋아요|댓글|공유|저장|조회|프로필|게시물|릴스|홈|검색|더보기|번역 보기|원문 보기)$/i;
 const socialMetadataPattern =
   /^(?:20\d{2}년?\s*)?(?:공연|행사|콘서트)\s*(?:기록|사진|포스터)$/i;
+const genericEventLabelPattern =
+  /^(?:콘서트|공연|페스티벌|축제|전시|뮤지컬|리사이틀|팬미팅|쇼케이스|라이브|투어|concert|festival|exhibition|musical|recital|showcase|live|tour)$/i;
 
 type OcrImageSource = HTMLImageElement | HTMLCanvasElement;
 
@@ -98,14 +101,8 @@ export async function extractEventFromImage(
     });
 
     const sourceImage = await loadOcrImage(imageDataUrl);
-    const variants: OcrVariant[] = [
-      { image: sourceImage, pageSegMode: PSM.SPARSE_TEXT },
-    ];
+    const variants: OcrVariant[] = [{ image: sourceImage, pageSegMode: PSM.AUTO }];
     try {
-      variants.push({
-        image: createHighContrastVariant(sourceImage),
-        pageSegMode: PSM.SPARSE_TEXT,
-      });
       variants.push(...createOverlappingRegionVariants(sourceImage, PSM));
     } catch {
       // The original image is still usable if a browser cannot create the enhanced canvas.
@@ -142,74 +139,37 @@ export async function extractEventFromImage(
   }
 }
 
-function createHighContrastVariant(image: OcrImageSource) {
-  const { width, height } = getImageDimensions(image);
-  const border = 16;
-  const canvas = document.createElement("canvas");
-  canvas.width = width + border * 2;
-  canvas.height = height + border * 2;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) throw new Error("canvas unavailable");
-
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(image, border, border);
-
-  const pixels = context.getImageData(border, border, width, height);
-  let luminanceTotal = 0;
-  for (let index = 0; index < pixels.data.length; index += 4) {
-    luminanceTotal +=
-      pixels.data[index]! * 0.299 +
-      pixels.data[index + 1]! * 0.587 +
-      pixels.data[index + 2]! * 0.114;
-  }
-  const averageLuminance = luminanceTotal / (pixels.data.length / 4);
-  const invert = averageLuminance < 105;
-
-  for (let index = 0; index < pixels.data.length; index += 4) {
-    const luminance =
-      pixels.data[index]! * 0.299 +
-      pixels.data[index + 1]! * 0.587 +
-      pixels.data[index + 2]! * 0.114;
-    const contrasted = Math.max(0, Math.min(255, 128 + (luminance - 128) * 1.55));
-    const value = invert ? 255 - contrasted : contrasted;
-    pixels.data[index] = value;
-    pixels.data[index + 1] = value;
-    pixels.data[index + 2] = value;
-    pixels.data[index + 3] = 255;
-  }
-  context.putImageData(pixels, border, border);
-  return canvas;
-}
-
 function createOverlappingRegionVariants(
   image: HTMLImageElement,
-  pageSegModes: { SPARSE_TEXT: string; SINGLE_BLOCK: string },
+  pageSegModes: { SPARSE_TEXT: string },
 ): OcrVariant[] {
   const width = image.naturalWidth;
   const height = image.naturalHeight;
-  const isTall = height > width * 1.15;
   const isWide = width > height * 1.15;
   const regions = isWide
     ? [
-        { x: 0, y: 0, width: width * 0.68, height },
-        { x: width * 0.32, y: 0, width: width * 0.68, height },
+        { x: 0, y: 0, width: width * 0.5, height },
+        { x: width * 0.25, y: 0, width: width * 0.5, height },
+        { x: width * 0.5, y: 0, width: width * 0.5, height },
       ]
     : [
-        { x: 0, y: 0, width, height: height * 0.68 },
-        { x: 0, y: height * 0.32, width, height: height * 0.68 },
+        { x: 0, y: 0, width, height: height * 0.5 },
+        { x: 0, y: height * 0.25, width, height: height * 0.5 },
+        { x: 0, y: height * 0.5, width, height: height * 0.5 },
       ];
 
   return regions.map((region, index) => ({
-    image: createEnhancedCrop(image, region),
-    // The lower part of a tall SNS screenshot is usually a regular caption block.
-    pageSegMode: isTall && index === 1 ? pageSegModes.SINGLE_BLOCK : pageSegModes.SPARSE_TEXT,
+    // Keep one enlarged color crop for decorated posters. Adaptive thresholding
+    // makes the other passes readable on both white pages and dark SNS captions.
+    image: createEnhancedCrop(image, region, index > 0),
+    pageSegMode: pageSegModes.SPARSE_TEXT,
   }));
 }
 
 function createEnhancedCrop(
   image: HTMLImageElement,
   region: { x: number; y: number; width: number; height: number },
+  useAdaptiveThreshold: boolean,
 ) {
   const maxPixels = 4_500_000;
   const preferredShortSide = 1_700;
@@ -236,13 +196,68 @@ function createEnhancedCrop(
     canvas.width,
     canvas.height,
   );
-  return createHighContrastVariant(canvas);
+  return useAdaptiveThreshold ? createAdaptiveThresholdVariant(canvas) : canvas;
 }
 
-function getImageDimensions(image: OcrImageSource) {
-  return image instanceof HTMLCanvasElement
-    ? { width: image.width, height: image.height }
-    : { width: image.naturalWidth, height: image.naturalHeight };
+function createAdaptiveThresholdVariant(image: HTMLCanvasElement) {
+  const width = image.width;
+  const height = image.height;
+  const border = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = width + border * 2;
+  canvas.height = height + border * 2;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("canvas unavailable");
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, border, border);
+  const pixels = context.getImageData(border, border, width, height);
+  const gray = new Uint8Array(width * height);
+  for (let pixel = 0, offset = 0; pixel < gray.length; pixel += 1, offset += 4) {
+    gray[pixel] = Math.round(
+      pixels.data[offset]! * 0.299 +
+        pixels.data[offset + 1]! * 0.587 +
+        pixels.data[offset + 2]! * 0.114,
+    );
+  }
+
+  const integralWidth = width + 1;
+  const integral = new Uint32Array(integralWidth * (height + 1));
+  for (let y = 1; y <= height; y += 1) {
+    let rowSum = 0;
+    for (let x = 1; x <= width; x += 1) {
+      rowSum += gray[(y - 1) * width + (x - 1)]!;
+      integral[y * integralWidth + x] = integral[(y - 1) * integralWidth + x]! + rowSum;
+    }
+  }
+
+  const radius = Math.max(12, Math.round(Math.min(width, height) / 90));
+  for (let y = 0; y < height; y += 1) {
+    const top = Math.max(0, y - radius);
+    const bottom = Math.min(height - 1, y + radius);
+    for (let x = 0; x < width; x += 1) {
+      const left = Math.max(0, x - radius);
+      const right = Math.min(width - 1, x + radius);
+      const area = (right - left + 1) * (bottom - top + 1);
+      const sum =
+        integral[(bottom + 1) * integralWidth + (right + 1)]! -
+        integral[top * integralWidth + (right + 1)]! -
+        integral[(bottom + 1) * integralWidth + left]! +
+        integral[top * integralWidth + left]!;
+      const mean = sum / area;
+      const luminance = gray[y * width + x]!;
+      // Dark SNS panels use bright text; light posters usually use dark text.
+      const value = mean < 105 ? (luminance > mean + 8 ? 0 : 255) : luminance < mean - 8 ? 0 : 255;
+      const offset = (y * width + x) * 4;
+      pixels.data[offset] = value;
+      pixels.data[offset + 1] = value;
+      pixels.data[offset + 2] = value;
+      pixels.data[offset + 3] = 255;
+    }
+  }
+  context.putImageData(pixels, border, border);
+  return canvas;
 }
 
 function collectLineObservations(
@@ -706,17 +721,30 @@ function rankEventCandidates(
   return catalog
     .map((event) => {
       const eventTitle = normalizeForTitle(event.title.replace(/^\[시연용\]\s*/, ""));
-      const lineScore = Math.max(
-        0,
-        ...searchableLines.map((line) => similarity(eventTitle, normalizeForTitle(line))),
-      );
-      const exactTitle = eventTitle.length >= 3 && normalizedText.includes(eventTitle);
       const venueMatch = Boolean(
         venue && event.venue && normalize(venue) === normalize(event.venue),
       );
       const dateMatch = Boolean(event.date && dates.includes(event.date));
       const corroborated = venueMatch || dateMatch;
-      let score = Math.max(lineScore, exactTitle ? 1 : 0);
+      const strongTitleFragment = searchableLines.some((line) => {
+        const fragment = normalizeForTitle(line);
+        return (
+          fragment.length >= 4 &&
+          !genericEventLabelPattern.test(line.trim()) &&
+          eventTitle.includes(fragment)
+        );
+      });
+      const lineScore = Math.max(
+        0,
+        ...searchableLines.map((line) => {
+          const lineTitle = normalizeForTitle(line);
+          const directScore = similarity(eventTitle, lineTitle);
+          if (!corroborated || lineTitle.length < 4) return directScore;
+          return Math.max(directScore, partialSimilarity(lineTitle, eventTitle));
+        }),
+      );
+      const exactTitle = eventTitle.length >= 3 && normalizedText.includes(eventTitle);
+      let score = Math.max(lineScore, exactTitle ? 1 : 0, strongTitleFragment ? 0.94 : 0);
       if (venueMatch) score += 0.08;
       if (dateMatch) score += 0.08;
 
@@ -729,16 +757,21 @@ function rankEventCandidates(
         sourceType: event.sourceType,
         exactTitle,
         corroborated,
+        strongTitleFragment,
       };
     })
     .filter(
       (candidate) =>
         candidate.exactTitle ||
+        (candidate.strongTitleFragment && candidate.score >= 0.9) ||
         (candidate.sourceType === "official_public_data" &&
           candidate.corroborated &&
           candidate.score >= 0.72),
     )
-    .sort((left, right) => right.score - left.score)
+    .sort(
+      (left, right) =>
+        Number(right.exactTitle) - Number(left.exactTitle) || right.score - left.score,
+    )
     .slice(0, 3);
 }
 

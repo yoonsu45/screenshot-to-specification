@@ -197,4 +197,13 @@ describe("parseOcrText", () => {
     expect(result.title).toBe("");
     expect(result.titleSuggestions).toEqual([]);
   });
+
+  it("행사명이 일부만 읽혀도 날짜와 장소가 맞으면 공식 행사를 찾는다", () => {
+    const result = parseOcrText(
+      "순이 콘서\n2011.10.30\n올림픽공원 체조경기장",
+      2026,
+    );
+
+    expect(result.candidates[0]?.title).toContain("인순이 콘서트");
+  });
 });
