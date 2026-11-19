@@ -327,34 +327,6 @@ function CheckPage() {
         </section>
       )}
 
-      {ocrResult && ocrResult.titleSuggestions.length > 0 && (
-        <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-card">
-          <h2 className="font-extrabold text-primary">읽힌 행사명 후보</h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            설명문은 제외했어요. 실제 행사명과 가장 가까운 문구를 눌러 선택해 주세요.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {ocrResult.titleSuggestions.map((title) => (
-              <button
-                key={title}
-                type="button"
-                onClick={() => {
-                  setForm((current) => ({ ...current, title, officialRecordId: undefined }));
-                  setError(false);
-                }}
-                className={`rounded-full border px-3 py-2 text-left text-sm font-bold transition ${
-                  form.title === title
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-secondary text-primary hover:ring-2 hover:ring-ring"
-                }`}
-              >
-                {title}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
       {ocrResult && ocrResult.bookingDates.length > 0 && (
         <div className="mb-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <p className="font-extrabold">예매 관련 날짜는 행사일과 분리했어요</p>
