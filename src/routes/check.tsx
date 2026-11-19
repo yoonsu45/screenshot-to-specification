@@ -83,7 +83,7 @@ function CheckPage() {
   const analyzedImage = useRef<string | null>(null);
   const analysisRequestId = useRef(0);
   const isCaptureMode = Boolean(form.image);
-  const officialSearchQuery = isCaptureMode ? form.title.trim() : manualSearchQuery;
+  const officialSearchQuery = manualSearchQuery;
 
   const suggestions = useMemo(() => {
     const query = form.title.trim();
@@ -292,48 +292,6 @@ function CheckPage() {
         <AnalysisBanner state={analysis} onRetry={() => form.image && analyzeImage(form.image)} />
       )}
 
-      {ocrResult && ocrResult.candidates.length > 0 && (
-        <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-card">
-          <h2 className="font-extrabold text-primary">인식된 행사 후보</h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            포스터 글자와 공식 행사 자료를 비교한 결과예요. 일치하는 행사만 선택해 주세요.
-          </p>
-          <div className="mt-3 space-y-2">
-            {ocrResult.candidates.map((candidate) => {
-              const selected = form.officialRecordId === candidate.eventId;
-              return (
-                <button
-                  key={candidate.eventId}
-                  type="button"
-                  onClick={() => selectOcrCandidate(candidate)}
-                  aria-pressed={selected}
-                  className={`w-full rounded-xl border-2 px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    selected ? "border-primary bg-primary/5" : "border-transparent bg-secondary hover:border-primary/40"
-                  }`}
-                >
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="rounded-full bg-background px-2 py-1 text-xs font-bold text-primary">
-                      {candidate.sourceType === "official_public_data" ? "공식 자료" : "시연용"}
-                    </span>
-                    {selected && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-primary">
-                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> 선택됨
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-2 block break-words font-extrabold leading-6 text-primary">
-                    {candidate.title}
-                  </span>
-                  <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">
-                    {candidate.date || "날짜 확인 불가"} · {candidate.venue || "장소 확인 불가"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
       {ocrResult && ocrResult.bookingDates.length > 0 && (
         <div className="mb-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <p className="font-extrabold">예매 관련 날짜는 행사일과 분리했어요</p>
@@ -443,29 +401,62 @@ function CheckPage() {
             <MapPin className="h-4 w-4" /> 올림픽공원 장소에서 선택
           </button>
         </div>
-        {isCaptureMode && (
-          <button
-            type="button"
-            onClick={runManualSearch}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-extrabold text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Search className="h-4 w-4" /> 입력한 행사 검색
-          </button>
-        )}
       </div>
 
-      {officialSearchQuery && (
+      {ocrResult && ocrResult.candidates.length > 0 && (
+        <section className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-card">
+          <h2 className="font-extrabold text-primary">인식된 행사 후보</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            포스터 글자와 공식 행사 자료를 비교한 결과예요. 일치하는 행사만 선택해 주세요.
+          </p>
+          <div className="mt-3 space-y-2">
+            {ocrResult.candidates.map((candidate) => {
+              const selected = form.officialRecordId === candidate.eventId;
+              return (
+                <button
+                  key={candidate.eventId}
+                  type="button"
+                  onClick={() => selectOcrCandidate(candidate)}
+                  aria-pressed={selected}
+                  className={`w-full rounded-xl border-2 px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    selected
+                      ? "border-primary bg-primary/5"
+                      : "border-transparent bg-secondary hover:border-primary/40"
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="rounded-full bg-background px-2 py-1 text-xs font-bold text-primary">
+                      {candidate.sourceType === "official_public_data" ? "공식 자료" : "시연용"}
+                    </span>
+                    {selected && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-primary">
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> 선택됨
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-2 block break-words font-extrabold leading-6 text-primary">
+                    {candidate.title}
+                  </span>
+                  <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">
+                    {candidate.date || "날짜 확인 불가"} · {candidate.venue || "장소 확인 불가"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {!isCaptureMode && officialSearchQuery && (
         <section
           ref={searchResultsRef}
           className="mt-5 scroll-mt-4 rounded-2xl border border-border bg-card p-4 shadow-card"
         >
-          <h2 className="font-extrabold text-primary">
-            {isCaptureMode ? "찾으시는 행사가 맞으신가요?" : "검색 결과"}
-          </h2>
+          <h2 className="font-extrabold text-primary">검색 결과</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             행사 정보를 확인하고 맞는 행사를 바로 방문 계획에 담아 보세요.
           </p>
-          {!isCaptureMode && demoSearchResults.length > 0 && (
+          {demoSearchResults.length > 0 && (
             <div className="mt-4">
               <h3 className="mb-2 text-sm font-extrabold text-primary">등록된 행사</h3>
               <ul className="grid gap-3">
@@ -479,9 +470,7 @@ function CheckPage() {
           )}
           {officialSearchResults.length > 0 && (
             <div className="mt-4">
-              {!isCaptureMode && (
-                <h3 className="mb-2 text-sm font-extrabold text-primary">공식 행사</h3>
-              )}
+              <h3 className="mb-2 text-sm font-extrabold text-primary">공식 행사</h3>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {officialSearchResults.map((event) => (
                   <li key={event.id}>
