@@ -30,6 +30,7 @@ export type BrowserOcrResult = {
   candidates: OcrEventCandidate[];
   detectedDates: string[];
   bookingDates: string[];
+  detectedRanges: Array<{ start: string; end: string }>;
 };
 
 export type OcrProgress = {
@@ -46,7 +47,7 @@ export type OcrLineObservation = {
 };
 
 const bookingPattern = /예매|티켓|ticket|open|오픈|판매|예약/i;
-const datePattern = /(?<!\d)(?:(20\d{2})(?:\s*[.\-/년]\s*|\s+))?(\d{1,2})\s*[.\-/월]\s*(\d{1,2})\s*일?(?!\d)/g;
+const datePattern = /(?<![\d./-])(?:(20\d{2}|\d{2})(?:\s*[.\-/년]\s*|\s+))?(\d{1,2})\s*[.\-/월]\s*(\d{1,2})\s*일?(?!\d)/g;
 const compactDatePattern = /(?<!\d)(20\d{2})(\d{2})(\d{2})(?!\d)/g;
 const eventTitlePattern =
   /콘서트|공연|페스티벌|축제|전시|뮤지컬|리사이틀|팬미팅|쇼케이스|라이브|투어|concert|festival|exhibition|musical|recital|fan\s*meeting|showcase|live|tour/i;
@@ -323,7 +324,7 @@ export function parseOcrText(
     .split(/\r?\n/)
     .map((line) => line.replace(/\s+/g, " ").trim())
     .filter(Boolean);
-  const dateMatches = extractDates(lines, referenceYear);
+  const { matches: dateMatches, ranges } = extractDates(lines, referenceYear);
   const detectedDates = unique(
     dateMatches.filter((match) => !match.booking).map((match) => match.value),
   );
@@ -344,7 +345,9 @@ export function parseOcrText(
     lines.some((line) => hasDate(line)),
   );
   const title = isClearTitle && first ? first.title : (inferredTitles[0] ?? "");
-  const date = detectedDates.length === 1 ? detectedDates[0]! : "";
+  const detectedRanges = ranges.filter((range, index) => ranges.findIndex((item) => item.start === range.start && item.end === range.end) === index);
+  const onlyRange = detectedRanges.length === 1 && detectedDates.length === 2 && detectedDates.includes(detectedRanges[0]!.start) && detectedDates.includes(detectedRanges[0]!.end);
+  const date = detectedDates.length === 1 ? detectedDates[0]! : onlyRange ? detectedRanges[0]!.start : "";
   const foundFieldCount = [title, date, venue].filter(Boolean).length;
   const confidence: OcrConfidence =
     first && first.score >= 0.78 && foundFieldCount >= 2
@@ -363,37 +366,51 @@ export function parseOcrText(
     candidates,
     detectedDates,
     bookingDates,
+    detectedRanges,
   };
 }
 
 function extractDates(lines: string[], _referenceYear: number) {
   const matches: Array<{ value: string; booking: boolean }> = [];
+  const ranges: Array<{ start: string; end: string }> = [];
 
   lines.forEach((line, index) => {
     datePattern.lastIndex = 0;
-    const ownMatches = [...line.matchAll(datePattern), ...line.matchAll(compactDatePattern)];
+    const ownMatches = [...line.matchAll(datePattern), ...line.matchAll(compactDatePattern)].sort((a, b) => a.index - b.index);
     if (!ownMatches.length) return;
 
     const previous = lines[index - 1] ?? "";
     const adjacentBookingLabel = bookingPattern.test(previous) && !hasDate(previous);
     const booking = bookingPattern.test(line) || adjacentBookingLabel;
 
+    const validMatches: Array<{ value: string; end: number; start: number }> = [];
     ownMatches.forEach((match) => {
       // Missing years must be confirmed by the user, never inferred from today.
       const standaloneYear = previous.match(/^\s*(20\d{2})\s*[.년]?\s*$/)?.[1];
       if (!match[1] && !standaloneYear) return;
-      const year = Number(match[1] ?? standaloneYear);
+      const yearText = match[1] ?? standaloneYear!;
+      // Two-digit years from 00–49 are interpreted as 2000–2049, not as a missing year.
+      if (yearText.length === 2 && Number(yearText) > 49) return;
+      const year = Number(yearText) + (yearText.length === 2 ? 2000 : 0);
       const month = Number(match[2]);
       const day = Number(match[3]);
       if (!isValidDate(year, month, day)) return;
-      matches.push({
-        value: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-        booking,
-      });
+      const value = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      matches.push({ value, booking });
+      validMatches.push({ value, start: match.index, end: match.index + match[0].length });
     });
+    if (!booking) {
+      for (let i = 0; i + 1 < validMatches.length; i += 1) {
+        const start = validMatches[i]!;
+        const end = validMatches[i + 1]!;
+        if (/^\s*[~～–—-]\s*$/.test(line.slice(start.end, end.start)) && start.value <= end.value) {
+          ranges.push({ start: start.value, end: end.value });
+        }
+      }
+    }
   });
 
-  return matches;
+  return { matches, ranges };
 }
 
 function hasDate(value: string) {

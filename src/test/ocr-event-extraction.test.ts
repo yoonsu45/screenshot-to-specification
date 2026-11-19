@@ -2,6 +2,20 @@ import { describe, expect, it } from "vitest";
 import { parseOcrText } from "@/lib/ocr-event-extraction";
 
 describe("parseOcrText", () => {
+  it("두 자리 연도와 해가 바뀌는 행사 기간을 인식한다", () => {
+    const result = parseOcrText("롯데타운 크리스마스 마켓\n📅 26.11.19 ~ 27.01.03", 2026);
+    expect(result.detectedRanges).toEqual([{ start: "2026-11-19", end: "2027-01-03" }]);
+    expect(result.detectedDates).toEqual(["2026-11-19", "2027-01-03"]);
+    expect(result.date).toBe("2026-11-19");
+  });
+
+  it("두 자리 연도의 예매 기간은 공연 기간으로 처리하지 않는다", () => {
+    const result = parseOcrText("예매 기간 26.11.19 ~ 27.01.03", 2026);
+    expect(result.date).toBe("");
+    expect(result.detectedRanges).toEqual([]);
+    expect(result.bookingDates).toEqual(["2026-11-19", "2027-01-03"]);
+  });
+
   it.each([
     ["20261121", "2026-11-21"],
     ["2026 11.21", "2026-11-21"],
