@@ -255,31 +255,40 @@ export function OfficialEventBrowser() {
                     </>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground"
-                  onClick={() => {
-                    const event = selected;
-                    setSelected(null);
-                    window.setTimeout(() => {
-                      if (requireAuth()) setSavingEvent(event);
-                    }, 220);
-                  }}
+                <div
+                  className={`grid w-full gap-2 ${
+                    plan.some((item) => item.id === `event:${selected.id}`)
+                      ? "grid-cols-2"
+                      : ""
+                  }`}
                 >
-                  <Plus className="h-4 w-4" />
-                  {plan.some((item) => item.id === `event:${selected.id}`) ? "방문일 변경" : "담기"}
-                </button>
-                {plan.some((item) => item.id === `event:${selected.id}`) && (
                   <button
                     type="button"
                     disabled={pending}
-                    onClick={() => void toggleSave(selected)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-background px-4 py-3 font-bold text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 font-bold text-primary-foreground disabled:opacity-40"
+                    onClick={() => {
+                      const event = selected;
+                      setSelected(null);
+                      window.setTimeout(() => {
+                        if (requireAuth()) setSavingEvent(event);
+                      }, 220);
+                    }}
                   >
-                    <Trash2 className="h-4 w-4" />
-                    담기 취소
+                    <Plus className="h-4 w-4" />
+                    {plan.some((item) => item.id === `event:${selected.id}`) ? "방문일 변경" : "담기"}
                   </button>
-                )}
+                  {plan.some((item) => item.id === `event:${selected.id}`) && (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => void toggleSave(selected)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-background px-3 py-3 font-bold text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      담기 취소
+                    </button>
+                  )}
+                </div>
                 <TicketlinkBookingButton title={selected.title} className="w-full" />
               </div>
             )}

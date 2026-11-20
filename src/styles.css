@@ -114,6 +114,19 @@
   }
 }
 
+input.event-date-input {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input.event-date-input::-webkit-date-and-time-value {
+  min-height: 1.5rem;
+  text-align: left;
+}
+
 @utility shadow-card {
   box-shadow: var(--shadow-card);
 }

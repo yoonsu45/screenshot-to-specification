@@ -230,6 +230,7 @@ function CheckPage() {
 
   const field =
     "h-12 w-full rounded-xl border border-input bg-card px-4 text-base outline-none focus:ring-2 focus:ring-ring";
+  const dateField = `${field} event-date-input block min-w-0 max-w-full`;
   const ocrResult = analysis.status === "success" ? analysis.result : null;
   const selectedComparison = form.officialRecordId
     ? [...searchOfficialEvents(""), ...events].find((event) => event.id === form.officialRecordId)
@@ -387,14 +388,14 @@ function CheckPage() {
           </span>
           <input
             type="date"
-            className={field}
+            className={dateField}
             value={form.date}
             onChange={(event) => setForm({ ...form, date: event.target.value })}
           />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-bold">행사 종료일 <span className="font-normal text-muted-foreground">(기간 행사일 때 입력)</span></span>
-          <input type="date" className={field} value={form.endDate ?? ""} onChange={(event) => setForm({ ...form, endDate: event.target.value })} />
+          <input type="date" className={dateField} value={form.endDate ?? ""} onChange={(event) => setForm({ ...form, endDate: event.target.value })} />
         </label>
         {form.endDate && (!form.date || form.endDate < form.date) && <p role="alert" className="text-sm font-bold text-destructive">종료일은 시작일 이후로 입력해 주세요.</p>}
         {ocrResult && ocrResult.detectedDates.length > 1 && (

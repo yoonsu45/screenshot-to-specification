@@ -210,32 +210,34 @@ export function EventCard({
             )}
             {event.description && <p className="text-muted-foreground">{event.description}</p>}
           </div>
-          <DialogFooter className="gap-2 sm:justify-between">
+          <DialogFooter className="flex-col gap-2 sm:flex-col sm:justify-stretch">
             <Button
               type="button"
               variant="outline"
               onClick={openOfficialSite}
-              className="rounded-xl font-bold"
+              className="w-full rounded-xl font-bold"
             >
               <ExternalLink />
               티켓링크 예매
             </Button>
-            <Button type="button" onClick={openVisitDateDialog} className="rounded-xl font-bold">
-              <Plus />
-              {isAdded ? "방문일 변경" : ADD_LABEL}
-            </Button>
-            {isAdded && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={cancelPending}
-                onClick={() => void cancelFromDetails()}
-                className="rounded-xl border-destructive/40 font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                <Trash2 />
-                담기 취소
+            <div className={`grid w-full gap-2 ${isAdded ? "grid-cols-2" : ""}`}>
+              <Button type="button" onClick={openVisitDateDialog} className="w-full rounded-xl font-bold">
+                <Plus />
+                {isAdded ? "방문일 변경" : ADD_LABEL}
               </Button>
-            )}
+              {isAdded && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={cancelPending}
+                  onClick={() => void cancelFromDetails()}
+                  className="w-full rounded-xl border-destructive/40 font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 />
+                  담기 취소
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
