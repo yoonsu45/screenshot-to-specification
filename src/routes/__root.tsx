@@ -144,7 +144,7 @@ function RootComponent() {
         <AppShell>
           <Outlet />
         </AppShell>
-        <Toaster position="top-center" swipeDirections={["top"]} />
+        <Toaster position="top-center" />
       </AppStoreProvider>
     </QueryClientProvider>
   );

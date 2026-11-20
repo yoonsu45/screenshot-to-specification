@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({ swipeDirections = ["top"], ...props }: ToasterProps) => {
   const toasterRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -52,6 +52,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       ref={toasterRef}
       closeButton
+      swipeDirections={swipeDirections}
       className="toaster group"
       toastOptions={{
         closeButtonAriaLabel: "알림 닫기",
