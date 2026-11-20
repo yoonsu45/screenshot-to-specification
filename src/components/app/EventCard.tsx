@@ -7,6 +7,7 @@ import {
   MapPin,
   Plus,
   Ticket,
+  Trash2,
   UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +41,7 @@ export function EventCard({
   const { addPlan, removePlan, plan, requireAuth, userEmail, eventSaveCounts } = useAppStore();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [visitDateOpen, setVisitDateOpen] = useState(false);
+  const [cancelPending, setCancelPending] = useState(false);
   const plannedItem = plan.find((item) => item.id === `event:${event.id}`);
   const isAdded = Boolean(plannedItem);
 
@@ -71,6 +73,18 @@ export function EventCard({
       return;
     }
     setVisitDateOpen(true);
+  }
+
+  async function cancelFromDetails() {
+    if (cancelPending || !isAdded || !requireAuth()) return;
+    setCancelPending(true);
+    try {
+      const removed = await removePlan(`event:${event.id}`);
+      if (removed) toast.success("방문 계획에서 뺐어요.");
+      else toast.error("담기 취소에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setCancelPending(false);
+    }
   }
 
   function openVisitDateDialog() {
@@ -210,6 +224,18 @@ export function EventCard({
               <Plus />
               {isAdded ? "방문일 변경" : ADD_LABEL}
             </Button>
+            {isAdded && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={cancelPending}
+                onClick={() => void cancelFromDetails()}
+                className="rounded-xl border-destructive/40 font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 />
+                담기 취소
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

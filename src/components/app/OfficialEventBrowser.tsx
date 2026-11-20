@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bookmark, CalendarDays, MapPin, Plus, UsersRound } from "lucide-react";
+import { Bookmark, CalendarDays, MapPin, Plus, Trash2, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { OfficialPosterImage } from "@/components/app/OfficialPosterImage";
 import { TicketlinkBookingButton } from "@/components/app/TicketlinkBookingButton";
@@ -36,7 +36,8 @@ export function OfficialEventBrowser() {
       setPending(true);
       try {
         const ok = await removePlan(`event:${event.id}`);
-        if (!ok) toast.error("저장 취소에 실패했습니다.");
+        if (ok) toast.success("방문 계획에서 뺐어요.");
+        else toast.error("담기 취소에 실패했어요. 잠시 후 다시 시도해 주세요.");
       } finally {
         setPending(false);
       }
@@ -268,6 +269,17 @@ export function OfficialEventBrowser() {
                   <Plus className="h-4 w-4" />
                   {plan.some((item) => item.id === `event:${selected.id}`) ? "방문일 변경" : "담기"}
                 </button>
+                {plan.some((item) => item.id === `event:${selected.id}`) && (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => void toggleSave(selected)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-background px-4 py-3 font-bold text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    담기 취소
+                  </button>
+                )}
                 <TicketlinkBookingButton title={selected.title} className="w-full" />
               </div>
             )}

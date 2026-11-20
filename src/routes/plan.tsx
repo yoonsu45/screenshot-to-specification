@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   CalendarCheck2,
   CalendarRange,
@@ -451,6 +452,21 @@ export function Plan() {
                   연결된 공식 홈페이지가 없는 행사입니다.
                 </p>
               )}
+              <button
+                type="button"
+                onClick={async () => {
+                  const removed = await removePlan(selectedEvent.item.id);
+                  if (removed) {
+                    setSelectedEvent(null);
+                    toast.success("방문 계획에서 뺐어요.");
+                  } else {
+                    toast.error("담기 취소에 실패했어요. 잠시 후 다시 시도해 주세요.");
+                  }
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-background px-4 py-3 font-extrabold text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" /> 담기 취소
+              </button>
             </>
           )}
         </DialogContent>
