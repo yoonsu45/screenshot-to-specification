@@ -276,7 +276,7 @@ function CheckPage() {
             <button
               type="button"
               onClick={resetEntry}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-extrabold text-primary hover:bg-secondary"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-2 text-sm font-extrabold text-primary hover:bg-secondary"
             >
               <RotateCcw className="h-4 w-4" />
               입력 초기화
