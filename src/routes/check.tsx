@@ -6,6 +6,7 @@ import {
   ImagePlus,
   LoaderCircle,
   MapPin,
+  RotateCcw,
   Search,
   WandSparkles,
 } from "lucide-react";
@@ -202,6 +203,22 @@ function CheckPage() {
     });
   }
 
+  function resetDates() {
+    setForm((current) => ({ ...current, date: "", endDate: "" }));
+    setError(false);
+  }
+
+  function resetManualEntry() {
+    const emptyForm = { title: "", date: "", endDate: "", venue: "" };
+    setForm(emptyForm);
+    setDraft(emptyForm);
+    setManualSearchQuery("");
+    setSearchOpen(false);
+    setSelectedOfficialEvent(null);
+    setVenuePickerOpen(false);
+    setError(false);
+  }
+
   function selectOcrCandidate(candidate: BrowserOcrResult["candidates"][number]) {
     setForm((current) => ({
       ...current,
@@ -245,9 +262,22 @@ function CheckPage() {
 
   return (
     <div className="mx-auto max-w-xl">
-      <h1 className="mb-1 text-2xl font-black text-primary sm:text-3xl">
-        {isCaptureMode ? "캡처 이미지 글자 읽기" : "공연 직접 입력 · 검색"}
-      </h1>
+      <div className="mb-1 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-black text-primary sm:text-3xl">
+          {isCaptureMode ? "캡처 이미지 글자 읽기" : "공연 직접 입력 · 검색"}
+        </h1>
+        {!isCaptureMode &&
+          (form.title || form.date || form.endDate || form.venue || manualSearchQuery) && (
+            <button
+              type="button"
+              onClick={resetManualEntry}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-extrabold text-primary hover:bg-secondary"
+            >
+              <RotateCcw className="h-4 w-4" />
+              입력 초기화
+            </button>
+          )}
+      </div>
       <p className="mb-5 text-sm text-muted-foreground">
         {isCaptureMode
           ? "기기에서 읽은 행사 정보를 확인하고, 잘못된 부분만 직접 수정해 주세요."
@@ -397,6 +427,18 @@ function CheckPage() {
           <span className="mb-1.5 block text-sm font-bold">행사 종료일 <span className="font-normal text-muted-foreground">(기간 행사일 때 입력)</span></span>
           <input type="date" className={dateField} value={form.endDate ?? ""} onChange={(event) => setForm({ ...form, endDate: event.target.value })} />
         </label>
+        {(form.date || form.endDate) && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={resetDates}
+              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-extrabold text-primary hover:bg-secondary"
+            >
+              <RotateCcw className="h-4 w-4" />
+              시작일·종료일 초기화
+            </button>
+          </div>
+        )}
         {form.endDate && (!form.date || form.endDate < form.date) && <p role="alert" className="text-sm font-bold text-destructive">종료일은 시작일 이후로 입력해 주세요.</p>}
         {ocrResult && ocrResult.detectedDates.length > 1 && (
           <div>
