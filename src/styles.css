@@ -118,12 +118,18 @@ input.event-date-input {
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
+  line-height: 3rem;
+  padding-top: 0;
+  padding-bottom: 0;
   -webkit-appearance: none;
   appearance: none;
 }
 
 input.event-date-input::-webkit-date-and-time-value {
-  min-height: 1.5rem;
+  display: flex;
+  height: 100%;
+  min-height: 100%;
+  align-items: center;
   text-align: left;
 }
 

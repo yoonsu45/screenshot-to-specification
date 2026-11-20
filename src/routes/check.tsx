@@ -203,13 +203,19 @@ function CheckPage() {
     });
   }
 
-  function resetDates() {
-    setForm((current) => ({ ...current, date: "", endDate: "" }));
+  function resetDate(field: "date" | "endDate") {
+    setForm((current) => ({ ...current, [field]: "" }));
     setError(false);
   }
 
-  function resetManualEntry() {
-    const emptyForm = { title: "", date: "", endDate: "", venue: "" };
+  function resetEntry() {
+    const emptyForm = {
+      title: "",
+      date: "",
+      endDate: "",
+      venue: "",
+      ...(form.image ? { image: form.image } : {}),
+    };
     setForm(emptyForm);
     setDraft(emptyForm);
     setManualSearchQuery("");
@@ -266,11 +272,10 @@ function CheckPage() {
         <h1 className="text-2xl font-black text-primary sm:text-3xl">
           {isCaptureMode ? "캡처 이미지 글자 읽기" : "공연 직접 입력 · 검색"}
         </h1>
-        {!isCaptureMode &&
-          (form.title || form.date || form.endDate || form.venue || manualSearchQuery) && (
+        {(form.title || form.date || form.endDate || form.venue || manualSearchQuery) && (
             <button
               type="button"
-              onClick={resetManualEntry}
+              onClick={resetEntry}
               className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-extrabold text-primary hover:bg-secondary"
             >
               <RotateCcw className="h-4 w-4" />
@@ -412,33 +417,46 @@ function CheckPage() {
           )}
         </div>
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-bold">
-            행사 시작일 <span className="font-normal text-muted-foreground">(선택)</span>
-          </span>
+        <div className="block">
+          <div className="mb-1.5 flex min-h-8 items-center justify-between gap-2">
+            <label htmlFor="event-start-date" className="text-sm font-bold">
+              행사 시작일 <span className="font-normal text-muted-foreground">(선택)</span>
+            </label>
+            {form.date && (
+              <button
+                type="button"
+                onClick={() => resetDate("date")}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-extrabold text-primary hover:bg-secondary"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> 시작일 초기화
+              </button>
+            )}
+          </div>
           <input
+            id="event-start-date"
             type="date"
             className={dateField}
             value={form.date}
             onChange={(event) => setForm({ ...form, date: event.target.value })}
           />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-bold">행사 종료일 <span className="font-normal text-muted-foreground">(기간 행사일 때 입력)</span></span>
-          <input type="date" className={dateField} value={form.endDate ?? ""} onChange={(event) => setForm({ ...form, endDate: event.target.value })} />
-        </label>
-        {(form.date || form.endDate) && (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={resetDates}
-              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-extrabold text-primary hover:bg-secondary"
-            >
-              <RotateCcw className="h-4 w-4" />
-              시작일·종료일 초기화
-            </button>
+        </div>
+        <div className="block">
+          <div className="mb-1.5 flex min-h-8 items-center justify-between gap-2">
+            <label htmlFor="event-end-date" className="text-sm font-bold">
+              행사 종료일 <span className="font-normal text-muted-foreground">(기간 행사일 때 입력)</span>
+            </label>
+            {form.endDate && (
+              <button
+                type="button"
+                onClick={() => resetDate("endDate")}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-extrabold text-primary hover:bg-secondary"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> 종료일 초기화
+              </button>
+            )}
           </div>
-        )}
+          <input id="event-end-date" type="date" className={dateField} value={form.endDate ?? ""} onChange={(event) => setForm({ ...form, endDate: event.target.value })} />
+        </div>
         {form.endDate && (!form.date || form.endDate < form.date) && <p role="alert" className="text-sm font-bold text-destructive">종료일은 시작일 이후로 입력해 주세요.</p>}
         {ocrResult && ocrResult.detectedDates.length > 1 && (
           <div>
